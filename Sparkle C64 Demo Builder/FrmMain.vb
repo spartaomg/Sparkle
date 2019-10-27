@@ -57,7 +57,7 @@
             Select Case Strings.Right(Path, 4)
                 Case ".sls"
                     CmdLine = True
-                    Script = IO.File.ReadAllText(Path)     'open script...
+                    Script = IO.File.ReadAllText(Path)     'open script...!!
                     SetScriptPath(Path)
                     If InStr(Script, "File:") = 0 Then
                         MsgBox("This script does not contain any files", vbOKOnly, "Unable to build disk")

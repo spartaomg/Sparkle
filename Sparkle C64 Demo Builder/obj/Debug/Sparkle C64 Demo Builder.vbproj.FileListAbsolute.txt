@@ -1,0 +1,21 @@
+C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\bin\Debug\Resources\SD.prg
+C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\bin\Debug\Resources\SL.prg
+C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\bin\Debug\Resources\TabS.bin
+C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\bin\Debug\Resources\TabT.bin
+C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\bin\Debug\Sparkle C64 Demo Tool.exe.config
+C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\bin\Debug\Sparkle C64 Demo Tool.exe.manifest
+C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\bin\Debug\Sparkle C64 Demo Tool.application
+C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\bin\Debug\Sparkle C64 Demo Tool.exe
+C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\bin\Debug\Sparkle C64 Demo Tool.pdb
+C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\bin\Debug\Sparkle C64 Demo Tool.xml
+C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\obj\Debug\Sparkle_C64_Demo_Tool.FrmMain.resources
+C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\obj\Debug\Sparkle_C64_Demo_Tool.FrmSE.resources
+C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\obj\Debug\Sparkle_C64_Demo_Tool.Resources.resources
+C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\obj\Debug\Sparkle C64 Demo Builder.vbproj.GenerateResource.cache
+C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\obj\Debug\Sparkle C64 Demo Builder.vbproj.CoreCompileInputs.cache
+C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\obj\Debug\Sparkle C64 Demo Tool.exe.manifest
+C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\obj\Debug\Sparkle C64 Demo Tool.application
+C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\obj\Debug\Sparkle C64 Demo Tool.exe
+C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\obj\Debug\Sparkle C64 Demo Tool.xml
+C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\obj\Debug\Sparkle C64 Demo Tool.pdb
+C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\obj\Debug\Sparkle C64 Demo Builder.vbprojAssemblyReference.cache
