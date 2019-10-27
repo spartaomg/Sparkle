@@ -1,18 +1,26 @@
 ﻿Friend Module ModDisk
 
-    Public Drive() As Byte
+    Public Drive() As Byte ' = My.Resources.SparkleDrive
 
+    'Public S2 As Boolean = False
+
+    'Public PRGFull() As String
+    'Public PRGShort() As String
+    'Public PRGBlock() As Byte
+    'Public PRGTrack() As Byte
+    'Public PRGSector() As Byte
+    'Public PRGCnt As Integer
     Public BlocksFree As Integer = 664
 
     Public Disk(174847), NextTrack, NextSector As Byte   'Next Empty Track and Sector
-    Public MaxSector As Byte = 18, LastSector, Prg() As Byte
+    Public MaxSector As Byte = 18, LastSector, BlockCnt, Prg() As Byte
 
     Public BufferCnt As Integer = 0
 
     Public FileUnderIO As Boolean = False
     Public IOBit As Byte
 
-    Public Track(35), CT, CS, CP, BufferCt, BlockCnt As Integer
+    Public Track(35), CT, CS, CP, BufferCt As Integer
     Public TestDisk As Boolean = False
     Public StartTrack As Byte = 1
     Public StartSector As Byte = 0
@@ -24,36 +32,74 @@
     Public DtPos, CmPos, CmLast, DtLen, MatchStart, BitCnt As Integer
     Public ByteCnt As Integer    'Points at the next empty byte in buffer
     Public MatchType(), MaxType As String
+    'Public LitLenA() As Integer
+
+    'Public OrigBytes As Integer = 0
+    'Public OrigBits As Integer = 0
+
+    'Public NewBytes As Integer = 0
+    'Public NewBits As Integer = 0
 
     Public LastByteCt As Integer = 255
     Public LastMOffset As Integer = 0
     Public LastMLen As Integer = 0
     Public LastPOffset As Integer = -1
     Public LastMType As String = ""
+    'Public LastBytes As Integer = 0
+    'Public LastBits As Integer = 0
 
+    'Public PreByteCt As Integer = 255
     Public PreMOffset As Integer = 0
+    'Public PreMLen As Integer = 0
+    'Public PrePOffset As Integer = -1
+    'Public PreMType As String = ""
+    'Public PreBytes As Integer = 0
+    'Public PreBits As Integer = 0
+
+    'Public PostByteCt As Integer = 255
     Public PostMOffset As Integer = 0
+    'Public PostMLen As Integer = 0
+    'Public PostPOffset As Integer = -1
+    'Public PostMType As String = ""
+    'Public PostBytes As Integer = 0
+    'Public PostBits As Integer = 0
+
+    'Public LitBytes As Integer = 0
+    'Public LitBits As Integer = 0
 
     Public BitsSaved As Integer = 0
     Public BytesSaved As Integer = 0
 
     Public PreOLMO As Integer = 0
+    'Public PreOLPO As Integer = 0
+
     Public PostOLMO As Integer = 0
+    'Public PostOLPO As Integer = 0
+
+    'Public Compression As String
 
     Public Script As String
     Public ScriptHeader As String = "[Sparkle Loader Script]"
     Public ScriptName As String
     Public DiskNo As Integer
+    'Public D64Path As String
 
     '-----THESE WILL BE REMOVED-----
     Public D64Name As String '= My.Computer.FileSystem.SpecialDirectories.MyDocuments
+    'Public DiskHeader As String = "OMG " + Year(Now).ToString
     '-------------------------------
 
     Public DiskHeader As String = "demo disk " + Year(Now).ToString
     Public DiskID As String = "sprkl"
+    'Public DiskComp As String
     Public DemoName As String = "demo"
     Public DemoStart As String
+    'Public Music, MusicInit, MusicPlay As String
+    'Public AddLoader As Boolean = True
     Public SystemFile As Boolean = False
+    'Public NextFileCnt As Byte = 0
+    'Public NextID As Byte = 0
+    'Public PRGList As String
     Public FileChanged As Boolean = False
 
     Public DiskCnt As Integer = -1
@@ -63,7 +109,7 @@
     Public CurrentPart As Integer = -1
     Public CurrentFile As Integer = -1
 
-    Public D64NameA(), DiskHeaderA(), DiskIDA(), DemoNameA(), DemoStartA(), DirArtA() As String
+    Public D64NameA(), DiskHeaderA(), DiskIDA(), DemoNameA(), DemoStartA() As String
     Public FileNameA(), FileAddrA(), FileOffsA(), FileLenA() As String
     Public Prgs As New List(Of Byte())
     Public FileIOA() As Boolean
@@ -75,23 +121,21 @@
     Public TotalParts As Integer = 0
     Public NewFile As String
 
-    Public DiskSizeA() As Integer
-    Public PartSizeA() As Integer
-    Public FileSizeA() As Integer
+    Public DiskBlockSize() As Integer
+    Public PartBlockSize() As Integer
+    Public FileBlockSize() As Integer
     Public FBSDisk() As Integer
-    Public PartByteCntA() As Integer
-    Public PartBitCntA() As Integer
-    Public PartBitPosA() As Byte
-    Public UncomPartSize As Double = 0
+    'Public MusicBlockSize As Integer = 0
 
     Public bBuildDisk As Boolean = False
 
-    Public SS, SE As Integer
+    Dim SS, SE As Integer
+    'Dim EndOfSection As Boolean = False
     Public NewPart As Boolean = False
-    Public ScriptEntryType As String = ""
-    Public ScriptEntry As String = ""
-    Public ScriptEntryArray() As String
-    Public LastNonEmpty As Integer = -1
+    Dim ScriptEntryType As String = ""
+    Dim ScriptEntry As String = ""
+    Dim ScriptEntryArray() As String
+    Dim LastNonEmpty As Integer = -1
 
     Public LC(), NM, FM, LM As Integer
     Public SM1 As Integer = 0
@@ -106,15 +150,6 @@
     Public LastBlockCnt As Byte = 0
     Public LoaderParts As Integer = 1
     Public FilesInBuffer As Byte = 1
-
-    Private DirTrack, DirSector, DirPos As Integer
-    Public DirArt As String
-    Private DirEntry As String = ""
-    Private LastDirSector As Byte
-
-    Public ScriptPath As String
-
-    Public CmdLine As Boolean = False
 
     Public Sub SetLastSector()
         On Error GoTo Err
@@ -140,23 +175,59 @@ Err:
 
     End Sub
 
+    Public Function ConvertScriptToArray() As Boolean
+        On Error GoTo Err
+
+        ConvertScriptToArray = False
+
+        SS = 1 : SE = 1
+
+        FindNextScriptEntry()
+
+        If ScriptEntry <> ScriptHeader Then
+            MsgBox("Invalid Loader Script file!", vbExclamation + vbOKOnly)
+            Exit Function
+        End If
+
+        ResetArrays()
+        AddNewDiskToArray()
+
+FindNext:
+        FindNextScriptEntry()
+        FindEntryType()
+
+        If SE < Script.Length Then GoTo FindNext
+
+        DiskPartCntA(CurrentDisk) = TotalParts
+        'MsgBox("Disk(" + CurrentDisk.ToString + "): " + DiskPartCntA(CurrentDisk).ToString + " parts")
+        ConvertScriptToArray = True
+
+        Exit Function
+
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+        ConvertScriptToArray = False
+
+    End Function
+
     Public Sub ResetArrays()
         On Error GoTo Err
 
         DiskCnt = -1
 
         ReDim DiskNoA(DiskCnt), DiskPartCntA(DiskCnt), DiskFileCntA(DiskCnt)
-        ReDim D64NameA(DiskCnt), DiskHeaderA(DiskCnt), DiskIDA(DiskCnt), DemoNameA(DiskCnt), DemoStartA(DiskCnt), DirArtA(DiskCnt)
-        ReDim DiskSizeA(DiskCnt)
+        ReDim D64NameA(DiskCnt), DiskHeaderA(DiskCnt), DiskIDA(DiskCnt), DemoNameA(DiskCnt), DemoStartA(DiskCnt)
+        ReDim DiskBlockSize(DiskCnt)
 
         PartCnt = -1
-        ReDim PDiskNoA(PartCnt), PSizeA(PartCnt), PartSizeA(PartCnt), FilesInPartA(PartCnt)
+        ReDim PDiskNoA(PartCnt), PSizeA(PartCnt), PartBlockSize(PartCnt), FilesInPartA(PartCnt)
 
         FileCnt = -1
 
         ReDim FileNameA(FileCnt), DFDiskNoA(FileCnt), DFPartNoA(FileCnt), FileAddrA(FileCnt), FileOffsA(FileCnt), FileLenA(FileCnt)
         ReDim FDiskNoA(FileCnt), FPartNoA(FileCnt), FSizeA(FileCnt)
-        ReDim FileSizeA(FileCnt), FBSDisk(FileCnt)
+        ReDim FileBlockSize(FileCnt), FBSDisk(FileCnt)
 
         TotalParts = 0
 
@@ -168,7 +239,63 @@ Err:
 
     End Sub
 
-    Public Function FindNextScriptEntry() As Boolean
+    Public Sub AddNewDiskToArray()
+        On Error GoTo Err
+
+        DiskCnt += 1
+        ReDim Preserve DiskNoA(DiskCnt), DiskPartCntA(DiskCnt), DiskFileCntA(DiskCnt)
+        ReDim Preserve D64NameA(DiskCnt), DiskHeaderA(DiskCnt), DiskIDA(DiskCnt), DemoNameA(DiskCnt), DemoStartA(DiskCnt)
+        'ReDim Preserve MusicA(DiskCnt), MusicInitA(DiskCnt), MusicPlayA(DiskCnt)
+        ReDim Preserve DiskBlockSize(DiskCnt)
+
+        DiskNoA(DiskCnt) = DiskCnt
+        CurrentDisk = DiskCnt
+        TotalParts = 0
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Public Sub AddNewPartToArray(DiskIndex As Integer)
+        On Error GoTo Err
+
+        PartCnt += 1
+        ReDim Preserve FilesInPartA(PartCnt), PDiskNoA(PartCnt), PSizeA(PartCnt), PartBlockSize(PartCnt)
+
+        PDiskNoA(PartCnt) = DiskIndex
+        CurrentPart = PartCnt
+        'TotalParts += 1
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Public Sub AddNewFileToArray(DiskIndex As Integer)
+        On Error GoTo Err
+        'If MsgBox("Add " + NewFile + " to Disk " + DiskIndex.ToString + ", Part " + CurrentPart.ToString + "?", vbOKCancel + vbCancel, "Add new file?") = vbCancel Then Exit Sub
+
+        FileCnt += 1
+        ReDim Preserve FileNameA(FileCnt), DFDiskNoA(FileCnt), DFPartNoA(FileCnt), FileAddrA(FileCnt), FileOffsA(FileCnt), FileLenA(FileCnt)
+        ReDim Preserve FDiskNoA(FileCnt), FPartNoA(FileCnt), FSizeA(FileCnt)
+        ReDim Preserve FileBlockSize(FileCnt), FBSDisk(FileCnt)
+
+        DFDiskNoA(FileCnt) = DiskIndex
+        DFPartNoA(FileCnt) = CurrentPart
+        FilesInPartA(CurrentPart) += 1            'Number
+        CurrentFile = FileCnt
+        DiskFileCntA(DiskIndex) += 1
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Function FindNextScriptEntry() As Boolean
         On Error GoTo Err
 
         FindNextScriptEntry = True
@@ -202,7 +329,66 @@ Err:
 
     End Function
 
-    Public Sub SplitEntry()
+    Private Sub FindEntryType()
+        On Error GoTo Err
+
+        If Strings.InStr(ScriptEntry, vbTab) = 0 Then
+            ScriptEntryType = ScriptEntry
+        Else
+            ScriptEntryType = Strings.Left(ScriptEntry, Strings.InStr(ScriptEntry, vbTab) - 1)
+            ScriptEntry = Strings.Right(ScriptEntry, ScriptEntry.Length - Strings.InStr(ScriptEntry, vbTab))
+        End If
+
+        SplitEntry()
+
+        Select Case ScriptEntryType
+            Case "Path:"
+                D64NameA(CurrentDisk) = ScriptEntryArray(0)
+            Case "Header:"
+                DiskHeaderA(CurrentDisk) = ScriptEntryArray(0)
+            Case "ID:"
+                DiskIDA(CurrentDisk) = ScriptEntryArray(0)
+            Case "Name:"
+                DemoNameA(CurrentDisk) = ScriptEntryArray(0)
+            Case "Start:"
+                DemoStartA(CurrentDisk) = ScriptEntryArray(0)
+            Case "File:"
+                AddFileToArray()
+                FileNameA(FileCnt) = ScriptEntryArray(0)                                 'New File's Path
+                FPartNoA(FileCnt) = PartCnt
+                If ScriptEntryArray.Count > 1 Then FileAddrA(FileCnt) = ScriptEntryArray(1) 'New File's load address
+                If ScriptEntryArray.Count > 2 Then FileOffsA(FileCnt) = ScriptEntryArray(2) 'New File's offset within file
+                If ScriptEntryArray.Count = 4 Then FileLenA(FileCnt) = ScriptEntryArray(3)  'New File's length in bytes within file
+            Case "New Disk"
+                DiskPartCntA(CurrentDisk) = TotalParts
+                'MsgBox("Disk(" + CurrentDisk.ToString + "): " + DiskPartCntA(CurrentDisk).ToString + " parts")
+                AddNewDiskToArray()
+            Case Else
+        End Select
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub AddFileToArray()
+        On Error GoTo Err
+
+        If NewPart = True Then
+            AddNewPartToArray(CurrentDisk)
+            TotalParts += 1
+        End If
+
+        AddNewFileToArray(CurrentDisk)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub SplitEntry()
         On Error GoTo Err
 
         LastNonEmpty = -1
@@ -471,18 +657,14 @@ Err:
 
     End Sub
 
-    Public Function InjectDriveCode(idcDiskID As Byte, idcFileCnt As Byte, idcNextID As Byte, Optional TestDisk As Boolean = False) As Boolean
+    Public Function InjectDriveCode(idcDiskID As Byte, idcFileCnt As Byte, idcNextID As Byte) As Boolean
         On Error GoTo Err
 
         InjectDriveCode = True
 
         Dim I, Cnt As Integer
 
-        If TestDisk = True Then
-            Drive = My.Resources.SDT
-        Else
-            Drive = My.Resources.SD
-        End If
+        Drive = My.Resources.SD
 
         Drive(802) = idcFileCnt 'Save number of parts to be loaded to ZP Tab Location $20 (=$320+2), includes Address Bytes!!!
         Drive(803) = idcNextID  'Save Next Side ID1 to ZP Tab Location $21 (=$321+2), includes Address Bytes
@@ -500,9 +682,9 @@ Err:
         Next
 
         'Next Side Info on last 3 bytes of BAM!!!
-        Disk(Track(18) + (0 * 256) + 255) = idcDiskID
-        Disk(Track(18) + (0 * 256) + 254) = idcFileCnt
-        Disk(Track(18) + (0 * 256) + 253) = idcNextID
+        Disk(Track(18) + 0 * 256 + 255) = idcDiskID
+        Disk(Track(18) + 0 * 256 + 254) = idcFileCnt
+        Disk(Track(18) + 0 * 256 + 253) = idcNextID
 
         Exit Function
 Err:
@@ -512,7 +694,7 @@ Err:
 
     End Function
 
-    Public Function InjectLoader(DiskIndex As Integer, T As Byte, S As Byte, IL As Byte, Optional TestDisk As Boolean = False) As Boolean
+    Public Function InjectLoader(DiskIndex As Integer, T As Byte, S As Byte, IL As Byte) As Boolean
         On Error GoTo Err
 
         InjectLoader = True
@@ -539,11 +721,7 @@ Err:
         AdLo = (B - 1) Mod 256
         AdHi = Int((B - 1) / 256)
 
-        If TestDisk = False Then
-            Loader = My.Resources.SL
-        Else
-            Loader = My.Resources.SLT
-        End If
+        Loader = My.Resources.SL
 
         For I = 0 To Loader.Length - 3       'Find JMP $01f0 instruction (JMP AltLoad)
             If (Loader(I) = &H4C) And (Loader(I + 1) = &H80) And (Loader(I + 2) = &H1) Then
@@ -615,7 +793,7 @@ SeekNewEntry:
                     If A > &H5F Then A -= &H20
                     Disk(Cnt + B + 3 + W) = A
                 Next
-                Disk(Cnt + B + &H1C) = L    'Length of boot loader in blocks
+                Disk(Cnt + B + &H1C) = L
             Else
                 B += 32
                 If B < 256 Then
@@ -644,11 +822,49 @@ Err:
     Public Function ConvertNumberToHexString(HLo As Byte, Optional HHi As Byte = 0) As String
         On Error GoTo Err
 
-        ConvertNumberToHexString = LCase(Hex(HLo + (HHi * 256)))
+        Dim S As String = ""
+        Dim B As Byte
 
-        If Len(ConvertNumberToHexString) < 4 Then
-            ConvertNumberToHexString = Left("0000", 4 - Len(ConvertNumberToHexString)) + ConvertNumberToHexString
-        End If
+        S = LCase(Hex(HLo + HHi * 256))
+
+        If Len(S) < 4 Then S = Left("0000", 4 - Len(S)) + S
+
+        ConvertNumberToHexString = S
+
+        'Exit Function
+
+        'B = Int(HHi / 16)
+
+        'If B < 10 Then
+        'S += Strings.Chr(48 + B)
+        'Else
+        'S += Strings.Chr(87 + B)
+        'End If
+
+        'B = HHi Mod 16
+
+        'If B < 10 Then
+        'S += Strings.Chr(48 + B)
+        'Else
+        'S += Strings.Chr(87 + B)
+        'End If
+
+        'B = Int(HLo / 16)
+        'If B < 10 Then
+        'S += Strings.Chr(48 + B)
+        'Else
+        'S += Strings.Chr(87 + B)
+        'End If
+
+        'B = HLo Mod 16
+
+        'If B < 10 Then
+        'S += Strings.Chr(48 + B)
+        'Else
+        'S += Strings.Chr(87 + B)
+        'End If
+
+        'ConvertNumberToHexString = S
 
         Exit Function
 Err:
@@ -701,53 +917,52 @@ Err:
 
     End Function
 
-    Public Sub MakeTestDisk()
+    Public Function ConvertArrayToScript() As String
         On Error GoTo Err
 
-        Dim B As Byte
-        Dim TDiff As Integer = Track(19) - Track(18)
-        Dim SMax As Integer
+        Dim S As String
+        Dim PC As Integer = -1
+        S = ScriptHeader + vbNewLine + vbNewLine
 
-        DemoStart = "0820"
-        DemoName = "sparkle test"
-        DiskHeader = "spakle test"
-        DiskID = " 2019"
-
-        NewDisk()
-
-        For T As Integer = 1 To 35
-            Select Case T
-                Case 1 To 17
-                    SMax = 20
-                Case 19 To 24
-                    SMax = 18
-                Case 25 To 30
-                    SMax = 17
-                Case 31 To 35
-                    SMax = 16
-            End Select
-            If T <> 18 Then
-                For S As Integer = 0 To SMax
-                    For I As Integer = S To S + 255
-                        B = I Mod 256
-                        Disk(Track(T) + S * 256 + I - S) = B
-                    Next
-                    DeleteBit(T, S, True)
-                Next
+        For I As Integer = 0 To DiskCnt
+            S += "Path:" + vbTab + D64NameA(I) + vbNewLine +
+                "Header:" + vbTab + DiskHeaderA(I) + vbNewLine +
+                "Name:" + vbTab + DemoNameA(I) + vbNewLine +
+                "Start:" + vbTab + DemoStartA(I)
+            For J As Integer = 0 To FileCnt
+                If PDiskNoA(DFPartNoA(J)) = I Then      'Is this file in a part on this disk?
+                    S += vbNewLine
+                    If DFPartNoA(J) <> PC Then
+                        S += vbNewLine
+                        PC = DFPartNoA(J)
+                    End If
+                    S += "File:" + vbTab + FileNameA(J)
+                    If FileAddrA(J) <> "" Then
+                        S += vbTab + FileAddrA(J)
+                        If FileOffsA(J) <> "" Then
+                            S += vbTab + FileOffsA(J)
+                            If FileLenA(J) <> "" Then S += vbTab + FileLenA(J)
+                        End If
+                    End If
+                End If
+            Next
+            If I < DiskCnt Then
+                S += vbNewLine + vbNewLine + "New Disk" + vbNewLine + vbNewLine
             End If
         Next
 
-        InjectLoader(-1, 18, 5, 6, True)
-        InjectDriveCode(1, 255, 1, True)
+        ConvertArrayToScript = S
 
-        Exit Sub
+        Exit Function
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
-    End Sub
+        ConvertArrayToScript = ""
 
-    Public Function BuildDemoFromScript(Optional SaveIt As Boolean = True) As Boolean
-        On Error GoTo Err
+    End Function
+
+    Public Function BuildDemoFromScript() As Boolean
+        'On Error GoTo Err
 
         BuildDemoFromScript = True
 
@@ -763,10 +978,10 @@ Err:
 
         DiskCnt = -1
 
-
 NewDisk:
         'Reset Disk Variables
         If ResetDiskVariables() = False Then GoTo NoDisk
+        DiskCnt += 1
 
 FindNext:
         If FindNextScriptEntry() = False Then GoTo NoDisk
@@ -785,24 +1000,30 @@ FindNext:
                 DemoName = ScriptEntryArray(0)
             Case "Start:"
                 DemoStart = ScriptEntryArray(0)
-            Case "DirArt:"
-                If IO.File.Exists(ScriptEntryArray(0)) Then
-                    DirArt = IO.File.ReadAllText(ScriptEntryArray(0))
-                End If
             Case "File:"
                 'Add files to part array, if new part, it will first sort files in last part then add previous part to disk
                 If AddFile() = False Then GoTo NoDisk
             Case "New Disk"
-                'If new disk, sort, compress and add last part, then update part count, add loader & drive code, save disk, then GoTo NewDisk
-                If FinishDisk(False, SaveIt) = False Then GoTo NoDisk
+                'If new disk, sort and add last part, then update part count, add loader & drive code, save disk, then GoTo NewDisk
+                If FinishDisk(False) = False Then GoTo NoDisk
                 GoTo NewDisk
             Case Else
         End Select
 
         If SE < Script.Length Then GoTo FindNext
 
-        'Last disk: sort, compress and add last part, then update part count, add loader & drive code, save disk, and we are done :)
-        If FinishDisk(True, SaveIt) = False Then GoTo NoDisk
+        'Last disk: sort and add last part, then update part count, add loader & drive code, save disk, and we are done :)
+        If FinishDisk(True) = False Then GoTo NoDisk
+
+        'Dim sLit As String = ""
+        'Dim TotLit As Integer = 0
+        'For I As Integer = 0 To LitLenA.Count - 1
+        'sLit += I.ToString + ":" + vbTab + LitLenA(I).ToString + vbNewLine
+        'TotLit += LitLenA(I)
+        'Next
+        'sLit = "Total literal sequences: " + TotLit.ToString + vbNewLine + vbNewLine + sLit
+
+        'IO.File.WriteAllText("C:\Users\Tamas\OneDrive\C64\Coding\LitLen.txt", sLit)
 
         Exit Function
 Err:
@@ -812,45 +1033,8 @@ NoDisk:
 
     End Function
 
-    Private Sub AddHeaderAndID()
-        On Error GoTo Err
-
-        Dim B As Byte
-
-        CP = Track(18)
-
-        For Cnt = &H90 To &HAA
-            Disk(CP + Cnt) = &HA0
-        Next
-
-        If DiskHeader.Length > 16 Then
-            DiskHeader = Left(DiskHeader, 16)
-        End If
-
-        For Cnt = 1 To Strings.Len(DiskHeader)
-            B = Asc(Mid(DiskHeader, Cnt, 1))
-            If B > &H5F Then B -= &H20
-            Disk(CP + &H8F + Cnt) = B
-        Next
-
-        If DiskID.Length > 5 Then
-            DiskID = Left(DiskID, 5)
-        End If
-
-        For Cnt = 1 To Len(DiskID)                  'Overwrites Disk ID and DOS type (5 characters max.)
-            B = Asc(Mid(DiskID, Cnt, 1))
-            If B > &H5F Then B -= &H20
-            Disk(CP + &HA1 + Cnt) = B
-        Next
-
-        Exit Sub
-Err:
-        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
-    End Sub
-
-    Private Function FinishDisk(LastDisk As Boolean, Optional SaveIt As Boolean = True) As Boolean
-        On Error GoTo Err
+    Private Function FinishDisk(LastDisk As Boolean) As Boolean
+        'On Error GoTo Err
 
         FinishDisk = True
         If SortPart() = False Then GoTo NoDisk
@@ -859,17 +1043,17 @@ Err:
         CloseBuff()
         'Now add compressed parts to disk
         If AddCompressedPartsToDisk() = False Then GoTo NoDisk
-        AddHeaderAndID()
         If InjectLoader(-1, 18, 5, 6) = False Then GoTo NoDisk
-        If InjectDriveCode(DiskCnt + 1, LoaderParts, IIf(LastDisk = False, DiskCnt + 2, 0)) = False Then GoTo NoDisk
-        If DirArt <> "" Then AddDirArt()
+        If InjectDriveCode(DiskCnt + 1, PartCnt + 1, IIf(LastDisk = False, DiskCnt + 2, 0)) = False Then GoTo NoDisk
 
         BytesSaved += Int(BitsSaved / 8)
         BitsSaved = BitsSaved Mod 8
 
-        If SaveIt = True Then
-            If SaveDisk() = False Then GoTo NoDisk
-        End If
+        'Debug.Print(BytesSaved.ToString + " bytes and " + BitsSaved.ToString + " bits saved!")
+
+        'Debug.Print(BufferCnt.ToString + " blocks used " + vbNewLine + (664 - BufferCnt).ToString + " blocks free")
+
+        If SaveDisk() = False Then GoTo NoDisk
 
         Exit Function
 Err:
@@ -884,36 +1068,23 @@ NoDisk:
 
         SaveDisk = True
 
-        'If D64Name = "" Then D64Name = "Demo Disk" + IIf(DiskCnt > 0, " " + (CurrentDisk + 1).ToString, "") + ".d64"
-        If D64Name = "" Then D64Name = "Demo Disk " + (DiskCnt + 1).ToString + ".d64"
+        If D64Name = "" Then D64Name = "Demo Disk" + IIf(DiskCnt > 0, " " + (CurrentDisk + 1).ToString, "")
 
-        If InStr(D64Name, ":") = 0 Then
-            D64Name = ScriptPath + D64Name
-        End If
-
-
-        If CmdLine = True Then
-            'We are in command line, just save the disk
-            IO.File.WriteAllBytes(D64Name, Disk)
-        Else
-            'We are in app mode, show dialog
-            Dim SaveDLG As New SaveFileDialog With {
+        Dim SaveDLG As New SaveFileDialog With {
             .Filter = "D64 Files (*.d64)|*.d64",
             .Title = "Save D64 File As...",
             .FileName = D64Name,
             .RestoreDirectory = True
         }
 
-            Dim R As DialogResult = SaveDLG.ShowDialog(FrmMain)
+        Dim R As DialogResult = SaveDLG.ShowDialog(FrmMain)
 
-            If R = Windows.Forms.DialogResult.OK Then
-                D64Name = SaveDLG.FileName
-                If Strings.Right(D64Name, 4) <> ".d64" Then
-                    D64Name += ".d64"
-                End If
-                IO.File.WriteAllBytes(D64Name, Disk)
+        If R = Windows.Forms.DialogResult.OK Then
+            D64Name = SaveDLG.FileName
+            If Strings.Right(D64Name, 4) <> ".d64" Then
+                D64Name += ".d64"
             End If
-
+            IO.File.WriteAllBytes(D64Name, Disk)
         End If
 
         Exit Function
@@ -924,16 +1095,18 @@ Err:
 
     End Function
 
-    Public Function CompressPart() As Boolean
-        On Error GoTo Err
+    Private Function CompressPart() As Boolean
+        'On Error GoTo Err
 
         CompressPart = True
 
         Dim PreBCnt As Integer = BufferCnt
 
-        If Prgs.Count = 0 Then Exit Function        'GoTo NoComp DOES NOT WORK!!!
+        If Prgs.Count = 0 Then Exit Function
 
         'DO NOT RESET ByteSt AND BUFFER VARIABLES HERE!!!
+
+        'MsgBox(PartCnt.ToString)
 
         If (BufferCnt = 0) And (ByteCnt = 254) Then
         Else
@@ -951,6 +1124,8 @@ Err:
 
         LastBlockCnt = BlockCnt
 
+        'FinishPart()
+
         'IF THE WHOLE PART IS LESS THAN 1 BLOCK, THEN "IT DOES NOT COUNT", Part Counter WILL NOT BE INCREASED
         If PreBCnt = BufferCnt Then
             PartCnt -= 1
@@ -959,13 +1134,13 @@ Err:
         Exit Function
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-NoComp:
+
         CompressPart = False
 
     End Function
 
     Private Function AddFile() As Boolean
-        On Error GoTo Err
+        'On Error GoTo Err
 
         AddFile = True
 
@@ -987,6 +1162,8 @@ NoComp:
         'Then add file to part
         If AddFileToPart() = False Then GoTo NoDisk
 
+        'MsgBox("Part: " + PartCnt.ToString + vbNewLine + "File: " + Prgs.Count.ToString + vbNewLine + "Len: " + Hex(Prgs(FileCnt).Length)) 'FileLenA(FileCnt))
+
         Exit Function
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
@@ -995,15 +1172,15 @@ NoDisk:
 
     End Function
 
-    Public Function SortPart() As Boolean
+    Private Function SortPart() As Boolean
         On Error GoTo Err
 
         SortPart = True
 
-        If Prgs.Count = 1 Then Exit Function 'GoTo NoSort DOES NOT WORK!!!
+        If Prgs.Count = 1 Then Exit Function
 
         Dim Change As Boolean
-        Dim FSO, FEO, FSI, FEI As Integer   'File Start and File End Outer loop/Inner loop
+        Dim FAO, FLO, FAI, FLI As Integer
         Dim PO(), PI() As Byte
         Dim S As String
         Dim IO As Boolean
@@ -1012,24 +1189,22 @@ NoDisk:
         'Check files for overlap
 
         For O As Integer = 0 To Prgs.Count - 2
-            FSO = Convert.ToInt32(FileAddrA(O), 16)              'Outer loop File Start
-            FEO = FSO + Convert.ToInt32(FileLenA(O), 16) - 1     'Outer loop File End
+            FAO = Convert.ToInt32(FileAddrA(O), 16)
+            FLO = Convert.ToInt32(FileLenA(O), 16)
             For I As Integer = O + 1 To Prgs.Count - 1
-                FSI = Convert.ToInt32(FileAddrA(I), 16)          'Inner loop File Start
-                FEI = FSI + Convert.ToInt32(FileLenA(I), 16) - 1 'Inner loop File End
-                '----|------+---------|--------OR-------|------+---------|-----------------
-                '    FSO    FSI       FEO               FSO    FEI       FEO
-                If ((FSI >= FSO) And (FSI <= FEO)) Or ((FEI >= FSO) And (FEI <= FEO)) Then
-                    Dim OLS As Integer = IIf(FSO >= FSI, FSO, FSI)  'Overlap Start address
-                    Dim OLE As Integer = IIf(FEO <= FEI, FEO, FEI)  'Overlap End address
+                FAI = Convert.ToInt32(FileAddrA(I), 16)
+                FLI = Convert.ToInt32(FileLenA(I), 16)
 
-                    If (OLS >= &HD000) And (OLE <= &HDFFF) And (FileIOA(O) <> FileIOA(I)) Then
-                        'Overlap is IO memory only and different IO status - NO OVERLAP
-                    Else
-                        If MsgBox("The following two files overlap in Part " + PartCnt.ToString + ":" _
-                           + vbNewLine + vbNewLine + FileNameA(I) + " ($" + Hex(FSI) + " - $" + Hex(FEI) + ")" + vbNewLine + vbNewLine _
-                           + FileNameA(O) + " ($" + Hex(FSO) + " - $" + Hex(FEO) + ")" + vbNewLine + vbNewLine + "Do you want to proceed?", vbYesNo + vbExclamation) = vbNo Then GoTo NoSort
-                    End If
+                If (FAI >= FAO) And (FAI < FAO + FLO) And (FileIOA(O) = FileIOA(I)) Then
+                    'First byte of second file overlaps with first file, same IO status
+                    If MsgBox("The following two files overlap in Part " + PartCnt.ToString + ":" _
+                           + vbNewLine + vbNewLine + FileNameA(I) + vbNewLine + vbNewLine _
+                           + FileNameA(O) + vbNewLine + vbNewLine + "Do you want to proceed?", vbYesNo + vbExclamation) = vbNo Then GoTo NoSort
+                ElseIf (FAI + FLI - 1 >= FAO) And (FAI + FLI - 1 < FAO + FLO) And (FileIOA(O) = FileIOA(I)) Then
+                    'Last byte of second file overlaps with first file, same IO status
+                    If MsgBox("The following two files overlap in Part " + PartCnt.ToString + ":" _
+                           + vbNewLine + vbNewLine + FileNameA(I) + vbNewLine + vbNewLine _
+                           + FileNameA(O) + vbNewLine + vbNewLine + "Do you want to proceed?", vbYesNo + vbExclamation) = vbNo Then GoTo NoSort
                 End If
             Next
         Next
@@ -1040,60 +1215,48 @@ Restart:
         Change = False
 
         For O As Integer = 0 To Prgs.Count - 2
-            FSO = Convert.ToInt32(FileAddrA(O), 16)
-            FEO = Convert.ToInt32(FileLenA(O), 16)
+            FAO = Convert.ToInt32(FileAddrA(O), 16)
+            FLO = Convert.ToInt32(FileLenA(O), 16)
             For I As Integer = O + 1 To Prgs.Count - 1
-                FSI = Convert.ToInt32(FileAddrA(I), 16)
-                FEI = Convert.ToInt32(FileLenA(I), 16)
+                FAI = Convert.ToInt32(FileAddrA(I), 16)
+                FLI = Convert.ToInt32(FileLenA(I), 16)
 
-                If FSO + FEO = FSI Then
-                    'Inner files follows outer file immediately
-                    If (FSI <= &HD000) Or (FSI > &HDFFF) Then
-                        'Append files as they meet outside IO memory
-Append:                 PO = Prgs(O)
-                        PI = Prgs(I)
-                        ReDim Preserve PO(FEO + FEI - 1)
+                'MsgBox("FAO: " + Hex(FAO) + vbNewLine + "FLO: " + Hex(FLO) + vbNewLine + "FAI: " + Hex(FAI) + vbNewLine + "FLI: " + Hex(FLI))
 
-                        For J As Integer = 0 To FEI - 1
-                            PO(FEO + J) = PI(J)
-                        Next
+                If (FAO + FLO = FAI) And (FileIOA(O) = FileIOA(I)) Then
+                    'Append only if same IO status
 
-                        Prgs(O) = PO
-                        Change = True
-                    Else
-                        If FileIOA(O) = FileIOA(I) Then
-                            'Files meet inside IO memory, append only if their IO status is the same
-                            GoTo Append
-                        End If
-                    End If
-                ElseIf FSI + FEI = FSO Then
-                    'Outer file follows inner file immediately
-                    If (FSO <= &HD000) Or (FSO > &HDFFF) Then
-                        'Prepend files as they meet outside IO memory
-Prepend:                PO = Prgs(O)
-                        PI = Prgs(I)
-                        ReDim Preserve PI(FEI + FEO - 1)
+                    PO = Prgs(O)
+                    PI = Prgs(I)
+                    ReDim Preserve PO(FLO + FLI - 1)
 
-                        For J As Integer = 0 To FEO - 1
-                            PI(FEI + J) = PO(J)
-                        Next
+                    For J As Integer = 0 To FLI - 1
+                        PO(FLO + J) = PI(J)
+                    Next
 
-                        Prgs(O) = PI
+                    Prgs(O) = PO
+                    Change = True
+                ElseIf (FAI + FLI = FAO) And (FileIOA(O) = FileIOA(I)) Then
+                    'Prepend only if same IO status
 
-                        FileAddrA(O) = FileAddrA(I)
+                    PO = Prgs(O)
+                    PI = Prgs(I)
+                    ReDim Preserve PI(FLI + FLO - 1)
 
-                        Change = True
-                    Else
-                        If FileIOA(O) = FileIOA(I) Then
-                            'Files meet inside IO memory, prepend only if their IO status is the same
-                            GoTo Prepend
-                        End If
-                    End If
+                    For J As Integer = 0 To FLO - 1
+                        PI(FLI + J) = PO(J)
+                    Next
+
+                    Prgs(O) = PI
+
+                    FileAddrA(O) = FileAddrA(I)
+
+                    Change = True
                 End If
 
                 If Change = True Then
-                    FEO += FEI
-                    FileLenA(O) = ConvertNumberToHexString(FEO Mod 256, Int(FEO / 256))
+                    FLO += FLI
+                    FileLenA(O) = ConvertNumberToHexString(FLO Mod 256, Int(FLO / 256))
                     For J As Integer = I To Prgs.Count - 2
                         FileNameA(J) = FileNameA(J + 1)
                         FileAddrA(J) = FileAddrA(J + 1)
@@ -1153,18 +1316,14 @@ NoSort:
 
     End Function
 
-    Public Function AddFileToPart() As Boolean
+    Private Function AddFileToPart() As Boolean
         On Error GoTo Err
 
         AddFileToPart = True
 
         Dim FN As String = ScriptEntryArray(0)
-        Dim FA As String = ""
-        Dim FO As String = ""
-        Dim FL As String = ""
-        Dim FAN As Integer = 0
-        Dim FON As Integer = 0
-        Dim FLN As Integer = 0
+        Dim FA, FO, FL As String
+        Dim FON, FLN As Integer
         Dim FUIO As Boolean = False
 
         Dim P() As Byte
@@ -1174,72 +1333,20 @@ NoSort:
             FUIO = True
         End If
 
-        If Strings.InStr(FN, ":") = 0 Then  'relative file path
-            FN = ScriptPath + FN            'look for file in script's folder
-        End If
-
-        'Get file variables from script, or get default values if there were none in the script entry
+        'Get file variablea from script, or get default values if there were none in the script entry
         If IO.File.Exists(FN) = True Then
             P = IO.File.ReadAllBytes(FN)
 
-            Select Case ScriptEntryArray.Count
-                Case 1  'No parameters in script
-                    If Strings.InStr(Strings.LCase(FN), ".sid") <> 0 Then   'SID file - read parameters from file
-                        FA = ConvertNumberToHexString(P(P(7)), (P(P(7) + 1)))
-                        FO = ConvertNumberToHexString(P(7) + 2)
-                        FL = ConvertNumberToHexString((P.Length - P(7) - 2) Mod 256, Int((P.Length - P(7) - 2) / 256))
-                    Else                                                    'Any other files
-                        If P.Length > 2 Then                                'We have at least 3 bytes in the file
-                            FA = ConvertNumberToHexString(P(0), P(1))       'First 2 bytes define load address
-                            FO = "0002"                                     'Offset=2, Length=prg length-2
-                            FL = ConvertNumberToHexString((P.Length - 2) Mod 256, Int((P.Length - 2) / 256))
-                        Else                                                'Short file without paramters -> STOP
-                            MsgBox("File parameters are needed for the following file:" + vbNewLine + vbNewLine + FN, vbCritical + vbOKOnly, "Missing file parameters")
-                            GoTo NoDisk
-                        End If
-                    End If
-                Case 2  'One parameter in script
-                    FA = ScriptEntryArray(1)                                'Load address from script
-                    FO = "0000"                                             'Offset will be 0, length=prg length
-                    FL = ConvertNumberToHexString(P.Length Mod 256, Int(P.Length / 256))
-                Case 3  'Two parameters in script
-                    FA = ScriptEntryArray(1)                                'Load address from script
-                    FO = ScriptEntryArray(2)                                'Offset from script
-                    FON = Convert.ToInt32(FO, 16)                           'Make sure offset is valid
-                    If FON > P.Length - 1 Then
-                        FON = P.Length - 1                                  'If offset>prg length-1 then correct it
-                        FO = ConvertNumberToHexString(FON Mod 256, Int(FON / 256))
-                    End If                                                  'Length=prg length- offset
-                    FL = ConvertNumberToHexString((P.Length - FON) Mod 256, Int((P.Length - FON) / 256))
-                Case 4  'Three parameters in script
-                    FA = ScriptEntryArray(1)
-                    FO = ScriptEntryArray(2)
-                    FON = Convert.ToInt32(FO, 16)                           'Make sure offset is valid
-                    If FON > P.Length - 1 Then
-                        FON = P.Length - 1                                  'If offset>prg length-1 then correct it
-                        FO = ConvertNumberToHexString(FON Mod 256, Int(FON / 256))
-                    End If                                                  'Length=prg length- offset
-                    FL = ScriptEntryArray(3)
-            End Select
+            FA = If(ScriptEntryArray.Count > 1, ScriptEntryArray(1), ConvertNumberToHexString(P(0), P(1)))
+            FO = If(ScriptEntryArray.Count > 2, ScriptEntryArray(2), "0002")
+            FL = If(ScriptEntryArray.Count = 4, ScriptEntryArray(3), ConvertNumberToHexString((P.Length - 2) Mod 256, Int((P.Length - 2) / 256)))
 
-            'FA = If(ScriptEntryArray.Count > 1, ScriptEntryArray(1), ConvertNumberToHexString(P(0), P(1)))
-            'FO = If(ScriptEntryArray.Count > 2, ScriptEntryArray(2), "0002")
-            'FL = If(ScriptEntryArray.Count = 4, ScriptEntryArray(3), ConvertNumberToHexString((P.Length - 2) Mod 256, Int((P.Length - 2) / 256)))
-            'MsgBox(FA + vbNewLine + FO + vbNewLine + FL)
-
-            FAN = Convert.ToInt32(FA, 16)
             FON = Convert.ToInt32(FO, 16)
             FLN = Convert.ToInt32(FL, 16)
 
             'Make sure file length is not longer than actual file (should not happen)
             If FON + FLN > P.Length Then
                 FLN = P.Length - FON
-                FL = ConvertNumberToHexString(FLN Mod 256, Int(FLN / 256))
-            End If
-
-            'Make sure file address+length<&H10000
-            If FAN + FLN > &H10000 Then
-                FLN = &H10000 - FAN
                 FL = ConvertNumberToHexString(FLN Mod 256, Int(FLN / 256))
             End If
 
@@ -1264,11 +1371,6 @@ NoSort:
         FileOffsA(FileCnt) = FO     'This may not be needed later
         FileLenA(FileCnt) = FL
         FileIOA(FileCnt) = FUIO
-
-        UncomPartSize += Int(FLN / 256)
-        If FLN Mod 256 <> 0 Then
-            UncomPartSize += 1
-        End If
 
         If FirstFileOfDisk = True Then      'If Demo Start is not specified, we will use the start address of the first file
             FirstFileStart = FA
@@ -1324,13 +1426,10 @@ Err:
 
     End Function
 
-    Public Function ResetDiskVariables() As Boolean
+    Private Function ResetDiskVariables() As Boolean
         On Error GoTo Err
 
         ResetDiskVariables = True
-
-        DiskCnt += 1
-        ReDim Preserve DiskSizeA(DiskCnt)
 
         BufferCnt = 0
 
@@ -1364,7 +1463,6 @@ Err:
         DiskID = "sprkl"
         DemoName = "demo"
         DemoStart = ""
-        DirArt = ""
 
         PartCnt = -1        'WILL BE INCREASED TO 0 IN ResetPartVariables
         LoaderParts = 1
@@ -1383,23 +1481,17 @@ NoDisk:
 
     End Function
 
-    Public Function ResetPartVariables() As Boolean
+    Private Function ResetPartVariables() As Boolean
         On Error GoTo Err
 
         ResetPartVariables = True
 
         FileCnt = -1
         ReDim FileNameA(FileCnt), FileAddrA(FileCnt), FileOffsA(FileCnt), FileLenA(FileCnt), FileIOA(FileCnt)
-
         Prgs.Clear()
 
         PartCnt += 1
-
-        TotalParts += 1
-        ReDim Preserve PartSizeA(TotalParts)
         BlockCnt = 0
-
-        UncomPartSize = 0
 
         Exit Function
 Err:
@@ -1409,9 +1501,8 @@ Err:
 
     End Function
 
-    Public Function AddCompressedPartsToDisk() As Boolean
-        On Error GoTo Err
-
+    Public Function AddCompressedPartsToDisk(Optional T As Byte = 1, Optional S As Byte = 0) As Boolean
+        'On Error GoTo Err
         AddCompressedPartsToDisk = True
 
         If BlocksFree < BufferCnt Then
@@ -1434,15 +1525,25 @@ Err:
             Next
 
             DeleteBit(CT, CS, True)
+
+            'If AddInterleave() = False Then   'No free sectors left on disk
+            'If I = BufferCnt - 1 Then
+            ''Last block of file in last block of disk
+            ''So we go to 18:00 to add Next Side Info
+            'CT = 18
+            'CS = 0
+            'Else
+            ''Reached last sector, but file copy is not complete (this should not happen)
+            'MsgBox("Unable to complete disk building!", vbOKOnly, "Disk is full")
+            'GoTo NoDisk
+            'End If
+            'End If   'Go to next free sector with Interleave IL
         Next
 
-        If BufferCnt < 664 Then
-            NextTrack = TabT(BufferCnt)     'CT
-            NextSector = TabS(BufferCnt)    'CS
-        Else
-            NextTrack = 18
-            NextSector = 0
-        End If
+        NextTrack = TabT(BufferCnt)     'CT
+        NextSector = TabS(BufferCnt)    'CS
+
+        'ReDim ByteSt(0)
 
         Exit Function
 Err:
@@ -1451,178 +1552,5 @@ NoDisk:
         AddCompressedPartsToDisk = False
 
     End Function
-
-    Public Function AddDirArt() As Boolean
-        On Error GoTo Err
-
-        AddDirArt = True
-
-        DirTrack = 18
-        DirSector = 1
-        DirPos = 0
-        FindNextDirPos()
-        DirEntry = ""
-        For I As Integer = 1 To DirArt.Length
-            DirEntry += Mid(DirArt, I, 1)
-            If Mid(DirArt, I, 1) = Chr(10) Then
-                If DirPos <> 0 Then AddDirEntry()
-                FindNextDirPos()
-            End If
-        Next
-
-        If (DirEntry <> "") And (DirPos <> 0) Then AddDirEntry()
-
-        Exit Function
-Err:
-        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
-NoDisk:
-
-        AddDirArt = False
-
-    End Function
-
-    Private Sub FindNextDirPos()
-        On Error GoTo Err
-
-        DirPos = 0
-
-FindNextEntry:
-
-        For I As Integer = 2 To 255 Step 32
-            If Disk(Track(DirTrack) + (DirSector * 256) + I) = 0 Then
-                DirPos = I
-                Exit Sub
-            End If
-        Next
-
-        FindNextDirSector()
-
-        If DirSector <> 0 Then GoTo FindNextEntry
-
-        Exit Sub
-Err:
-        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
-    End Sub
-
-    Private Sub FindNextDirSector()
-        On Error GoTo Err
-
-        'Sector order: 1,7,13,3,9,15,4,8,12,16
-
-        LastDirSector = DirSector
-
-        Select Case DirSector
-            Case 1
-                DirSector = 7
-            Case 7
-                DirSector = 13
-            Case 13
-                DirSector = 3
-            Case 3
-                DirSector = 9
-            Case 9
-                DirSector = 15
-            Case 15
-                DirSector = 4
-            Case 4
-                DirSector = 8
-            Case 8
-                DirSector = 12
-            Case 12
-                DirSector = 16
-            Case 16
-                DirSector = 0
-        End Select
-
-        Disk(Track(DirTrack) + (LastDirSector * 256)) = DirTrack
-        Disk(Track(DirTrack) + (LastDirSector * 256) + 1) = DirSector
-
-        If DirSector <> 0 Then
-            Disk(Track(DirTrack) + (DirSector * 256)) = 0
-            Disk(Track(DirTrack) + (DirSector * 256) + 1) = 255
-        End If
-
-        Exit Sub
-Err:
-        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
-    End Sub
-
-    Private Sub AddDirEntry()
-        On Error GoTo Err
-
-        Disk(Track(DirTrack) + (DirSector * 256) + DirPos + 0) = &H82   '"PRG" -  all dir entries will point to first file in dir
-        Disk(Track(DirTrack) + (DirSector * 256) + DirPos + 1) = 18     'Track 18 (track pointer of boot loader)
-        Disk(Track(DirTrack) + (DirSector * 256) + DirPos + 2) = 5      'Sector 5 (sector pointer of boot loader)
-
-        If Right(DirEntry, 1) = Chr(10) Then
-            DirEntry = Left(DirEntry, DirEntry.Length - 1)
-        End If
-
-        If Right(DirEntry, 1) = Chr(13) Then
-            DirEntry = Left(DirEntry, DirEntry.Length - 1)
-        End If
-
-        If DirEntry.Length > 16 Then
-            DirEntry = Left(DirEntry, 16)
-        ElseIf DirEntry.Length < 16 Then
-            For I As Integer = DirEntry.Length + 1 To 16
-                DirEntry += Chr(160)
-            Next
-        End If
-
-        For I As Integer = 1 To 16
-            Disk(Track(DirTrack) + (DirSector * 256) + DirPos + 2 + I) = Asc(Mid(UCase(DirEntry), I, 1))
-        Next
-
-        DirEntry = ""
-
-        Exit Sub
-Err:
-        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
-    End Sub
-
-    Public Sub SetScriptPath(Path As String)
-        On Error GoTo Err
-
-        ScriptName = Path
-        ScriptPath = ScriptName
-
-        If Path = "" Then Exit Sub
-
-        For I As Integer = Path.Length - 1 To 0 Step -1
-            If Right(ScriptPath, 1) <> "\" Then
-                ScriptPath = Left(ScriptPath, ScriptPath.Length - 1)
-            Else
-                Exit For
-            End If
-        Next
-
-        Exit Sub
-Err:
-        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
-    End Sub
-
-    Public Sub SimplifyScript()
-        On Error GoTo Err
-
-        If InStr(Script, ScriptPath) <> 0 Then
-            Dim S As String = "This script could be simplified using the relative path of the script as a base folder." + vbNewLine
-            S += vbNewLine + "Do you want to simplify the script before saving it?" + vbNewLine + vbNewLine
-            S += "(Note: the simplified script will only work if it remains in its current folder!)"
-            If MsgBox(S, vbYesNo + vbInformation, "Simplify script?") = vbYes Then
-                Script = Replace(Script, ScriptPath, "")
-            End If
-        End If
-
-        Exit Sub
-Err:
-        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
-    End Sub
 
 End Module
