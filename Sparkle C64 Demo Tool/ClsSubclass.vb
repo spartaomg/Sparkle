@@ -1,6 +1,7 @@
 ﻿Imports System.Windows.Forms
 
 Namespace SubClassCtrl
+    'From https://www.codeproject.com/Articles/3234/Subclassing-in-NET-The-pure-NET-way
 
     Public Class SubClassing
         Inherits System.Windows.Forms.NativeWindow
