@@ -11,7 +11,7 @@
     Private PartT() As Integer, PartS(), PartDiskLoc(), PartNo As Integer
     Dim PETSCII As Image = My.Resources.PETSCII_BW
     Dim BM As New Bitmap(256, 256)
-    Dim DarkBlue As Color = Color.FromArgb(54, 40, 125)
+    'Dim DarkBlue As Color = Color.FromArgb(54, 40, 125)
 
     Private Sub FrmMain_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         On Error GoTo Err
