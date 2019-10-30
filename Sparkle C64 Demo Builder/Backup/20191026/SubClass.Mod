@@ -1,3 +1,0 @@
-﻿Module SubClass
-
-End Module

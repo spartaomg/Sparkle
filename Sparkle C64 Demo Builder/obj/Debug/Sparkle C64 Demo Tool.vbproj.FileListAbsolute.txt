@@ -3,8 +3,6 @@ C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\bin\Debug\Resources\TabS.bin
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\bin\Debug\Resources\TabT.bin
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\bin\Debug\Sparkle.exe.config
-C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\bin\Debug\Sparkle.exe.manifest
-C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\bin\Debug\Sparkle.application
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\bin\Debug\Sparkle.exe
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\bin\Debug\Sparkle.pdb
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\bin\Debug\Sparkle.xml
@@ -13,8 +11,6 @@ C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\obj\Debug\Sparkle.FrmSE.resources
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\obj\Debug\Sparkle.Resources.resources
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\obj\Debug\Sparkle C64 Demo Tool.vbproj.GenerateResource.cache
-C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\obj\Debug\Sparkle.exe.manifest
-C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\obj\Debug\Sparkle.application
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\obj\Debug\Sparkle.exe
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\obj\Debug\Sparkle.xml
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Builder\obj\Debug\Sparkle.pdb

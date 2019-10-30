@@ -1112,11 +1112,13 @@ Prepend:                PO = Prgs(O)
 
         '--------------------------------------------------------------------------------
         'Sort files by length (short first, thus, last block will more likely contain 1 file only = faster depacking)
+        Dim F1 As Integer = 0
+        Dim F2 As Integer = 0
 ReSort:
         Change = False
         For I As Integer = 0 To Prgs.Count - 2
-
-            If FileLenA(I) > FileLenA(I + 1) Then
+            'Sort except if file length < 3, to allow for ZP relocation script hack
+            If (Val("&H" + FileLenA(I)) > Val("&H" + FileLenA(I + 1))) And (Val("&H" + FileLenA(I) > 2)) Then
                 PI = Prgs(I)
                 Prgs(I) = Prgs(I + 1)
                 Prgs(I + 1) = PI
