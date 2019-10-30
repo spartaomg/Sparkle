@@ -1111,7 +1111,7 @@ Prepend:                PO = Prgs(O)
         Next
 
         '--------------------------------------------------------------------------------
-        'Sort files by length (short first, thus, last block will more likely contain 1 file only = faster depacking)
+        'Sort files by length (short files first, thus, last block will more likely contain 1 file only = faster depacking)
         Dim F1 As Integer = 0
         Dim F2 As Integer = 0
 ReSort:
