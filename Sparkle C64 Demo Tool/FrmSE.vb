@@ -26,7 +26,7 @@ Public Class FrmSE
     Private Const WM_HSCROLL As Integer = &H114
     Private Const WM_MOUSEWHEEL As Integer = &H20A
 
-    Dim WithEvents SCC As SubClassCtrl.SubClassing
+    Private WithEvents SCC As SubClassCtrl.SubClassing
     Private SelNode As TreeNode
 
     Private FileType As Byte
@@ -2613,7 +2613,7 @@ Err:
     End Sub
 
     Private Sub SCC_CallBackProc(ByRef m As Message) Handles SCC.CallBackProc
-
+        'If txtEdit is visible while we are scrolling - set focus back to Tv and hide txtEdit
         Select Case m.Msg
             Case WM_VSCROLL, WM_HSCROLL, WM_MOUSEWHEEL
                 tv.Focus()
