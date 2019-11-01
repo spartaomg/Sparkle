@@ -499,7 +499,7 @@ Err:
 
                     Select Case Strings.Right(tv.SelectedNode.Name, 3)
                         Case ":FA", ":FO", ":FL"
-                            ResetNumber(tv.SelectedNode.Parent, tv.SelectedNode.Index)
+                            ResetFileParameters(tv.SelectedNode.Parent, tv.SelectedNode.Index)
                         Case Else
                             Exit Select
                     End Select
@@ -517,7 +517,7 @@ Err:
         Select Case Strings.Right(SelNode.Name, 3)
             Case ":FA", ":FO", ":FL"
                 If txtEdit.Text <> txtBuffer Then
-                    CheckNumbers(SelNode.Parent)
+                    CheckFileParameters(SelNode.Parent)
                 End If
             Case Else
                 Exit Select
@@ -529,10 +529,11 @@ Err:
 
     End Sub
 
-    Private Sub ResetNumber(SelNode As TreeNode, NodeIndex As Integer)
+    Private Sub ResetFileParameters(SelNode As TreeNode, NodeIndex As Integer)
         On Error GoTo Err
 
-        NewFile = If(Strings.Right(SelNode.Text, 1) = "*", Strings.Left(SelNode.Text, Len(SelNode.Text) - 1), SelNode.Text)
+        'NewFile = If(Strings.Right(SelNode.Text, 1) = "*", Strings.Left(SelNode.Text, Len(SelNode.Text) - 1), SelNode.Text)
+        NewFile = Replace(SelNode.Text, "*", "")
 
         If Loading = False Then tv.BeginUpdate()
 
@@ -545,7 +546,7 @@ Err:
                 If LCase(Strings.Right(NewFile, 4)) = ".sid" Then
                     FAddr = Prg(Prg(7)) + (Prg(Prg(7) + 1) * 256)
                 Else
-                    If Prg.Length > 1 Then
+                    If Prg.Length > 2 Then
                         FAddr = Prg(1) * 256 + Prg(0)
                     Else
                         FAddr = 2064                    'Arbitrary $0810
@@ -553,6 +554,9 @@ Err:
                 End If
                 txtEdit.Text = ConvertNumberToHexString(FAddr Mod 256, Int(FAddr / 256))
                 SelNode.Nodes(0).Text = sFileAddr + txtEdit.Text
+                If SelNode.Nodes(0).ForeColor = Color.RosyBrown Then
+
+                End If
             Case 1
                 If Prg.Length > 2 Then
                     FOffs = 2
@@ -578,17 +582,18 @@ Err:
 
     End Sub
 
-    Private Sub CheckNumbers(SelNode As TreeNode)
+    Private Sub CheckFileParameters(SelNode As TreeNode)
         On Error GoTo Err
 
-        NewFile = SelNode.Text
+        'NewFile = SelNode.Text
 
-        If Strings.Right(NewFile, 1) = "*" Then
-            NewFile = Strings.Left(NewFile, Len(NewFile) - 1)
-            'FileUnderIO = True
-            'Else
-            'FileUnderIO = False
-        End If
+        'If Strings.Right(NewFile, 1) = "*" Then
+        ''NewFile = Strings.Left(NewFile, Len(NewFile) - 1)
+        NewFile = Replace(SelNode.Text, "*", "")
+        ''FileUnderIO = True
+        ''Else
+        ''FileUnderIO = False
+        'End If
 
         FAddr = Convert.ToInt32(Strings.Right(SelNode.Nodes(0).Text, 4), 16)
         FOffs = Convert.ToInt32(Strings.Right(SelNode.Nodes(1).Text, 4), 16)
@@ -601,7 +606,7 @@ Err:
         If Loading = False Then tv.BeginUpdate()
 
         If FAddr = -1 Then
-            If Prg.Length > 1 Then
+            If Prg.Length > 2 Then              'File is at least 3 bytes long
                 FAddr = Prg(1) * 256 + Prg(0)
             Else
                 FAddr = 2064                    'Arbitrary $0810
@@ -979,17 +984,18 @@ Err:
 
         Dim N As TreeNode = tv.SelectedNode
 
-        P = Application.ExecutablePath  '"C:\Users\Tamas\OneDrive\C64\Coding"
+        P = Application.ExecutablePath
         F = ""
 
         If FilePath <> "" Then
             For I = Len(FilePath) To 1 Step -1
                 If Mid(FilePath, I, 1) = "\" Then
                     P = Strings.Left(FilePath, I - 1)               'Path
-                    F = Strings.Right(FilePath, Len(FilePath) - I)  'File name
-                    If Strings.Right(F, 1) = "*" Then
-                        F = Strings.Left(F, Strings.Len(F) - 1)     'Delete IO status asterisk
-                    End If
+                    F = Replace(Strings.Right(FilePath, Len(FilePath) - I), "*", "")  'File name, delete IO status asterisk
+                    'If Strings.Right(F, 1) = "*" Then
+                    'F = Strings.Left(F, Strings.Len(F) - 1)     'Delete IO status asterisk
+                    'F = Replace(F, "*", "")                      'Delete IO status asterisk
+                    'End If
                     Exit For
                 End If
             Next
@@ -1254,7 +1260,7 @@ Err:
 
             PartNode = PartNode.Parent.Nodes(K)
 
-            FileCnt = 0
+            FileCnt = -1
             ReDim FileNameA(FileCnt), FileAddrA(FileCnt), FileOffsA(FileCnt), FileLenA(FileCnt), FileIOA(FileCnt)
             Prgs.Clear()
             ReDim ByteSt(-1)
@@ -1265,7 +1271,8 @@ Err:
                 FN = PartNode.Nodes(I).Text
 
                 If Strings.Right(FN, 1) = "*" Then
-                    FN = Strings.Left(FN, Len(FN) - 1)
+                    'FN = Strings.Left(FN, Len(FN) - 1)
+                    FN = Replace(FN, "*", "")
                     FUIO = True
                 Else
                     FUIO = False
@@ -1274,13 +1281,17 @@ Err:
                 If IO.File.Exists(FN) = True Then
                     P = IO.File.ReadAllBytes(FN)
 
-                    FA = If(PartNode.Nodes(I).Nodes.Count > 0, Strings.Right(PartNode.Nodes(I).Nodes(0).Text, 4), ConvertNumberToHexString(P(0), P(1)))
-                    FO = If(PartNode.Nodes(I).Nodes.Count > 1, Strings.Right(PartNode.Nodes(I).Nodes(1).Text, 4), "0002")
-                    FL = If(PartNode.Nodes(I).Nodes.Count > 2, Strings.Right(PartNode.Nodes(I).Nodes(2).Text, 4), ConvertNumberToHexString((P.Length - 2) Mod 256, Int((P.Length - 2) / 256)))
+                    'This is not needed as we allways have all 3 parameter nodes
+                    'FA = If(PartNode.Nodes(I).Nodes.Count > 0, Strings.Right(PartNode.Nodes(I).Nodes(0).Text, 4), ConvertNumberToHexString(P(0), P(1)))
+                    'FO = If(PartNode.Nodes(I).Nodes.Count > 1, Strings.Right(PartNode.Nodes(I).Nodes(1).Text, 4), "0002")
+                    'FL = If(PartNode.Nodes(I).Nodes.Count > 2, Strings.Right(PartNode.Nodes(I).Nodes(2).Text, 4), ConvertNumberToHexString((P.Length - 2) Mod 256, Int((P.Length - 2) / 256)))
+
+                    FA = Strings.Right(PartNode.Nodes(I).Nodes(0).Text, 4)
+                    FO = Strings.Right(PartNode.Nodes(I).Nodes(1).Text, 4)
+                    FL = Strings.Right(PartNode.Nodes(I).Nodes(2).Text, 4)
 
                     FON = Convert.ToInt32(FO, 16)
                     FLN = Convert.ToInt32(FL, 16)
-
 
                     'Make sure file length is not longer than actual file (should not happen)
                     If FON + FLN > P.Length Then
@@ -1293,7 +1304,7 @@ Err:
                         UncomPartSize += 1
                     End If
 
-                    'Trim file to the specified chunk (FLN number of bytes starting at FON, to Address of FAN)
+                    'Trim file to the specified data segment (FLN number of bytes starting at FON, to Address of FAN)
                     For J As Integer = 0 To FLN - 1
                         P(J) = P(FON + J)
                     Next
@@ -1417,8 +1428,9 @@ Err:
         ReDim Prg(0)
 
         If Strings.Right(NewFile, 1) = "*" Then
-            Prg = IO.File.ReadAllBytes(Strings.Left(NewFile, Strings.Len(NewFile) - 1))
-            Ext = LCase(Strings.Right(Strings.Left(NewFile, (Len(NewFile) - 1)), 3))
+            'Prg = IO.File.ReadAllBytes(Strings.Left(NewFile, Strings.Len(NewFile) - 1))
+            Prg = IO.File.ReadAllBytes(Replace(NewFile, "*", ""))
+            Ext = LCase(Strings.Right(Replace(NewFile, "*", ""), 3))
             FileUnderIO = True
         Else
             Prg = IO.File.ReadAllBytes(NewFile)
@@ -1685,7 +1697,6 @@ Err:
     Private Sub UpdateFileParameters(SelNode As TreeNode)
         On Error GoTo Err
 
-
         If SelNode Is Nothing Then Exit Sub
 
         If Loading = False Then tv.BeginUpdate()
@@ -1725,7 +1736,6 @@ Err:
         Else
             SelNode.Nodes(SelNode.Name + ":FL").Text = sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
         End If
-
 
         If SelNode.Nodes(SelNode.Name + ":FS") Is Nothing Then
             SelNode.Nodes.Add(SelNode.Name + ":FS", sFileSize + FileSize.ToString + " block" + IIf(FileSize <> 1, "s", ""))
@@ -1940,8 +1950,9 @@ Done:
         ReDim Prg(0)
 
         If Strings.Right(FilePath, 1) = "*" Then
-            Prg = IO.File.ReadAllBytes(Strings.Left(FilePath, Len(FilePath) - 1))
-            Ext = LCase(Strings.Right(Strings.Left(FilePath, Len(FilePath) - 1), 3))
+            Prg = IO.File.ReadAllBytes(Replace(FilePath, "*", ""))
+            'Prg = IO.File.ReadAllBytes(Strings.Left(FilePath, Len(FilePath) - 1))
+            Ext = LCase(Strings.Right(Replace(FilePath, "*", ""), 3))
             FileUnderIO = True
         Else
             Prg = IO.File.ReadAllBytes(FilePath)

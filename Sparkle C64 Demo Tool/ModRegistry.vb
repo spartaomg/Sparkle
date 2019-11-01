@@ -52,14 +52,6 @@ Module ModRegistry
         If My.User.IsInRole(ApplicationServices.BuiltInRole.Administrator) Then
             'Yes, so check file associations
             FrmMain.TsbAdmin.Visible = True
-
-            'If My.Computer.Registry.ClassesRoot.OpenSubKey("Sparkle Loader Script\shell\open\command", True) Is Nothing Then
-            'Dim response As String = MsgBox(Prompt:="EXS files are not associated with Vistube, associate now?", Buttons:=vbYesNo)
-            'If response = vbYes Then
-            'My.Computer.Registry.ClassesRoot.CreateSubKey(".ps2x").SetValue("", "ps2x", Microsoft.Win32.RegistryValueKind.String)
-            'My.Computer.Registry.ClassesRoot.CreateSubKey("ps2x\shell\open\command").SetValue("", Application.ExecutablePath & " ""&#37;l"" ", Microsoft.Win32.RegistryValueKind.String)
-            'End If
-            'End If
         Else
             FrmMain.TsbAdmin.Visible = False
         End If
