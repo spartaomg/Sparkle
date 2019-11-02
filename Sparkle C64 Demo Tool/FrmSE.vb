@@ -26,6 +26,9 @@ Public Class FrmSE
     Private Const WM_HSCROLL As Integer = &H114
     Private Const WM_MOUSEWHEEL As Integer = &H20A
 
+    Private ReadOnly DefaultCol As Color = Color.RosyBrown
+    Private ReadOnly ManualCol As Color = Color.SaddleBrown
+
     Private WithEvents SCC As SubClassCtrl.SubClassing
     Private SelNode As TreeNode
 
@@ -37,11 +40,15 @@ Public Class FrmSE
     Private KeyID, PartID, FileID As String
     Private NodeType As Byte
     Private FAddr, FOffs, FLen As Integer
+    Private FAS, FOS, FLS As String
     Private Loading As Boolean = False
     Private txtBuffer As String = ""
     Private LMD As Date = Date.Now
     Private Dbl As Boolean = False
     Private DefaultParams As Boolean = True
+
+    Private DFAS, DFOS, DFLS As String
+    Private DFAN, DFON, DFLN As Integer
 
     Private ReadOnly sDiskPath As String = "Disk Path: "
     Private ReadOnly sDiskHeader As String = "Disk Header: "
@@ -514,14 +521,58 @@ Err:
             txtEdit.Visible = False
         End If
 
+        'Select Case Strings.Right(SelNode.Name, 3)
+        'Case ":FA", ":FO", ":FL"
+        'If txtEdit.Text <> txtBuffer Then
+        'CheckFileParameters(SelNode.Parent)
+        'End If
+        'Case Else
+        'Exit Select
+        'End Select
         Select Case Strings.Right(SelNode.Name, 3)
-            Case ":FA", ":FO", ":FL"
+            Case ":FA"              ', ":FO", ":FL"
+                'FAddr = Convert.ToInt32(Strings.Right(SelNode.Parent.Nodes(0).Text, 4), 16)
+                'FOffs = Convert.ToInt32(Strings.Right(SelNode.Parent.Nodes(1).Text, 4), 16)
+                'FLen = Convert.ToInt32(Strings.Right(SelNode.Parent.Nodes(2).Text, 4), 16)
+                GetDefaultFileParameters(SelNode.Parent)
                 If txtEdit.Text <> txtBuffer Then
                     CheckFileParameters(SelNode.Parent)
+                    'GetDefaultFileParameters(SelNode.Parent)
+                    If SelNode.ForeColor = DefaultCol Then
+                        SelNode.Parent.Nodes(1).Text = sFileOffs + DFOS
+                        SelNode.Parent.Nodes(2).Text = sFileLen + DFLS
+                    End If
+                End If
+            Case ":FO"
+                'FAddr = Convert.ToInt32(Strings.Right(SelNode.Parent.Nodes(0).Text, 4), 16)
+                'FOffs = Convert.ToInt32(Strings.Right(SelNode.Parent.Nodes(1).Text, 4), 16)
+                'FLen = Convert.ToInt32(Strings.Right(SelNode.Parent.Nodes(2).Text, 4), 16)
+                GetDefaultFileParameters(SelNode.Parent)
+                If txtEdit.Text <> txtBuffer Then
+                    CheckFileParameters(SelNode.Parent)
+                    'GetDefaultFileParameters(SelNode.Parent)
+                    If SelNode.ForeColor = DefaultCol Then
+                        SelNode.Parent.Nodes(2).Text = sFileLen + FLS
+                    End If
+                End If
+            Case ":FL"
+                'FAddr = Convert.ToInt32(Strings.Right(SelNode.Parent.Nodes(0).Text, 4), 16)
+                'FOffs = Convert.ToInt32(Strings.Right(SelNode.Parent.Nodes(1).Text, 4), 16)
+                'FLen = Convert.ToInt32(Strings.Right(SelNode.Parent.Nodes(2).Text, 4), 16)
+                GetDefaultFileParameters(SelNode.Parent)
+                If txtEdit.Text <> txtBuffer Then
+                    CheckFileParameters(SelNode.Parent)
+                    'GetDefaultFileParameters(SelNode.Parent)
+                    SelNode.Parent.Nodes(2).Text = sFileLen + FLS
                 End If
             Case Else
                 Exit Select
         End Select
+
+        'Update File Parameter Node Colors
+        SelNode.Parent.Nodes(0).ForeColor = IIf(Strings.Right(SelNode.Parent.Nodes(0).Text, 4) = DFAS, DefaultCol, ManualCol)
+        SelNode.Parent.Nodes(1).ForeColor = IIf(Strings.Right(SelNode.Parent.Nodes(1).Text, 4) = DFOS, DefaultCol, ManualCol)
+        SelNode.Parent.Nodes(2).ForeColor = IIf(Strings.Right(SelNode.Parent.Nodes(2).Text, 4) = DFLS, DefaultCol, ManualCol)
 
         Exit Sub
 Err:
@@ -529,50 +580,128 @@ Err:
 
     End Sub
 
-    Private Sub ResetFileParameters(SelNode As TreeNode, NodeIndex As Integer)
+    Private Sub ResetFileParameters(FileNode As TreeNode, NodeIndex As Integer)
         On Error GoTo Err
 
         'NewFile = If(Strings.Right(SelNode.Text, 1) = "*", Strings.Left(SelNode.Text, Len(SelNode.Text) - 1), SelNode.Text)
-        NewFile = Replace(SelNode.Text, "*", "")
-
         If Loading = False Then tv.BeginUpdate()
 
-        ReDim Prg(0)
+        'ReDim Prg(0)
 
-        Prg = IO.File.ReadAllBytes(NewFile)
+        'Prg = IO.File.ReadAllBytes(NewFile)
+
+        GetDefaultFileParameters(FileNode)
 
         Select Case NodeIndex
             Case 0
-                If LCase(Strings.Right(NewFile, 4)) = ".sid" Then
-                    FAddr = Prg(Prg(7)) + (Prg(Prg(7) + 1) * 256)
-                Else
-                    If Prg.Length > 2 Then
-                        FAddr = Prg(1) * 256 + Prg(0)
-                    Else
-                        FAddr = 2064                    'Arbitrary $0810
-                    End If
-                End If
-                txtEdit.Text = ConvertNumberToHexString(FAddr Mod 256, Int(FAddr / 256))
-                SelNode.Nodes(0).Text = sFileAddr + txtEdit.Text
-                If SelNode.Nodes(0).ForeColor = Color.RosyBrown Then
-
-                End If
+                txtEdit.Text = DFAS
+                With FileNode.Nodes(0)
+                    .Text = sFileAddr + DFAS
+                    .ForeColor = DefaultCol
+                End With
             Case 1
-                If Prg.Length > 2 Then
-                    FOffs = 2
-                Else
-                    FOffs = 0
-                End If
-                txtEdit.Text = ConvertNumberToHexString(FOffs Mod 256, Int(FOffs / 256))
-                SelNode.Nodes(1).Text = sFileOffs + txtEdit.Text
+                txtEdit.Text = DFOS
+                With FileNode.Nodes(1)
+                    .Text = sFileOffs + DFOS
+                    .ForeColor = DefaultCol
+                End With
+                With FileNode.Nodes(2)
+                    .Text = sFileLen + DFLS
+                    .ForeColor = DefaultCol
+                End With
             Case 2
-                FOffs = Convert.ToInt32(Strings.Right(SelNode.Nodes(1).Text, 4), 16)
-                FLen = Prg.Length - FOffs
-                txtEdit.Text = ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
-                SelNode.Nodes(2).Text = sFileLen + txtEdit.Text
+                txtEdit.Text = DFLS
+                With FileNode.Nodes(2)
+                    .Text = sFileLen + DFLS
+                    .ForeColor = DefaultCol
+                End With
+                'Case 0
+                'If LCase(Strings.Right(NewFile, 4)) = ".sid" Then
+                'FAddr = Prg(Prg(7)) + (Prg(Prg(7) + 1) * 256)
+                'Else
+                'If Prg.Length > 2 Then
+                'FAddr = Prg(1) * 256 + Prg(0)
+                'Else
+                'FAddr = 2064                    'Arbitrary $0810
+                'End If
+                'End If
+                'txtEdit.Text = ConvertNumberToHexString(FAddr Mod 256, Int(FAddr / 256))
+                'FileNode.Nodes(0).Text = sFileAddr + txtEdit.Text
+                'If FileNode.Nodes(1).ForeColor = DefaultCol Then
+                'FLen -= 2
+                'FileNode.Nodes(1).Text = sFileOffs + "0002"
+                'FileNode.Nodes(2).Text = sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
+                'End If
+                'Case 1
+                'If LCase(Strings.Right(NewFile, 4)) = ".sid" Then
+                'FOffs = Prg(7) + 2
+                'Else
+                'If Prg.Length > 2 Then
+                'FOffs = 2
+                'Else
+                'FOffs = 0
+                'End If
+                'End If
+                'txtEdit.Text = ConvertNumberToHexString(FOffs Mod 256, Int(FOffs / 256))
+                'FileNode.Nodes(1).Text = sFileOffs + txtEdit.Text
+                'If FileNode.Nodes(2).ForeColor = DefaultCol Then
+                'FLen = Prg.Length - FOffs
+                'FileNode.Nodes(2).Text = sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
+                'End If
+                'Case 2
+                'FOffs = Convert.ToInt32(Strings.Right(FileNode.Nodes(1).Text, 4), 16)
+                'FLen = Prg.Length - FOffs
+                'txtEdit.Text = ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
+                'FileNode.Nodes(2).Text = sFileLen + txtEdit.Text
         End Select
 
-        'CheckNumbers(SelNode)   'This will update the parameter nodes' color
+        'CheckNumbers(FileNode)   'This will update the parameter nodes' color
+
+        If Loading = False Then tv.EndUpdate()
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+    Private Sub GetDefaultFileParameters(FileNode As TreeNode)
+        On Error GoTo Err
+
+        If Loading = False Then tv.BeginUpdate()
+
+        Dim P() As Byte = IO.File.ReadAllBytes(Replace(FileNode.Text, "*", ""))
+        Dim Ext As String = LCase(Strings.Right(Replace(FileNode.Text, "*", ""), 4))
+
+        'Determine default numeric parameters
+        Select Case Ext
+            Case ".sid"
+                DFAN = P(P(7)) + (P(P(7) + 1) * 256)
+                DFON = P(7) + 2
+            Case Else
+                'Default load address = first 2 bytes of file as in .prg files
+                If P.Length > 2 Then
+                    DFAN = P(0) + (P(1) * 256)
+                Else
+                    DFAN = 2064
+                End If
+                'Default offset depends on load address
+                'If load address = default then default offset = 2
+                'Otherwise, default offset = 0
+                DFON = If(Strings.Right(FileNode.Nodes(0).Text, 4) = ConvertNumberToHexString(DFAN Mod 256, Int(DFAN / 256)), 2, 0)
+        End Select
+
+        'Default length depends on default offset
+        DFLN = P.Length - DFON
+
+        'Calculate default parameter strings
+        DFAS = ConvertNumberToHexString(DFAN Mod 256, Int(DFAN / 256))
+        DFOS = ConvertNumberToHexString(DFON Mod 256, Int(DFON / 256))
+        DFLS = ConvertNumberToHexString(DFLN Mod 256, Int(DFLN / 256))
+
+        'Update File Parameter Node Colors
+        'FileNode.Nodes(0).ForeColor = IIf(Strings.Right(FileNode.Nodes(0).Text, 4) = DFAS, DefaultCol, ManualCol)
+        'FileNode.Nodes(1).ForeColor = IIf(Strings.Right(FileNode.Nodes(1).Text, 4) = DFOS, DefaultCol, ManualCol)
+        'FileNode.Nodes(2).ForeColor = IIf(Strings.Right(FileNode.Nodes(2).Text, 4) = DFLS, DefaultCol, ManualCol)
 
         If Loading = False Then tv.EndUpdate()
 
@@ -605,38 +734,42 @@ Err:
 
         If Loading = False Then tv.BeginUpdate()
 
-        If FAddr = -1 Then
-            If Prg.Length > 2 Then              'File is at least 3 bytes long
-                FAddr = Prg(1) * 256 + Prg(0)
-            Else
-                FAddr = 2064                    'Arbitrary $0810
-            End If
-            SelNode.Nodes(0).Text = sFileAddr + ConvertNumberToHexString(FAddr Mod 256, Int(FAddr / 256))
-        End If
+        'If FAddr = -1 Then
+        'If Prg.Length > 2 Then              'File is at least 3 bytes long
+        'FAddr = Prg(1) * 256 + Prg(0)
+        'Else
+        'FAddr = 2064                    'Arbitrary $0810
+        'End If
+        'SelNode.Nodes(0).Text = sFileAddr + ConvertNumberToHexString(FAddr Mod 256, Int(FAddr / 256))
+        'End If
 
         If FOffs > Prg.Length - 1 Then
             FOffs = Prg.Length - 1
-            SelNode.Nodes(1).Text = sFileOffs + ConvertNumberToHexString(FOffs Mod 256, Int(FOffs / 256))
+            'SelNode.Nodes(1).Text = sFileOffs + ConvertNumberToHexString(FOffs Mod 256, Int(FOffs / 256))
         End If
 
         If (FLen = 0) Or (FOffs + FLen > Prg.Length) Then
             FLen = Prg.Length - FOffs
-            SelNode.Nodes(2).Text = sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
+            'SelNode.Nodes(2).Text = sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
         End If
 
         If FAddr + FLen > &HFFFF Then
             FLen = &H10000 - FAddr
-            SelNode.Nodes(2).Text = sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
+            'SelNode.Nodes(2).Text = sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
         End If
+
+        FAS = ConvertNumberToHexString(FAddr Mod 256, Int(FAddr / 256))
+        FOS = ConvertNumberToHexString(FOffs Mod 256, Int(FOffs / 256))
+        FLS = ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
 
         CalcFileSize()
 
-        SelNode.Nodes(0).ForeColor = IIf(DefaultParams = True, Color.RosyBrown, Color.SaddleBrown)
-        SelNode.Nodes(1).ForeColor = IIf(DefaultParams = True, Color.RosyBrown, Color.SaddleBrown)
-        SelNode.Nodes(2).ForeColor = IIf(DefaultParams = True, Color.RosyBrown, Color.SaddleBrown)
+        'SelNode.Nodes(0).ForeColor = IIf(DefaultParams = True, Color.RosyBrown, Color.SaddleBrown)
+        'SelNode.Nodes(1).ForeColor = IIf(DefaultParams = True, Color.RosyBrown, Color.SaddleBrown)
+        'SelNode.Nodes(2).ForeColor = IIf(DefaultParams = True, Color.RosyBrown, Color.SaddleBrown)
 
-        SelNode.Text = NewFile
-        SelNode.ToolTipText = NewFile
+        'SelNode.Text = NewFile
+        'SelNode.ToolTipText = NewFile
 
         CalcPartSize(SelNode.Parent)
 
@@ -1259,115 +1392,116 @@ Err:
         For K = PartNode.Index To PartNode.Parent.Nodes.Count - 2
 
             PartNode = PartNode.Parent.Nodes(K)
+            If PartNode.Nodes.Count > 1 Then
 
-            FileCnt = -1
-            ReDim FileNameA(FileCnt), FileAddrA(FileCnt), FileOffsA(FileCnt), FileLenA(FileCnt), FileIOA(FileCnt)
-            Prgs.Clear()
-            ReDim ByteSt(-1)
-            UncomPartSize = 0
-            BlockCnt = 0
+                FileCnt = -1
+                ReDim FileNameA(FileCnt), FileAddrA(FileCnt), FileOffsA(FileCnt), FileLenA(FileCnt), FileIOA(FileCnt)
+                Prgs.Clear()
+                ReDim ByteSt(-1)
+                UncomPartSize = 0
+                BlockCnt = 0
 
-            For I As Integer = 0 To PartNode.Nodes.Count - 2
-                FN = PartNode.Nodes(I).Text
+                For I As Integer = 0 To PartNode.Nodes.Count - 2
+                    FN = PartNode.Nodes(I).Text
 
-                If Strings.Right(FN, 1) = "*" Then
-                    'FN = Strings.Left(FN, Len(FN) - 1)
-                    FN = Replace(FN, "*", "")
-                    FUIO = True
+                    If Strings.Right(FN, 1) = "*" Then
+                        'FN = Strings.Left(FN, Len(FN) - 1)
+                        FN = Replace(FN, "*", "")
+                        FUIO = True
+                    Else
+                        FUIO = False
+                    End If
+
+                    If IO.File.Exists(FN) = True Then
+                        P = IO.File.ReadAllBytes(FN)
+
+                        'This is not needed as we allways have all 3 parameter nodes
+                        'FA = If(PartNode.Nodes(I).Nodes.Count > 0, Strings.Right(PartNode.Nodes(I).Nodes(0).Text, 4), ConvertNumberToHexString(P(0), P(1)))
+                        'FO = If(PartNode.Nodes(I).Nodes.Count > 1, Strings.Right(PartNode.Nodes(I).Nodes(1).Text, 4), "0002")
+                        'FL = If(PartNode.Nodes(I).Nodes.Count > 2, Strings.Right(PartNode.Nodes(I).Nodes(2).Text, 4), ConvertNumberToHexString((P.Length - 2) Mod 256, Int((P.Length - 2) / 256)))
+
+                        FA = Strings.Right(PartNode.Nodes(I).Nodes(0).Text, 4)
+                        FO = Strings.Right(PartNode.Nodes(I).Nodes(1).Text, 4)
+                        FL = Strings.Right(PartNode.Nodes(I).Nodes(2).Text, 4)
+
+                        FON = Convert.ToInt32(FO, 16)
+                        FLN = Convert.ToInt32(FL, 16)
+
+                        'Make sure file length is not longer than actual file (should not happen)
+                        If FON + FLN > P.Length Then
+                            FLN = P.Length - FON
+                            FL = ConvertNumberToHexString(FLN Mod 256, Int(FLN / 256))
+                        End If
+
+                        UncomPartSize += Int(FLN / 256)
+                        If FLN Mod 256 <> 0 Then
+                            UncomPartSize += 1
+                        End If
+
+                        'Trim file to the specified data segment (FLN number of bytes starting at FON, to Address of FAN)
+                        For J As Integer = 0 To FLN - 1
+                            P(J) = P(FON + J)
+                        Next
+                        ReDim Preserve P(FLN - 1)
+
+                    Else
+
+                        MsgBox("The following file does not exist:" + vbNewLine + vbNewLine + FN)
+                        GoTo NoDisk
+                    End If
+
+                    FileCnt += 1
+                    ReDim Preserve FileNameA(FileCnt), FileAddrA(FileCnt), FileOffsA(FileCnt), FileLenA(FileCnt), FileIOA(FileCnt)
+
+                    FileNameA(FileCnt) = FN
+                    FileAddrA(FileCnt) = FA
+                    FileOffsA(FileCnt) = FO     'This may not be needed later
+                    FileLenA(FileCnt) = FL
+                    FileIOA(FileCnt) = FUIO
+
+                    Prgs.Add(P)
+                Next
+
+                CurrentPart = Int((PartNode.Tag And &HFFF000) / &H1000)
+                PartCnt = CurrentPart
+
+                BufferCnt = 0
+                ByteCnt = PartByteCntA(CurrentPart - 1)
+                BitCnt = PartBitCntA(CurrentPart - 1)
+                BitPos = PartBitPosA(CurrentPart - 1)
+
+                SortPart()
+                CompressPart()
+
+                If CurrentPart + 1 > PartByteCntA.Count Then
+                    ReDim Preserve PartByteCntA(CurrentPart + 1), PartBitCntA(CurrentPart + 1), PartBitPosA(CurrentPart + 1)
+                End If
+
+                PartByteCntA(CurrentPart) = ByteCnt
+                PartBitCntA(CurrentPart) = BitCnt
+                PartBitPosA(CurrentPart) = BitPos
+
+                For I As Integer = 0 To PartNode.Parent.Nodes.Count - 1
+                    'Find the first part node under this disk node
+                    If Strings.Left(PartNode.Parent.Nodes(I).Text, 5) = "[Part" Then
+                        'If our current part node is the first one under this disk, then increase BufferCnt
+                        If PartNode.Index = I Then
+                            BufferCnt += 1
+                        End If
+                        Exit For
+                    End If
+                Next
+
+                PartSizeA(CurrentPart - 1) = BufferCnt
+                UncomPartSize = Int(10000 * BufferCnt / UncomPartSize) / 100
+
+                If Prgs.Count = 0 Then
+                    PNT(K) = "[Part " + (K - 5).ToString + "]"
                 Else
-                    FUIO = False
-                End If
-
-                If IO.File.Exists(FN) = True Then
-                    P = IO.File.ReadAllBytes(FN)
-
-                    'This is not needed as we allways have all 3 parameter nodes
-                    'FA = If(PartNode.Nodes(I).Nodes.Count > 0, Strings.Right(PartNode.Nodes(I).Nodes(0).Text, 4), ConvertNumberToHexString(P(0), P(1)))
-                    'FO = If(PartNode.Nodes(I).Nodes.Count > 1, Strings.Right(PartNode.Nodes(I).Nodes(1).Text, 4), "0002")
-                    'FL = If(PartNode.Nodes(I).Nodes.Count > 2, Strings.Right(PartNode.Nodes(I).Nodes(2).Text, 4), ConvertNumberToHexString((P.Length - 2) Mod 256, Int((P.Length - 2) / 256)))
-
-                    FA = Strings.Right(PartNode.Nodes(I).Nodes(0).Text, 4)
-                    FO = Strings.Right(PartNode.Nodes(I).Nodes(1).Text, 4)
-                    FL = Strings.Right(PartNode.Nodes(I).Nodes(2).Text, 4)
-
-                    FON = Convert.ToInt32(FO, 16)
-                    FLN = Convert.ToInt32(FL, 16)
-
-                    'Make sure file length is not longer than actual file (should not happen)
-                    If FON + FLN > P.Length Then
-                        FLN = P.Length - FON
-                        FL = ConvertNumberToHexString(FLN Mod 256, Int(FLN / 256))
-                    End If
-
-                    UncomPartSize += Int(FLN / 256)
-                    If FLN Mod 256 <> 0 Then
-                        UncomPartSize += 1
-                    End If
-
-                    'Trim file to the specified data segment (FLN number of bytes starting at FON, to Address of FAN)
-                    For J As Integer = 0 To FLN - 1
-                        P(J) = P(FON + J)
-                    Next
-                    ReDim Preserve P(FLN - 1)
-
-                Else
-
-                    MsgBox("The following file does not exist:" + vbNewLine + vbNewLine + FN)
-                    GoTo NoDisk
-                End If
-
-                FileCnt += 1
-                ReDim Preserve FileNameA(FileCnt), FileAddrA(FileCnt), FileOffsA(FileCnt), FileLenA(FileCnt), FileIOA(FileCnt)
-
-                FileNameA(FileCnt) = FN
-                FileAddrA(FileCnt) = FA
-                FileOffsA(FileCnt) = FO     'This may not be needed later
-                FileLenA(FileCnt) = FL
-                FileIOA(FileCnt) = FUIO
-
-                Prgs.Add(P)
-            Next
-
-            CurrentPart = Int((PartNode.Tag And &HFFF000) / &H1000)
-            PartCnt = CurrentPart
-
-            BufferCnt = 0
-            ByteCnt = PartByteCntA(CurrentPart - 1)
-            BitCnt = PartBitCntA(CurrentPart - 1)
-            BitPos = PartBitPosA(CurrentPart - 1)
-
-            SortPart()
-            CompressPart()
-
-            If CurrentPart + 1 > PartByteCntA.Count Then
-                ReDim Preserve PartByteCntA(CurrentPart + 1), PartBitCntA(CurrentPart + 1), PartBitPosA(CurrentPart + 1)
-            End If
-
-            PartByteCntA(CurrentPart) = ByteCnt
-            PartBitCntA(CurrentPart) = BitCnt
-            PartBitPosA(CurrentPart) = BitPos
-
-            For I As Integer = 0 To PartNode.Parent.Nodes.Count - 1
-                'Find the first part node under this disk node
-                If Strings.Left(PartNode.Parent.Nodes(I).Text, 5) = "[Part" Then
-                    'If our current part node is the first one under this disk, then increase BufferCnt
-                    If PartNode.Index = I Then
-                        BufferCnt += 1
-                    End If
-                    Exit For
-                End If
-            Next
-
-            PartSizeA(CurrentPart - 1) = BufferCnt
-            UncomPartSize = Int(10000 * BufferCnt / UncomPartSize) / 100
-
-            If Prgs.Count = 0 Then
-                PNT(K) = "[Part " + (K - 5).ToString + "]"
-            Else
-                PNT(K) = "[Part " + (K - 5).ToString + ": " + BufferCnt.ToString + " block" + IIf(BufferCnt <> 1, "s", "") + " compressed, " _
+                    PNT(K) = "[Part " + (K - 5).ToString + ": " + BufferCnt.ToString + " block" + IIf(BufferCnt <> 1, "s", "") + " compressed, " _
                 + UncomPartSize.ToString + "% of uncompressed size]"
+                End If
             End If
-
         Next
 
         If Loading = False Then tv.BeginUpdate()
