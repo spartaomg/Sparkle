@@ -39,13 +39,14 @@ Public Class FrmSE
     Private FilePath As String
     Private KeyID, PartID, FileID As String
     Private NodeType As Byte
-    Private FAddr, FOffs, FLen As Integer
+    Private FAddr, FOffs, FLen, PLen As Integer
     Private FAS, FOS, FLS As String
     Private Loading As Boolean = False
     Private txtBuffer As String = ""
     Private LMD As Date = Date.Now
     Private Dbl As Boolean = False
     Private DefaultParams As Boolean = True
+    Private DFA, DFO, DFL As Boolean
 
     Private DFAS, DFOS, DFLS As String
     Private DFAN, DFON, DFLN As Integer
@@ -438,7 +439,6 @@ Err:
 
         Dim k As New KeyEventArgs(Keys.Enter)
         Tv_KeyDown(sender, k)
-        'Debug.Print("NMDC")
 
         Exit Sub
 Err:
@@ -507,6 +507,9 @@ Err:
                     Select Case Strings.Right(tv.SelectedNode.Name, 3)
                         Case ":FA", ":FO", ":FL"
                             ResetFileParameters(tv.SelectedNode.Parent, tv.SelectedNode.Index)
+                            SelNode.Text = txtEdit.Tag + txtEdit.Text
+                            txtEdit.Visible = False
+                            GoTo ChkCol
                         Case Else
                             Exit Select
                     End Select
@@ -521,58 +524,69 @@ Err:
             txtEdit.Visible = False
         End If
 
-        'Select Case Strings.Right(SelNode.Name, 3)
-        'Case ":FA", ":FO", ":FL"
-        'If txtEdit.Text <> txtBuffer Then
-        'CheckFileParameters(SelNode.Parent)
-        'End If
-        'Case Else
-        'Exit Select
-        'End Select
         Select Case Strings.Right(SelNode.Name, 3)
             Case ":FA"              ', ":FO", ":FL"
-                'FAddr = Convert.ToInt32(Strings.Right(SelNode.Parent.Nodes(0).Text, 4), 16)
-                'FOffs = Convert.ToInt32(Strings.Right(SelNode.Parent.Nodes(1).Text, 4), 16)
-                'FLen = Convert.ToInt32(Strings.Right(SelNode.Parent.Nodes(2).Text, 4), 16)
-                GetDefaultFileParameters(SelNode.Parent)
                 If txtEdit.Text <> txtBuffer Then
+                    GetDefaultFileParameters(SelNode.Parent, 0)
                     CheckFileParameters(SelNode.Parent)
-                    'GetDefaultFileParameters(SelNode.Parent)
                     If SelNode.ForeColor = DefaultCol Then
                         SelNode.Parent.Nodes(1).Text = sFileOffs + DFOS
                         SelNode.Parent.Nodes(2).Text = sFileLen + DFLS
                     End If
                 End If
             Case ":FO"
-                'FAddr = Convert.ToInt32(Strings.Right(SelNode.Parent.Nodes(0).Text, 4), 16)
-                'FOffs = Convert.ToInt32(Strings.Right(SelNode.Parent.Nodes(1).Text, 4), 16)
-                'FLen = Convert.ToInt32(Strings.Right(SelNode.Parent.Nodes(2).Text, 4), 16)
-                GetDefaultFileParameters(SelNode.Parent)
+                GetDefaultFileParameters(SelNode.Parent, 1)
                 If txtEdit.Text <> txtBuffer Then
                     CheckFileParameters(SelNode.Parent)
-                    'GetDefaultFileParameters(SelNode.Parent)
                     If SelNode.ForeColor = DefaultCol Then
                         SelNode.Parent.Nodes(2).Text = sFileLen + FLS
+                        If SelNode.Parent.Nodes(2).ForeColor = DefaultCol Then
+                            DFAS = ""
+                            DFLS = FLS
+                        End If
                     End If
                 End If
             Case ":FL"
-                'FAddr = Convert.ToInt32(Strings.Right(SelNode.Parent.Nodes(0).Text, 4), 16)
-                'FOffs = Convert.ToInt32(Strings.Right(SelNode.Parent.Nodes(1).Text, 4), 16)
-                'FLen = Convert.ToInt32(Strings.Right(SelNode.Parent.Nodes(2).Text, 4), 16)
-                GetDefaultFileParameters(SelNode.Parent)
                 If txtEdit.Text <> txtBuffer Then
+                    GetDefaultFileParameters(SelNode.Parent, 2)
                     CheckFileParameters(SelNode.Parent)
-                    'GetDefaultFileParameters(SelNode.Parent)
                     SelNode.Parent.Nodes(2).Text = sFileLen + FLS
                 End If
             Case Else
                 Exit Select
         End Select
 
+ChkCol:
+
+        If Strings.Right(SelNode.Parent.Nodes(0).Text, 4) = DFAS Then
+            DFA = True
+        Else
+            DFA = False
+        End If
+
+        If Strings.Right(SelNode.Parent.Nodes(1).Text, 4) = DFOS Then
+            DFO = True
+            If DFOS = "0000" Then
+                DFA = False
+            End If
+        Else
+            DFO = False
+            DFA = False
+        End If
+
+        If Strings.Right(SelNode.Parent.Nodes(2).Text, 4) = DFLS Then
+            'If DFLN = PLen - DFON Then
+            DFL = True
+        Else
+            DFL = False
+            DFO = False
+            DFA = False
+        End If
+
         'Update File Parameter Node Colors
-        SelNode.Parent.Nodes(0).ForeColor = IIf(Strings.Right(SelNode.Parent.Nodes(0).Text, 4) = DFAS, DefaultCol, ManualCol)
-        SelNode.Parent.Nodes(1).ForeColor = IIf(Strings.Right(SelNode.Parent.Nodes(1).Text, 4) = DFOS, DefaultCol, ManualCol)
-        SelNode.Parent.Nodes(2).ForeColor = IIf(Strings.Right(SelNode.Parent.Nodes(2).Text, 4) = DFLS, DefaultCol, ManualCol)
+        SelNode.Parent.Nodes(0).ForeColor = IIf(DFA = True, DefaultCol, ManualCol)
+        SelNode.Parent.Nodes(1).ForeColor = IIf(DFO = True, DefaultCol, ManualCol)
+        SelNode.Parent.Nodes(2).ForeColor = IIf(DFL = True, DefaultCol, ManualCol)
 
         Exit Sub
 Err:
@@ -583,14 +597,9 @@ Err:
     Private Sub ResetFileParameters(FileNode As TreeNode, NodeIndex As Integer)
         On Error GoTo Err
 
-        'NewFile = If(Strings.Right(SelNode.Text, 1) = "*", Strings.Left(SelNode.Text, Len(SelNode.Text) - 1), SelNode.Text)
         If Loading = False Then tv.BeginUpdate()
 
-        'ReDim Prg(0)
-
-        'Prg = IO.File.ReadAllBytes(NewFile)
-
-        GetDefaultFileParameters(FileNode)
+        GetDefaultFileParameters(FileNode, NodeIndex)
 
         Select Case NodeIndex
             Case 0
@@ -599,8 +608,6 @@ Err:
                     .Text = sFileAddr + DFAS
                     .ForeColor = DefaultCol
                 End With
-            Case 1
-                txtEdit.Text = DFOS
                 With FileNode.Nodes(1)
                     .Text = sFileOffs + DFOS
                     .ForeColor = DefaultCol
@@ -609,53 +616,37 @@ Err:
                     .Text = sFileLen + DFLS
                     .ForeColor = DefaultCol
                 End With
+
+            Case 1
+                txtEdit.Text = DFOS
+                With FileNode.Nodes(1)
+                    .Text = sFileOffs + DFOS
+                    .ForeColor = DefaultCol
+                End With
+                With FileNode.Nodes(2)
+                    If Convert.ToInt32(Strings.Right(FileNode.Nodes(2).Text, 4), 16) + Convert.ToInt32(txtBuffer, 16) = PLen Then
+                        .Text = sFileLen + DFLS
+                        .ForeColor = DefaultCol
+                    End If
+                End With
+                'With FileNode.Nodes(0)
+                '.ForeColor = IIf(Strings.Right(.Text, 4) = DFAS, DefaultCol, ManualCol)
+                'End With
             Case 2
+                'With FileNode.Nodes(2)
+                '.Text = sFileLen + DFLS
+                '.ForeColor = DefaultCol
+                'End With
+                If DFLN + Convert.ToInt32(Strings.Right(FileNode.Nodes(1).Text, 4)) > PLen Then
+                    DFLN = PLen - Convert.ToInt32(Strings.Right(FileNode.Nodes(1).Text, 4))
+                    DFLS = ConvertNumberToHexString(DFLN Mod 256, Int(DFLN / 256))
+                End If
                 txtEdit.Text = DFLS
                 With FileNode.Nodes(2)
                     .Text = sFileLen + DFLS
                     .ForeColor = DefaultCol
                 End With
-                'Case 0
-                'If LCase(Strings.Right(NewFile, 4)) = ".sid" Then
-                'FAddr = Prg(Prg(7)) + (Prg(Prg(7) + 1) * 256)
-                'Else
-                'If Prg.Length > 2 Then
-                'FAddr = Prg(1) * 256 + Prg(0)
-                'Else
-                'FAddr = 2064                    'Arbitrary $0810
-                'End If
-                'End If
-                'txtEdit.Text = ConvertNumberToHexString(FAddr Mod 256, Int(FAddr / 256))
-                'FileNode.Nodes(0).Text = sFileAddr + txtEdit.Text
-                'If FileNode.Nodes(1).ForeColor = DefaultCol Then
-                'FLen -= 2
-                'FileNode.Nodes(1).Text = sFileOffs + "0002"
-                'FileNode.Nodes(2).Text = sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
-                'End If
-                'Case 1
-                'If LCase(Strings.Right(NewFile, 4)) = ".sid" Then
-                'FOffs = Prg(7) + 2
-                'Else
-                'If Prg.Length > 2 Then
-                'FOffs = 2
-                'Else
-                'FOffs = 0
-                'End If
-                'End If
-                'txtEdit.Text = ConvertNumberToHexString(FOffs Mod 256, Int(FOffs / 256))
-                'FileNode.Nodes(1).Text = sFileOffs + txtEdit.Text
-                'If FileNode.Nodes(2).ForeColor = DefaultCol Then
-                'FLen = Prg.Length - FOffs
-                'FileNode.Nodes(2).Text = sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
-                'End If
-                'Case 2
-                'FOffs = Convert.ToInt32(Strings.Right(FileNode.Nodes(1).Text, 4), 16)
-                'FLen = Prg.Length - FOffs
-                'txtEdit.Text = ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
-                'FileNode.Nodes(2).Text = sFileLen + txtEdit.Text
         End Select
-
-        'CheckNumbers(FileNode)   'This will update the parameter nodes' color
 
         If Loading = False Then tv.EndUpdate()
 
@@ -664,13 +655,15 @@ Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
-    Private Sub GetDefaultFileParameters(FileNode As TreeNode)
+    Private Sub GetDefaultFileParameters(FileNode As TreeNode, NodeIndex As Integer)
         On Error GoTo Err
 
         If Loading = False Then tv.BeginUpdate()
 
         Dim P() As Byte = IO.File.ReadAllBytes(Replace(FileNode.Text, "*", ""))
         Dim Ext As String = LCase(Strings.Right(Replace(FileNode.Text, "*", ""), 4))
+
+        PLen = P.Length
 
         'Determine default numeric parameters
         Select Case Ext
@@ -679,7 +672,7 @@ Err:
                 DFON = P(7) + 2
             Case Else
                 'Default load address = first 2 bytes of file as in .prg files
-                If P.Length > 2 Then
+                If PLen > 2 Then
                     DFAN = P(0) + (P(1) * 256)
                 Else
                     DFAN = 2064
@@ -687,21 +680,21 @@ Err:
                 'Default offset depends on load address
                 'If load address = default then default offset = 2
                 'Otherwise, default offset = 0
-                DFON = If(Strings.Right(FileNode.Nodes(0).Text, 4) = ConvertNumberToHexString(DFAN Mod 256, Int(DFAN / 256)), 2, 0)
+                If Strings.Right(FileNode.Nodes(0).Text, 1) <> "$" Then
+                    DFON = If(Strings.Right(FileNode.Nodes(0).Text, 4) = ConvertNumberToHexString(DFAN Mod 256, Int(DFAN / 256)), 2, 0)
+                Else
+                    'File address is being reset, so offset=2
+                    DFON = 2
+                End If
         End Select
 
-        'Default length depends on default offset
-        DFLN = P.Length - DFON
+        'Default length depends on offset
+        DFLN = PLen - DFON
 
         'Calculate default parameter strings
         DFAS = ConvertNumberToHexString(DFAN Mod 256, Int(DFAN / 256))
         DFOS = ConvertNumberToHexString(DFON Mod 256, Int(DFON / 256))
         DFLS = ConvertNumberToHexString(DFLN Mod 256, Int(DFLN / 256))
-
-        'Update File Parameter Node Colors
-        'FileNode.Nodes(0).ForeColor = IIf(Strings.Right(FileNode.Nodes(0).Text, 4) = DFAS, DefaultCol, ManualCol)
-        'FileNode.Nodes(1).ForeColor = IIf(Strings.Right(FileNode.Nodes(1).Text, 4) = DFOS, DefaultCol, ManualCol)
-        'FileNode.Nodes(2).ForeColor = IIf(Strings.Right(FileNode.Nodes(2).Text, 4) = DFLS, DefaultCol, ManualCol)
 
         If Loading = False Then tv.EndUpdate()
 
@@ -711,51 +704,30 @@ Err:
 
     End Sub
 
-    Private Sub CheckFileParameters(SelNode As TreeNode)
+    Private Sub CheckFileParameters(FileNode As TreeNode)
         On Error GoTo Err
 
-        'NewFile = SelNode.Text
+        'NewFile = Replace(FileNode.Text, "*", "")
 
-        'If Strings.Right(NewFile, 1) = "*" Then
-        ''NewFile = Strings.Left(NewFile, Len(NewFile) - 1)
-        NewFile = Replace(SelNode.Text, "*", "")
-        ''FileUnderIO = True
-        ''Else
-        ''FileUnderIO = False
-        'End If
-
-        FAddr = Convert.ToInt32(Strings.Right(SelNode.Nodes(0).Text, 4), 16)
-        FOffs = Convert.ToInt32(Strings.Right(SelNode.Nodes(1).Text, 4), 16)
-        FLen = Convert.ToInt32(Strings.Right(SelNode.Nodes(2).Text, 4), 16)
-
-        ReDim Prg(0)
-
-        Prg = IO.File.ReadAllBytes(NewFile)
+        FAddr = Convert.ToInt32(Strings.Right(FileNode.Nodes(0).Text, 4), 16)
+        FOffs = Convert.ToInt32(Strings.Right(FileNode.Nodes(1).Text, 4), 16)
+        FLen = Convert.ToInt32(Strings.Right(FileNode.Nodes(2).Text, 4), 16)
 
         If Loading = False Then tv.BeginUpdate()
 
-        'If FAddr = -1 Then
-        'If Prg.Length > 2 Then              'File is at least 3 bytes long
-        'FAddr = Prg(1) * 256 + Prg(0)
-        'Else
-        'FAddr = 2064                    'Arbitrary $0810
-        'End If
-        'SelNode.Nodes(0).Text = sFileAddr + ConvertNumberToHexString(FAddr Mod 256, Int(FAddr / 256))
-        'End If
-
-        If FOffs > Prg.Length - 1 Then
-            FOffs = Prg.Length - 1
-            'SelNode.Nodes(1).Text = sFileOffs + ConvertNumberToHexString(FOffs Mod 256, Int(FOffs / 256))
+        If FOffs > PLen - 1 Then
+            FOffs = PLen - 1
+            FileNode.Nodes(1).Text = sFileOffs + ConvertNumberToHexString(FOffs Mod 256, Int(FOffs / 256))
         End If
 
-        If (FLen = 0) Or (FOffs + FLen > Prg.Length) Then
-            FLen = Prg.Length - FOffs
-            'SelNode.Nodes(2).Text = sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
+        If (FLen = 0) Or (FOffs + FLen > PLen) Then
+            FLen = PLen - FOffs
+            FileNode.Nodes(2).Text = sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
         End If
 
         If FAddr + FLen > &HFFFF Then
             FLen = &H10000 - FAddr
-            'SelNode.Nodes(2).Text = sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
+            FileNode.Nodes(2).Text = sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
         End If
 
         FAS = ConvertNumberToHexString(FAddr Mod 256, Int(FAddr / 256))
@@ -771,7 +743,7 @@ Err:
         'SelNode.Text = NewFile
         'SelNode.ToolTipText = NewFile
 
-        CalcPartSize(SelNode.Parent)
+        CalcPartSize(FileNode.Parent)
 
         If Loading = False Then tv.EndUpdate()
 
