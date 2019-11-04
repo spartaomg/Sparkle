@@ -1032,7 +1032,7 @@ CheckBitLen:
                 Next
                 Buffer(AdHiPos) = 0                             'IO Flag to previous AdHi Position
                 ByteCnt -= 1                                    'Update ByteCt to next empty position in buffer
-                LastByteCt -= 1                                 'Last Match pointer also needs to be updated (BUG REPORTED BY RAISTLIN/G*P)
+                LastByteCt -= 1                                 'Last Match pointer also needs to be updated (BUG FIX - REPORTED BY RAISTLIN/G*P)
                 AdHiPos -= 1                                    'Update AdHi Position in Buffer
                 BlockUnderIO = 1                                'Set BlockUnderIO Flag
             End If

@@ -1095,7 +1095,7 @@ Prepend:                PO = Prgs(O)
 
                 If Change = True Then
                     'Update merged file's IO status
-                    FileIOA(O) = FileIOA(O) Or FileIOA(I)
+                    FileIOA(O) = FileIOA(O) Or FileIOA(I)   'BUG FIX - REPORTED BY RAISTLIN/G*P
                     'New file's length is the length of the two merged files
                     FEO += FEI
                     FileLenA(O) = ConvertNumberToHexString(FEO Mod 256, Int(FEO / 256))
