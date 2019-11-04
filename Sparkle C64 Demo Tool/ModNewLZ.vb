@@ -23,6 +23,7 @@
 
     Public Sub NewLZ(PN As Object, Optional FA As String = "", Optional FO As String = "", Optional FL As String = "", Optional FUIO As Boolean = False)
         On Error GoTo Err
+        'The only two parameters that are needed are FA and FUIO
 
         Dim FAN, FON, FLN As Integer
 
@@ -39,7 +40,7 @@
 
             'MsgBox(Hex(PrgAdd) + vbNewLine + Hex(PrgLen))
 
-        ElseIf TypeOf PN Is String Then
+        ElseIf TypeOf PN Is String Then     'THIS IS NO LONGER USED
             ReDim Prg(0)
 
             'Read file to prg()
@@ -545,7 +546,7 @@ Err:
     Private Function PostMatch() As Boolean
         On Error GoTo Err
 
-        'Find 2-byte MidMatches for the lastst 2 Literal bytes
+        'Find 2-byte MidMatches for the last 2 Literal bytes
         PostMatch = False
         'POffset points at the first byte of the new match sequence here
         '     POffset                                                LastPOffset
@@ -654,14 +655,14 @@ Err:
 
         LastMLen -= 1
 
-        If LastMType = "s" Then   'Update previous match as a short match
+        If LastMType = "s" Then                                 'Update previous match as a short match
             Buffer(LastByteCt) = ((LastMOffset - 1) * 4) + LastMLen
             PreByteCnt = LastByteCt - 1
-        ElseIf LastMType = "m" Then                           'Update previous match as a mid match
+        ElseIf LastMType = "m" Then                             'Update previous match as a mid match
             Buffer(LastByteCt) = LastMLen * 4
             Buffer(LastByteCt - 1) = LastMOffset - 1
             PreByteCnt = LastByteCt - 2
-        Else                                                        'Update previous match as a long match
+        Else                                                    'Update previous match as a long match
             Buffer(LastByteCt) = LongMatchTag
             Buffer(LastByteCt - 1) = LastMLen
             Buffer(LastByteCt - 2) = LastMOffset - 1
@@ -1030,7 +1031,8 @@ CheckBitLen:
                     Buffer(I - 1) = Buffer(I)
                 Next
                 Buffer(AdHiPos) = 0                             'IO Flag to previous AdHi Position
-                ByteCnt -= 1                                     'Update ByteCt to next empty position in buffer
+                ByteCnt -= 1                                    'Update ByteCt to next empty position in buffer
+                LastByteCt -= 1                                 'Last Match pointer also needs to be updated (BUG REPORTED BY RAISTLIN/G*P)
                 AdHiPos -= 1                                    'Update AdHi Position in Buffer
                 BlockUnderIO = 1                                'Set BlockUnderIO Flag
             End If

@@ -945,6 +945,7 @@ Err:
         NewPart = True
 
         For I As Integer = 0 To Prgs.Count - 1
+            'The only two parameters that are needed are FA and FUIO
             NewLZ(Prgs(I).ToArray, FileAddrA(I),, FileLenA(I), FileIOA(I))  'NewPart is TRUE FOR THE FIRST FILE
             If I < Prgs.Count - 1 Then FinishFile()
         Next
@@ -1047,7 +1048,7 @@ Restart:
                 FEI = Convert.ToInt32(FileLenA(I), 16)
 
                 If FSO + FEO = FSI Then
-                    'Inner files follows outer file immediately
+                    'Inner file follows outer file immediately
                     If (FSI <= &HD000) Or (FSI > &HDFFF) Then
                         'Append files as they meet outside IO memory
 Append:                 PO = Prgs(O)
@@ -1059,6 +1060,7 @@ Append:                 PO = Prgs(O)
                         Next
 
                         Prgs(O) = PO
+
                         Change = True
                     Else
                         If FileIOA(O) = FileIOA(I) Then
@@ -1092,8 +1094,12 @@ Prepend:                PO = Prgs(O)
                 End If
 
                 If Change = True Then
+                    'Update merged file's IO status
+                    FileIOA(O) = FileIOA(O) Or FileIOA(I)
+                    'New file's length is the length of the two merged files
                     FEO += FEI
                     FileLenA(O) = ConvertNumberToHexString(FEO Mod 256, Int(FEO / 256))
+                    'Remove File(I) and all its parameters
                     For J As Integer = I To Prgs.Count - 2
                         FileNameA(J) = FileNameA(J + 1)
                         FileAddrA(J) = FileAddrA(J + 1)
@@ -1101,6 +1107,7 @@ Prepend:                PO = Prgs(O)
                         FileLenA(J) = FileLenA(J + 1)
                         FileIOA(J) = FileIOA(J + 1)
                     Next
+                    'One less file left
                     FileCnt -= 1
                     ReDim Preserve FileNameA(Prgs.Count - 2), FileAddrA(Prgs.Count - 2), FileOffsA(Prgs.Count - 2), FileLenA(Prgs.Count - 2)
                     ReDim Preserve FileIOA(Prgs.Count - 2)
