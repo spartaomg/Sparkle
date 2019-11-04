@@ -945,7 +945,7 @@ Err:
         NewPart = True
 
         For I As Integer = 0 To Prgs.Count - 1
-            'The only two parameters that are needed are FA and FUIO
+            'The only two parameters that are needed are FA and FUIO... FileLenA(i) is not used
             NewLZ(Prgs(I).ToArray, FileAddrA(I),, FileLenA(I), FileIOA(I))  'NewPart is TRUE FOR THE FIRST FILE
             If I < Prgs.Count - 1 Then FinishFile()
         Next

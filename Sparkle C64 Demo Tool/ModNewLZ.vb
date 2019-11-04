@@ -10,8 +10,8 @@
     Private ReadOnly NextFileTag As Byte = &HFC
     Private ReadOnly EndTag As Byte = 0             'Could be changed to &HF8, but this is more economical (Number of EndTags > Number of LongMatchTags)
 
-    Private FirstBlockOfNextFile As Boolean = False          'If true, this is the first block of next file in same buffer, Lit Selector Bit NOT NEEEDED
-    Private NextFileInBuffer As Boolean = False             'Indicates whether the next file is added to the same buffer
+    Private FirstBlockOfNextFile As Boolean = False 'If true, this is the first block of next file in same buffer, Lit Selector Bit NOT NEEEDED
+    Private NextFileInBuffer As Boolean = False     'Indicates whether the next file is added to the same buffer
 
     Private BlockUnderIO As Integer = 0
     Private AdLoPos As Byte, AdHiPos As Byte
