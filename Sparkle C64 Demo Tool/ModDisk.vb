@@ -53,6 +53,8 @@
     Public DiskID As String = "sprkl"
     Public DemoName As String = "demo"
     Public DemoStart As String
+    Public LoaderZP As String = "02"
+
     Public SystemFile As Boolean = False
     Public FileChanged As Boolean = False
 
@@ -115,6 +117,8 @@
     Public ScriptPath As String
 
     Public CmdLine As Boolean = False
+
+    Private Loader() As Byte
 
     Public Sub SetLastSector()
         On Error GoTo Err
@@ -519,7 +523,6 @@ Err:
 
         Dim B, I, Cnt, W As Integer
         Dim ST, SS, A, L, AdLo, AdHi As Byte
-        Dim Loader() As Byte
         Dim DN As String
 
         If DiskIndex > -1 Then
@@ -541,14 +544,15 @@ Err:
 
         If TestDisk = False Then
             Loader = My.Resources.SL
+            UpdateZP()
         Else
             Loader = My.Resources.SLT
         End If
 
-        For I = 0 To Loader.Length - 3       'Find JMP $01f0 instruction (JMP AltLoad)
+        For I = 0 To Loader.Length - 3      'Find JMP $01f0 instruction (JMP AltLoad)
             If (Loader(I) = &H4C) And (Loader(I + 1) = &H80) And (Loader(I + 2) = &H1) Then
-                Loader(I - 2) = AdLo       'Lo Byte return address at the end of Loader
-                Loader(I - 5) = AdHi       'Hi Byte return address at the end of Loader
+                Loader(I - 2) = AdLo        'Lo Byte return address at the end of Loader
+                Loader(I - 5) = AdHi        'Hi Byte return address at the end of Loader
                 Exit For
             End If
         Next
@@ -640,6 +644,56 @@ Err:
         InjectLoader = False
 
     End Function
+
+    Private Sub UpdateZP()
+        On Error GoTo Err
+
+        'Check string length
+        If LoaderZP.Length < 2 Then
+            LoaderZP = Left("02", 2 - LoaderZP.Length) + LoaderZP
+        ElseIf LoaderZP.Length > 2 Then
+            LoaderZP = Right(LoaderZP, 2)
+        End If
+
+        'Convert LoaderZP to byte
+        Dim ZP As Byte = Convert.ToByte(LoaderZP, 16)
+
+        'ZP cannot be $00, $01, or $ff
+        If ZP < 2 Then
+            MsgBox("Zeropage value cannot be less than $02." + vbNewLine + vbNewLine + "ZP is corrected to $02. Please update the ZP entry in your script!", vbInformation + vbOKOnly)
+            ZP = 2
+            LoaderZP = "02"
+        End If
+        If ZP = 255 Then
+            MsgBox("Zeropage value cannot be more than $fe." + vbNewLine + vbNewLine + "ZP is corrected to $fe. Please update the ZP entry in your script!", vbInformation + vbOKOnly)
+            ZP = 254
+            LoaderZP = "fe"
+        End If
+
+        Loader(334) = ZP
+        Loader(363) = ZP
+        Loader(396) = ZP
+        Loader(398) = ZP
+        Loader(442) = ZP
+        Loader(444) = ZP
+        Loader(461) = ZP
+        Loader(478) = ZP
+        Loader(480) = ZP
+        Loader(492) = ZP
+        Loader(508) = ZP
+
+        Loader(349) = ZP + 1
+        Loader(406) = ZP + 1
+        Loader(448) = ZP + 1
+        Loader(484) = ZP + 1
+        Loader(497) = ZP + 1
+
+        Exit Sub
+
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
 
     Public Function ConvertNumberToHexString(HLo As Byte, Optional HHi As Byte = 0) As String
         On Error GoTo Err
@@ -763,7 +817,6 @@ Err:
 
         DiskCnt = -1
 
-
 NewDisk:
         'Reset Disk Variables
         If ResetDiskVariables() = False Then GoTo NoDisk
@@ -789,6 +842,8 @@ FindNext:
                 If IO.File.Exists(ScriptEntryArray(0)) Then
                     DirArt = IO.File.ReadAllText(ScriptEntryArray(0))
                 End If
+            Case "ZP:"
+                LoaderZP = ScriptEntryArray(0)
             Case "File:"
                 'Add files to part array, if new part, it will first sort files in last part then add previous part to disk
                 If AddFile() = False Then GoTo NoDisk
@@ -1186,6 +1241,19 @@ NoSort:
             FN = ScriptPath + FN            'look for file in script's folder
         End If
 
+        'Correct file parameter length to 4 characters
+        For I As Integer = 1 To ScriptEntryArray.Count - 1
+            If ScriptEntryArray(I).Length < 4 Then
+                'MsgBox(ScriptEntryArray(I))
+                ScriptEntryArray(I) = Left("0000", 4 - Strings.Len(ScriptEntryArray(I))) + ScriptEntryArray(I)
+                'MsgBox(ScriptEntryArray(I))
+            ElseIf ScriptEntryArray(I).Length > 4 Then
+                'MsgBox(ScriptEntryArray(I))
+                ScriptEntryArray(I) = Right(ScriptEntryArray(I), 4)
+                'MsgBox(ScriptEntryArray(I))
+            End If
+        Next
+
         'Get file variables from script, or get default values if there were none in the script entry
         If IO.File.Exists(FN) = True Then
             P = IO.File.ReadAllBytes(FN)
@@ -1373,6 +1441,7 @@ Err:
         DemoName = "demo"
         DemoStart = ""
         DirArt = ""
+        LoaderZP = "02"
 
         PartCnt = -1        'WILL BE INCREASED TO 0 IN ResetPartVariables
         LoaderParts = 1

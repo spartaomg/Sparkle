@@ -1952,6 +1952,7 @@ FindNext:
                 End If
 
                 UpdateNode(DiskNode.Nodes(sDirArt + DC.ToString), sDirArt + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt, tDirArt)
+            Case "ZP:"
             Case "File:"
                 AddFileFromScript(DiskNode)
             Case "New Disk"
