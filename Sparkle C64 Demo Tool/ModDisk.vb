@@ -193,7 +193,7 @@ NextChar:
                 ScriptEntry = Strings.Mid(Script, SS, SE - SS)    'Reached end of script, finish this entry
             End If
         Else                                                'Found EOL
-            ScriptEntry = Strings.Mid(Script, SS, SE - SS)        'Finish this entry
+            ScriptEntry = Strings.Mid(Script, SS, SE - SS)  'Finish this entry
             SS = SE + 2                                     'Skip EOL bytes
             SE = SS + 1
         End If
@@ -825,7 +825,7 @@ FindNext:
         If FindNextScriptEntry() = False Then GoTo NoDisk
         'Split String
         If SplitScriptEntry() = False Then GoTo NoDisk
-
+        'MsgBox(ScriptEntry + vbNewLine + ScriptEntryType)
         'Set disk variables and add files
         Select Case ScriptEntryType
             Case "Path:"
@@ -839,11 +839,14 @@ FindNext:
             Case "Start:"
                 DemoStart = ScriptEntryArray(0)
             Case "DirArt:"
+                If InStr(ScriptEntryArray(0), ":") = 0 Then
+                    ScriptEntryArray(0) = ScriptPath + ScriptEntryArray(0)
+                End If
                 If IO.File.Exists(ScriptEntryArray(0)) Then
                     DirArt = IO.File.ReadAllText(ScriptEntryArray(0))
                 End If
             Case "ZP:"
-                LoaderZP = ScriptEntryArray(0)
+                If DiskCnt = 0 Then LoaderZP = ScriptEntryArray(0)  'ZP usage can only be set from first disk
             Case "File:"
                 'Add files to part array, if new part, it will first sort files in last part then add previous part to disk
                 If AddFile() = False Then GoTo NoDisk
@@ -852,6 +855,9 @@ FindNext:
                 If FinishDisk(False, SaveIt) = False Then GoTo NoDisk
                 GoTo NewDisk
             Case Else
+                If NewPart = True Then
+                    If PartDone() = False Then GoTo NoDisk
+                End If
         End Select
 
         If SE < Script.Length Then GoTo FindNext
@@ -1026,17 +1032,18 @@ NoComp:
         AddFile = True
 
         If NewPart = True Then
-            'First finish last part, if it exists
-            If PartCnt > 0 Then
-                'Sort files in part
-                If SortPart() = False Then GoTo NoDisk
-                'Then compress files and add them to part
-                If CompressPart() = False Then GoTo NoDisk     'THIS WILL RESET NewPart TO FALSE
-
-            End If
-
-            'Then reset part variables (file arrays, prg array, block cnt), increase part counter
-            ResetPartVariables()
+            If PartDone() = False Then GoTo NoDisk
+            ''First finish last part, if it exists
+            'If PartCnt > 0 Then
+            ''Sort files in part
+            'If SortPart() = False Then GoTo NoDisk
+            ''Then compress files and add them to part
+            'If CompressPart() = False Then GoTo NoDisk     'THIS WILL RESET NewPart TO FALSE
+            '
+            'End If
+            '
+            ''Then reset part variables (file arrays, prg array, block cnt), increase part counter
+            'ResetPartVariables()
 
         End If
 
@@ -1050,7 +1057,30 @@ NoDisk:
         AddFile = False
 
     End Function
+    Private Function PartDone() As Boolean
+        On Error GoTo Err
 
+        PartDone = True
+
+        'First finish last part, if it exists
+        If PartCnt > 0 Then
+            'Sort files in part
+            If SortPart() = False Then GoTo NoDisk
+            'Then compress files and add them to part
+            If CompressPart() = False Then GoTo NoDisk     'THIS WILL RESET NewPart TO FALSE
+
+        End If
+
+        'Then reset part variables (file arrays, prg array, block cnt), increase part counter
+        ResetPartVariables()
+
+        Exit Function
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+NoDisk:
+        PartDone = False
+
+    End Function
     Public Function SortPart() As Boolean
         On Error GoTo Err
 
@@ -1082,9 +1112,12 @@ NoDisk:
                     If (OLS >= &HD000) And (OLE <= &HDFFF) And (FileIOA(O) <> FileIOA(I)) Then
                         'Overlap is IO memory only and different IO status - NO OVERLAP
                     Else
-                        If MsgBox("The following two files overlap in Part " + PartCnt.ToString + ":" _
+                        'If MsgBox("The following two files overlap in Part " + PartCnt.ToString + ":" _
+                        '  + vbNewLine + vbNewLine + FileNameA(I) + " ($" + Hex(FSI) + " - $" + Hex(FEI) + ")" + vbNewLine + vbNewLine _
+                        '  + FileNameA(O) + " ($" + Hex(FSO) + " - $" + Hex(FEO) + ")" + vbNewLine + vbNewLine + "Do you want to proceed?", vbYesNo + vbExclamation) = vbNo Then GoTo NoSort
+                        MsgBox("The following two files overlap in Part " + PartCnt.ToString + ":" _
                            + vbNewLine + vbNewLine + FileNameA(I) + " ($" + Hex(FSI) + " - $" + Hex(FEI) + ")" + vbNewLine + vbNewLine _
-                           + FileNameA(O) + " ($" + Hex(FSO) + " - $" + Hex(FEO) + ")" + vbNewLine + vbNewLine + "Do you want to proceed?", vbYesNo + vbExclamation) = vbNo Then GoTo NoSort
+                           + FileNameA(O) + " ($" + Hex(FSO) + " - $" + Hex(FEO) + ")", vbOKOnly + vbExclamation)
                     End If
                 End If
             Next

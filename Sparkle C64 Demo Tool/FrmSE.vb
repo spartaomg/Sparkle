@@ -45,7 +45,7 @@ Public Class FrmSE
     Private txtBuffer As String = ""
     Private LMD As Date = Date.Now
     Private Dbl As Boolean = False
-    Private DefaultParams As Boolean = True
+    'Private DefaultParams As Boolean = True
     Private DFA, DFO, DFL As Boolean
 
     Private DFAS, DFOS, DFLS As String
@@ -60,10 +60,12 @@ Public Class FrmSE
     Private ReadOnly sAddPart As String = "AddPart"
     Private ReadOnly sAddFile As String = "AddFile"
     Private ReadOnly sFileSize As String = "Original File Size: "
+    Private ReadOnly sFileUIO As String = "Load under I/O: "
     Private ReadOnly sFileAddr As String = "Load Address: $"
     Private ReadOnly sFileOffs As String = "File Offset:  $"
     Private ReadOnly sFileLen As String = "File Length:  $"
     Private ReadOnly sDirArt As String = "DirArt: "
+    Private ReadOnly sZP As String = "Zeropage: "
 
     Private ReadOnly TT As New ToolTip
 
@@ -79,6 +81,7 @@ Public Class FrmSE
     Private ReadOnly tFileAddr As String = "Double click or press <Enter> to edit the file segment's load address."
     Private ReadOnly tFileOffs As String = "Double click or press <Enter> to edit the file segment's offset."
     Private ReadOnly tFileLen As String = "Double click or press <Enter> to edit the file segment's length."
+    Private ReadOnly tLoadUIO As String = "Double click or press <Enter> to change the file segment's I/O status, if applicable."
     Private ReadOnly tDirArt As String = "Double click or press <Enter> to add a DirArt file to the demo's directory." + vbNewLine +
                 "Press the <Delete> key to delete the current DirArt file."
     Private ReadOnly tDisk As String = "Press <Delete> to delete this disk with all its content."
@@ -86,6 +89,7 @@ Public Class FrmSE
                 "Press <Delete> to delete this part from this disk with all its content."
     Private ReadOnly tFile As String = "Double click or press <Enter> to change this file." + vbNewLine +
                 "Press <Delete> to delete this file from this part."
+    Private ReadOnly tZP As String = "Double click or press <Enter> to edit the loader's zeropage usage."
 
     Private Sub FrmSE_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         On Error GoTo Err
@@ -182,13 +186,13 @@ Err:
 
         SelNode = tv.SelectedNode
 
-        CurrentDisk = Int(tv.SelectedNode.Tag / &H1000000)
-        CurrentPart = Int((tv.SelectedNode.Tag And &HFFF000) / &H1000)
-        CurrentFile = tv.SelectedNode.Tag And &HFFF
+        CurrentDisk = Int(SelNode.Tag / &H1000000)
+        CurrentPart = Int((SelNode.Tag And &HFFF000) / &H1000)
+        CurrentFile = SelNode.Tag And &HFFF
 
         If (tv.Enabled = False) Or (Loading) Then Exit Sub
 
-        Select Case tv.SelectedNode.ForeColor
+        Select Case SelNode.ForeColor
             Case Color.DarkRed      'Disk node
                 NodeType = 1
             Case Color.DarkMagenta  'Part node
@@ -196,45 +200,38 @@ Err:
             Case Color.Black        'File node
                 NodeType = 3
             Case Else
-                If Strings.Left(tv.SelectedNode.Text, 8) = "DirArt: " Then
+                If Strings.Left(SelNode.Text, 8) = "DirArt: " Then
                     NodeType = 4    'DirArt node
                 Else
                     NodeType = 0    'All other nodes
                 End If
-                'Case Color.DarkGreen, Color.DarkGray, Color.DarkBlue, Color.SaddleBrown, Color.RosyBrown
-                'If Strings.Left(tv.SelectedNode.Text, 8) = "DirArt: " Then
-                'NodeType = 4            'DirArt node
-                'Else
-                'NodeType = 0            'All other nodes
-                'End If
-                'Case Else
-                'If CurrentPart = 0 Then
-                'NodeType = 1            'Disk node (color=color.darkred)
-                'ElseIf CurrentFile = 0 Then
-                'NodeType = 2            'Part node (color=color.darkmagenta)
-                'Else
-                'NodeType = 3            'File node (color=color.black)
-                'End If
         End Select
 
         If NodeType = 3 Then
-            BtnFileUp.Enabled = tv.SelectedNode.Index > 0
-            BtnFileDown.Enabled = tv.SelectedNode.Index < tv.SelectedNode.Parent.Nodes.Count - 2
+            BtnFileUp.Enabled = SelNode.Index > 0
+            BtnFileDown.Enabled = SelNode.Index < SelNode.Parent.Nodes.Count - 2
         Else
             BtnFileDown.Enabled = False
             BtnFileUp.Enabled = False
         End If
 
         If NodeType = 2 Then
-            BtnPartUp.Enabled = tv.SelectedNode.Index > 6
-            BtnPartDown.Enabled = tv.SelectedNode.Index < tv.SelectedNode.Parent.Nodes.Count - 2
+            Dim NI As Integer
+            For I As Integer = 0 To SelNode.Parent.Nodes.Count - 1
+                If InStr(SelNode.Parent.Nodes(I).Text, "[Part") <> 0 Then
+                    NI = I
+                    Exit For
+                End If
+            Next
+            BtnPartUp.Enabled = SelNode.Index > NI
+            BtnPartDown.Enabled = SelNode.Index < SelNode.Parent.Nodes.Count - 2
         Else
             BtnPartDown.Enabled = False
             BtnPartUp.Enabled = False
         End If
 
         If CurrentDisk > 0 Then
-            TssDisk.Text = "Disk " + (CurrentDisk).ToString + ": " + (664 - DiskSizeA(CurrentDisk - 1)).ToString + " block" + IIf(664 - DiskSizeA(CurrentDisk - 1) <> 1, "s free", " free")
+            TssDisk.Text = "Disk " + CurrentDisk.ToString + ": " + (664 - DiskSizeA(CurrentDisk - 1)).ToString + " block" + IIf(664 - DiskSizeA(CurrentDisk - 1) <> 1, "s free", " free")
         End If
 
         Exit Sub
@@ -327,6 +324,10 @@ Err:
         If Strings.Right(N.Name, 3) = ":FS" Then        'Is this a File Size node?
             txtEdit.Visible = False
             Exit Sub
+        ElseIf Strings.Right(N.Name, 5) = ":FUIO" Then
+            txtEdit.Visible = False
+            SwapIOStatus
+            Exit Sub
         ElseIf Strings.Right(N.Name, 3) = ":FA" Then
             'Load Address
             S = sFileAddr
@@ -403,6 +404,14 @@ FileData:
                         .Visible = False    'True
                         UpdateDirArtPath()
                         Exit Sub
+                    Case sZP
+                        .Text = Strings.Right(N.Text, Len(N.Text) - Len(S) - 1)
+                        .Width = TextRenderer.MeasureText("00", N.NodeFont).Width
+                        .Tag = S + "$"
+                        N.Text = .Tag
+                        .Left = tv.Left + N.Bounds.Left + N.Bounds.Width
+                        .MaxLength = 2
+                        .Visible = True
                     Case Else
                         .Visible = False
                 End Select
@@ -461,7 +470,7 @@ Err:
                 e.Handled = True
                 tv.Focus()
             Case Else
-                If txtEdit.MaxLength = 4 Then
+                If txtEdit.MaxLength = 4 Or txtEdit.MaxLength = 2 Then
                     Select Case e.KeyCode
                         Case Keys.A, Keys.B, Keys.C, Keys.D, Keys.E, Keys.F
                         Case Keys.D0, Keys.D1, Keys.D2, Keys.D3, Keys.D4, Keys.D5, Keys.D6, Keys.D7, Keys.D8, Keys.D9
@@ -500,71 +509,102 @@ Err:
 
         tv.Focus()
 
-        If txtEdit.Visible = True Then
-            If txtEdit.MaxLength = 4 Then
-                If txtEdit.Text = "" Then
+        txtEdit.Visible = False
 
-                    Select Case Strings.Right(tv.SelectedNode.Name, 3)
-                        Case ":FA", ":FO", ":FL"
-                            ResetFileParameters(tv.SelectedNode.Parent, tv.SelectedNode.Index)
-                            SelNode.Text = txtEdit.Tag + txtEdit.Text
-                            txtEdit.Visible = False
-                            GoTo ChkCol
-                        Case Else
-                            Exit Select
-                    End Select
+        CorrectTextLength()
 
-                ElseIf Len(txtEdit.Text) < 4 Then
-
-                    txtEdit.Text = Strings.Left("0000", 4 - Strings.Len(txtEdit.Text)) + txtEdit.Text
-
-                End If
-            End If
-            SelNode.Text = txtEdit.Tag + txtEdit.Text
-            txtEdit.Visible = False
-        End If
+        SelNode.Text = txtEdit.Tag + LCase(txtEdit.Text)
 
         Select Case Strings.Right(SelNode.Name, 3)
-            Case ":FA"              ', ":FO", ":FL"
-                If txtEdit.Text <> txtBuffer Then
-                    GetDefaultFileParameters(SelNode.Parent, 0)
-                    CheckFileParameters(SelNode.Parent)
-                    If SelNode.ForeColor = DefaultCol Then
-                        SelNode.Parent.Nodes(1).Text = sFileOffs + DFOS
-                        SelNode.Parent.Nodes(2).Text = sFileLen + DFLS
-                    End If
-                End If
-            Case ":FO"
-                GetDefaultFileParameters(SelNode.Parent, 1)
-                If txtEdit.Text <> txtBuffer Then
-                    CheckFileParameters(SelNode.Parent)
-                    If SelNode.ForeColor = DefaultCol Then
-                        SelNode.Parent.Nodes(2).Text = sFileLen + FLS
-                        If SelNode.Parent.Nodes(2).ForeColor = DefaultCol Then
-                            DFAS = ""
-                            DFLS = FLS
-                        End If
-                    End If
-                End If
-            Case ":FL"
-                If txtEdit.Text <> txtBuffer Then
-                    GetDefaultFileParameters(SelNode.Parent, 2)
-                    CheckFileParameters(SelNode.Parent)
-                    SelNode.Parent.Nodes(2).Text = sFileLen + FLS
-                End If
-            Case Else
-                Exit Select
+            Case ":FA", ":FO", ":FL"
+                ChangeFileParameters(SelNode.Parent, SelNode.Index)
+                Exit Sub
         End Select
 
-ChkCol:
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
-        If Strings.Right(SelNode.Parent.Nodes(0).Text, 4) = DFAS Then
+    End Sub
+
+    Private Sub CorrectTextLength()
+        'Corrects the length of txtEdit to 2 or 4 characters depending on MaxLength
+        'Eliminates invalid values
+
+        Select Case txtEdit.MaxLength
+            Case 2  'ZP value
+                If txtEdit.Text.Length < 2 Then
+                    txtEdit.Text = LCase(Strings.Left("02", 2 - txtEdit.Text.Length) + txtEdit.Text)
+                End If
+
+                'Invalid values: 00, 01, ff
+                If txtEdit.Text = "00" Or txtEdit.Text = "01" Then
+                    txtEdit.Text = "02"
+                ElseIf txtEdit.Text = "ff" Then
+                    txtEdit.Text = "fe"
+                End If
+            Case 4  'Address values
+                If (txtEdit.Text.Length < 4) And (txtEdit.Text.Length > 0) Then
+                    txtEdit.Text = LCase(Strings.Left("0000", 4 - txtEdit.Text.Length) + txtEdit.Text)
+                End If
+        End Select
+
+    End Sub
+
+    Private Sub ChangeFileParameters(FileNode As TreeNode, NodeIndex As Integer)
+        On Error GoTo Err
+
+        If Loading = False Then tv.BeginUpdate()
+
+        'If node is edited, then A/O/L=txtEdit, otherwise A/O/L = 4 rightmost chars of node text
+        Dim A As String = IIf(NodeIndex = 0, txtEdit.Text, Strings.Right(FileNode.Nodes(0).Text, FileNode.Nodes(0).Text.Length - sFileAddr.Length))
+        Dim O As String = IIf(NodeIndex = 1, txtEdit.Text, Strings.Right(FileNode.Nodes(1).Text, FileNode.Nodes(1).Text.Length - sFileOffs.Length))
+        Dim L As String = IIf(NodeIndex = 2, txtEdit.Text, Strings.Right(FileNode.Nodes(2).Text, FileNode.Nodes(2).Text.Length - sFileLen.Length))
+
+        GetDefaultFileParameters(FileNode, A, O, L)
+
+        If txtEdit.Text = "" Then
+            ResetFileParameters(FileNode, NodeIndex)
+        ElseIf txtEdit.Text <> txtBuffer Then
+            Select Case NodeIndex
+                Case 0
+                    'Load Address has changed, check if Offset is default and update it as needed
+                    If FileNode.Nodes(1).ForeColor = DefaultCol Then FileNode.Nodes(1).Text = sFileOffs + DFOS
+                    GoTo Node2
+                Case 1
+                    'Load Address and/or Offset have changed, check if length is default and update it as needed
+Node2:              If FileNode.Nodes(2).ForeColor = DefaultCol Then FileNode.Nodes(2).Text = sFileLen + DFLS
+                Case 2
+                    'Nothing here...
+            End Select
+        End If
+
+        ValidateFileParameters(FileNode)    'This will make sure parameters are within limits
+        'It will also update file size and part size(s)
+
+        CheckFileParameterColors(FileNode)  'Check if parameters are default or not
+
+        GoTo Done
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+Done:
+        If Loading = False Then tv.EndUpdate()
+
+    End Sub
+
+    Private Sub CheckFileParameterColors(FileNode As TreeNode)
+        On Error GoTo Err
+
+        If Loading = False Then tv.BeginUpdate()
+
+        If Strings.Right(FileNode.Nodes(0).Text, 4) = DFAS Then
             DFA = True
         Else
             DFA = False
         End If
 
-        If Strings.Right(SelNode.Parent.Nodes(1).Text, 4) = DFOS Then
+        If Strings.Right(FileNode.Nodes(1).Text, 4) = DFOS Then
             DFO = True
             If DFOS = "0000" Then
                 DFA = False
@@ -574,8 +614,7 @@ ChkCol:
             DFA = False
         End If
 
-        If Strings.Right(SelNode.Parent.Nodes(2).Text, 4) = DFLS Then
-            'If DFLN = PLen - DFON Then
+        If Strings.Right(FileNode.Nodes(2).Text, 4) = DFLS Then
             DFL = True
         Else
             DFL = False
@@ -584,13 +623,16 @@ ChkCol:
         End If
 
         'Update File Parameter Node Colors
-        SelNode.Parent.Nodes(0).ForeColor = IIf(DFA = True, DefaultCol, ManualCol)
-        SelNode.Parent.Nodes(1).ForeColor = IIf(DFO = True, DefaultCol, ManualCol)
-        SelNode.Parent.Nodes(2).ForeColor = IIf(DFL = True, DefaultCol, ManualCol)
+        FileNode.Nodes(0).ForeColor = IIf(DFA = True, DefaultCol, ManualCol)
+        FileNode.Nodes(1).ForeColor = IIf(DFO = True, DefaultCol, ManualCol)
+        FileNode.Nodes(2).ForeColor = IIf(DFL = True, DefaultCol, ManualCol)
 
-        Exit Sub
+        GoTo Done
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+Done:
+        If Loading = False Then tv.EndUpdate()
 
     End Sub
 
@@ -599,7 +641,7 @@ Err:
 
         If Loading = False Then tv.BeginUpdate()
 
-        GetDefaultFileParameters(FileNode, NodeIndex)
+        'GetDefaultFileParameters(FileNode)
 
         Select Case NodeIndex
             Case 0
@@ -624,38 +666,41 @@ Err:
                     .ForeColor = DefaultCol
                 End With
                 With FileNode.Nodes(2)
-                    If Convert.ToInt32(Strings.Right(FileNode.Nodes(2).Text, 4), 16) + Convert.ToInt32(txtBuffer, 16) = PLen Then
-                        .Text = sFileLen + DFLS
-                        .ForeColor = DefaultCol
-                    End If
+                    '(If File Length is max length then reset it) vs. (always reset File Length)
+                    'If Convert.ToInt32(Strings.Right(FileNode.Nodes(2).Text, 4), 16) + Convert.ToInt32(txtBuffer, 16) = PLen Then
+                    .Text = sFileLen + DFLS
+                    .ForeColor = DefaultCol
+                    'End If
                 End With
-                'With FileNode.Nodes(0)
-                '.ForeColor = IIf(Strings.Right(.Text, 4) = DFAS, DefaultCol, ManualCol)
-                'End With
             Case 2
-                'With FileNode.Nodes(2)
-                '.Text = sFileLen + DFLS
-                '.ForeColor = DefaultCol
-                'End With
-                If DFLN + Convert.ToInt32(Strings.Right(FileNode.Nodes(1).Text, 4)) > PLen Then
-                    DFLN = PLen - Convert.ToInt32(Strings.Right(FileNode.Nodes(1).Text, 4))
-                    DFLS = ConvertNumberToHexString(DFLN Mod 256, Int(DFLN / 256))
-                End If
+                ''With FileNode.Nodes(2)
+                ''.Text = sFileLen + DFLS
+                ''.ForeColor = DefaultCol
+                ''End With
+                'If DFLN + Convert.ToInt32(Strings.Right(FileNode.Nodes(1).Text, 4), 16) > PLen Then
+                'DFLN = PLen - Convert.ToInt32(Strings.Right(FileNode.Nodes(1).Text, 4), 16)
+                'DFLS = ConvertNumberToHexString(DFLN Mod 256, Int(DFLN / 256))
+                'End If
                 txtEdit.Text = DFLS
                 With FileNode.Nodes(2)
                     .Text = sFileLen + DFLS
                     .ForeColor = DefaultCol
                 End With
+
+            Case Else
+                Exit Select
         End Select
 
-        If Loading = False Then tv.EndUpdate()
+        GoTo Done
 
-        Exit Sub
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+Done:
+        If Loading = False Then tv.EndUpdate()
 
     End Sub
-    Private Sub GetDefaultFileParameters(FileNode As TreeNode, NodeIndex As Integer)
+
+    Private Sub GetDefaultFileParameters(FileNode As TreeNode, Optional FA As String = "", Optional FO As String = "", Optional FL As String = "")
         On Error GoTo Err
 
         If Loading = False Then tv.BeginUpdate()
@@ -675,39 +720,64 @@ Err:
                 If PLen > 2 Then
                     DFAN = P(0) + (P(1) * 256)
                 Else
-                    DFAN = 2064
+                    DFAN = 2064 'If file is less than3 bytes long, load address is arbitrary 2064
                 End If
                 'Default offset depends on load address
                 'If load address = default then default offset = 2
                 'Otherwise, default offset = 0
-                If Strings.Right(FileNode.Nodes(0).Text, 1) <> "$" Then
-                    DFON = If(Strings.Right(FileNode.Nodes(0).Text, 4) = ConvertNumberToHexString(DFAN Mod 256, Int(DFAN / 256)), 2, 0)
-                Else
-                    'File address is being reset, so offset=2
+                'If FA = "" Then
+                'DFON = 2
+                'ElseIf FA = ConvertNumberToHexString(DFAN Mod 256, Int(DFAN / 256)) Then
+                'DFON = 2
+                'Else
+                'DFON = 0
+                'End If
+                'If FileNode.Nodes.Count > 0 Then
+                'If Strings.Right(FileNode.Nodes(0).Text, 1) <> "$" Then
+                'DFON = If(Strings.Right(FileNode.Nodes(0).Text, 4) = ConvertNumberToHexString(DFAN Mod 256, Int(DFAN / 256)), 2, 0)
+                'Else
+                ''File address is being reset, so offset=2
+                'DFON = 2
+                'End If
+                'Else
+                'DFON = 2
+                'End If
+                If FA = "" Then
                     DFON = 2
+                ElseIf DFAN = Convert.ToInt32(FA, 16) Then
+                    DFON = 2
+                Else
+                    DFON = 0
                 End If
         End Select
 
         'Default length depends on offset
+        '        If FO = "" Then
         DFLN = PLen - DFON
+        'Else
+        'DFLN = PLen - Convert.ToInt32(FO, 16)
+        'End If
 
         'Calculate default parameter strings
         DFAS = ConvertNumberToHexString(DFAN Mod 256, Int(DFAN / 256))
         DFOS = ConvertNumberToHexString(DFON Mod 256, Int(DFON / 256))
         DFLS = ConvertNumberToHexString(DFLN Mod 256, Int(DFLN / 256))
 
-        If Loading = False Then tv.EndUpdate()
+        'MsgBox(DFAS + vbNewLine + DFOS + vbNewLine + DFLS)
 
-        Exit Sub
+        GoTo Done
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
+Done:
+        If Loading = False Then tv.EndUpdate()
+
     End Sub
 
-    Private Sub CheckFileParameters(FileNode As TreeNode)
+    Private Sub ValidateFileParameters(FileNode As TreeNode)
         On Error GoTo Err
 
-        'NewFile = Replace(FileNode.Text, "*", "")
+        NewFile = FileNode.Text
 
         FAddr = Convert.ToInt32(Strings.Right(FileNode.Nodes(0).Text, 4), 16)
         FOffs = Convert.ToInt32(Strings.Right(FileNode.Nodes(1).Text, 4), 16)
@@ -715,41 +785,57 @@ Err:
 
         If Loading = False Then tv.BeginUpdate()
 
+        'Make sure Offset is within program length
         If FOffs > PLen - 1 Then
             FOffs = PLen - 1
-            FileNode.Nodes(1).Text = sFileOffs + ConvertNumberToHexString(FOffs Mod 256, Int(FOffs / 256))
+            'FileNode.Nodes(1).Text = sFileOffs + ConvertNumberToHexString(FOffs Mod 256, Int(FOffs / 256))
         End If
 
+        'Check file length
         If (FLen = 0) Or (FOffs + FLen > PLen) Then
             FLen = PLen - FOffs
-            FileNode.Nodes(2).Text = sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
+            DFLN = FLen
+            DFLS = ConvertNumberToHexString(DFLN Mod 256, Int(DFLN / 256))
+            'FileNode.Nodes(2).Text = sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
         End If
 
+        'Make sure file is within memory
         If FAddr + FLen > &HFFFF Then
             FLen = &H10000 - FAddr
-            FileNode.Nodes(2).Text = sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
+            'FileNode.Nodes(2).Text = sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
         End If
 
         FAS = ConvertNumberToHexString(FAddr Mod 256, Int(FAddr / 256))
         FOS = ConvertNumberToHexString(FOffs Mod 256, Int(FOffs / 256))
         FLS = ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
 
-        CalcFileSize()
+        FileNode.Text = CalcFileSize(FileNode.Text, FAddr, FLen)
 
-        'SelNode.Nodes(0).ForeColor = IIf(DefaultParams = True, Color.RosyBrown, Color.SaddleBrown)
-        'SelNode.Nodes(1).ForeColor = IIf(DefaultParams = True, Color.RosyBrown, Color.SaddleBrown)
-        'SelNode.Nodes(2).ForeColor = IIf(DefaultParams = True, Color.RosyBrown, Color.SaddleBrown)
+        'If FileUnderIO = True Then
+        'If FileNode.Nodes.Count = 4 Then
+        'FileNode.Nodes.Add("FIO", "Under I/O: yes")
+        'Else
+        'FileNode.Nodes(4).Text = "Under I/O: yes"
+        'End If
+        'Else
+        'If FileNode.Nodes.Count = 4 Then
+        'FileNode.Nodes.Add("FIO", "Under I/O: no")
+        'Else
+        'FileNode.Nodes(4).Text = "Under I/O: no"
+        'End If
+        'End If
 
-        'SelNode.Text = NewFile
-        'SelNode.ToolTipText = NewFile
+        'FileNode.Nodes(0).Text = sFileAddr + FAS
+        FileNode.Nodes(1).Text = sFileOffs + FOS
+        FileNode.Nodes(2).Text = sFileLen + FLS
 
         CalcPartSize(FileNode.Parent)
 
-        If Loading = False Then tv.EndUpdate()
-
-        Exit Sub
+        GoTo Done
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+Done:
+        If Loading = False Then tv.EndUpdate()
 
     End Sub
 
@@ -786,6 +872,9 @@ Err:
         AddNode(N, sDemoName + DC.ToString, sDemoName + "demo", N.Tag, Color.DarkGreen, Fnt, tDemoName)
         AddNode(N, sDemoStart + DC.ToString, sDemoStart + "$", N.Tag, Color.DarkGreen, Fnt, tDemoStart)
         AddNode(N, sDirArt + DC.ToString, sDirArt, N.Tag, Color.DarkGreen, Fnt, tDirArt)
+        If DC = 1 Then
+            AddNode(N, sZP + DC.ToString, sZP + "$02", N.Tag, Color.DarkGreen, Fnt, tZP)
+        End If
 
         AddNewPartNode(N)       '[Add new part...]
 
@@ -952,11 +1041,20 @@ Err:
             BlockCnt = 1    'Fake block for compression
         End If
 
-        CalcFileSize()
+        N.Text = NewFile
+
+        GetDefaultFileParameters(N)
+
+        FAddr = DFAN
+        FOffs = DFON
+        FLen = DFLN
+        DFA = True
+        DFO = True
+        DFL = True
+
+        N.Text = CalcFileSize(N.Text, DFAN, DFLN)
 
         FileSizeA(CurrentFile - 1) = FileSize
-
-        N.Text = NewFile
 
         FileNameA(CurrentFile - 1) = NewFile
 
@@ -1007,14 +1105,24 @@ Err:
             BlockCnt = 1        'Fake block for compression
         End If
 
-        CalcFileSize()          'Also sets/clears IOBit
-
         With N
             .Text = NewFile
             .Name = .Parent.Name + ":F" + FC.ToString
             .Tag = .Parent.Tag + FC
             .ForeColor = Color.Black
         End With
+
+        GetDefaultFileParameters(N)
+
+        FAddr = DFAN
+        FOffs = DFON
+        FLen = DFLN
+
+        DFA = True
+        DFO = True
+        DFL = True
+
+        N.Text = CalcFileSize(N.Text, DFAN, DFLN)          'Also sets/clears IOBit
 
         UpdateFileParameters(N)
 
@@ -1345,14 +1453,22 @@ Err:
 
         Dim PNT(PartNode.Parent.Nodes.Count - 2) As String
 
-        For I As Integer = 6 To PartNode.Parent.Nodes.Count - 2
+        Dim NI As Integer
+        For I As Integer = 0 To PartNode.Parent.Nodes.Count - 1
+            If InStr(PartNode.Parent.Nodes(I).Text, "[Part") <> 0 Then
+                NI = I
+                Exit For
+            End If
+        Next
+
+        For I As Integer = NI To PartNode.Parent.Nodes.Count - 2
             PNT(I) = PartNode.Parent.Nodes(I).Text
         Next
 
         Dim P() As Byte
 
         If PartNode.Nodes.Count = 1 Then
-            CurrentPart = PartNode.Index - 5
+            CurrentPart = PartNode.Index - (NI - 1)
             'CurrentPart = Int((PartNode.Tag And &HFFF000) / &H1000)
             PartNode.Text = "[Part " + CurrentPart.ToString + "]"
             PartNode.Tag = PartNode.Parent.Tag + CurrentPart * &H1000
@@ -1405,8 +1521,8 @@ Err:
                             FL = ConvertNumberToHexString(FLN Mod 256, Int(FLN / 256))
                         End If
 
-                        UncomPartSize += Int(FLN / 256)
-                        If FLN Mod 256 <> 0 Then
+                        UncomPartSize += Int(FLN / 254)
+                        If FLN Mod 254 <> 0 Then
                             UncomPartSize += 1
                         End If
 
@@ -1477,11 +1593,12 @@ Err:
         Next
 
         If Loading = False Then tv.BeginUpdate()
-        For I As Integer = 6 To PartNode.Parent.Nodes.Count - 2
+        For I As Integer = NI To PartNode.Parent.Nodes.Count - 2
             If PartNode.Parent.Nodes(I).Text <> PNT(I) Then
                 PartNode.Parent.Nodes(I).Text = PNT(I)
             End If
         Next
+
         If Loading = False Then tv.EndUpdate()
 
 Done:
@@ -1499,31 +1616,69 @@ NoDisk:
 
     End Sub
 
-    Private Sub CalcFileSize()
+    Private Function CalcFileSize(FN As String, FA As Integer, FL As Integer) As String
         On Error GoTo Err
 
-        FileSize = CalcOrigBlockCnt()   'This also opens the prg to Prg()
+        CalcFileSize = FN
 
-        NewFile = Replace(NewFile, "*", "")
+        Dim DefaultFUIO As Boolean = InStr(FN, "*") <> 0
 
-        FileUnderIO = False
+        FAddr = FA
+        FLen = FL
+
+        FileSize = CalcOrigBlockCnt()   'This also opens the prg to Prg() and calculates FAddr and FLen
+
+        FN = Replace(FN, "*", "")
+
         If UnderIO() = True Then
-            If MsgBox("This file ($" + LCase(Hex(FAddr)) + "-$" + LCase(Hex(FAddr + FLen - 1)) + ") overlaps the I/O Memory ($d000-$dfff)." + vbNewLine + vbNewLine +
-                      "Do you want to load this file under I/O?", vbYesNo, "File overlapping I/O") = vbYes Then
-                NewFile += "*"
+            If DefaultFUIO = False Then
+                If MsgBox(FN + vbNewLine + vbNewLine + "This file ($" + LCase(Hex(FAddr)) + "-$" + LCase(Hex(FAddr + FLen - 1)) + ") overlaps the I/O memory ($d000-$dfff)." + vbNewLine + vbNewLine +
+                          "Do you want to load this file in the RAM under the I/O area?", vbQuestion + vbYesNo, "File overlapping I/O memory") = vbYes Then
+                    FN += "*"
+                    FileUnderIO = True
+                Else
+                    FileUnderIO = False
+                End If
+            Else
+                FN += "*"
                 FileUnderIO = True
             End If
+        Else
+            FileUnderIO = False
         End If
 
-        Exit Sub
+        CalcFileSize = FN
+
+        Exit Function
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Function
+
+    Private Sub SwapIOStatus()
+
+        With SelNode
+            If Strings.Right(.Text, 3) = "yes" Then
+                .Text = sFileUIO + " no"
+                .ForeColor = Color.MediumPurple
+                .Parent.Text = Strings.Replace(.Parent.Text, "*", "")
+                CalcPartSize(.Parent.Parent)
+            Else
+                FAddr = Convert.ToInt32(Strings.Right(.Parent.Nodes(0).Text, 4), 16)
+                FLen = Convert.ToInt32(Strings.Right(.Parent.Nodes(2).Text, 4), 16)
+                If UnderIO() Then
+                    .Text = sFileUIO + "yes"
+                    .ForeColor = Color.Purple
+                    .Parent.Text = Strings.Replace(.Parent.Text, "*", "") + "*"
+                    CalcPartSize(.Parent.Parent)
+                End If
+            End If
+        End With
 
     End Sub
 
     Private Function CalcOrigBlockCnt() As Integer
         On Error GoTo Err
-
 
         Dim Ext As String
 
@@ -1544,29 +1699,37 @@ Err:
             FileUnderIO = False
         End If
 
-        DefaultParams = True
-
+        'DefaultParams = True
+        DFA = True
+        DFO = True
+        DFL = True
         Select Case Ext
             Case "sid"
                 If FAddr = -1 Then
                     FAddr = Prg(Prg(7)) + (Prg(Prg(7) + 1) * 256)
                 Else
                     If FAddr <> Prg(Prg(7)) + (Prg(Prg(7) + 1) * 256) Then
-                        DefaultParams = False
+                        'DefaultParams = False
+                        DFA = False
                     End If
                 End If
                 If FOffs = -1 Then
                     FOffs = Prg(7) + 2
                 Else
                     If FOffs <> Prg(7) + 2 Then
-                        DefaultParams = False
+                        'DefaultParams = False
+                        DFO = False
+                        DFA = False
                     End If
                 End If
                 If FLen = 0 Then
                     FLen = Prg.Length - FOffs
                 Else
                     If FLen <> Prg.Length - FOffs Then
-                        DefaultParams = False
+                        'DefaultParams = False
+                        DFL = False
+                        DFO = False
+                        DFA = False
                     End If
                 End If
             Case Else   'including prg: load address derived from first 2 bytes, offset=2, length=prg length-2
@@ -1574,28 +1737,33 @@ Err:
                     FAddr = Prg(0) + (Prg(1) * 256)
                 Else
                     If FAddr <> Prg(0) + (Prg(1) * 256) Then
-                        DefaultParams = False
+                        'DefaultParams = False
+                        DFA = False
                     End If
                 End If
                 If FOffs = -1 Then
                     FOffs = 2
                 Else
                     If FOffs <> 2 Then
-                        DefaultParams = False
+                        'DefaultParams = False
+                        DFO = False
+                        DFA = False
                     End If
                 End If
                 If FLen = 0 Then
                     FLen = Prg.Length - FOffs
                 Else
                     If FLen <> Prg.Length - FOffs Then
-                        DefaultParams = False
+                        'DefaultParams = False
+                        DFL = False
+                        DFO = False
+                        DFA = False
                     End If
                 End If
-
         End Select
 
-        CalcOrigBlockCnt = Int(FLen / 256)
-        If FLen Mod 256 <> 0 Then CalcOrigBlockCnt += 1
+        CalcOrigBlockCnt = Int(FLen / 254)
+        If FLen Mod 254 <> 0 Then CalcOrigBlockCnt += 1
 
         Exit Function
 Err:
@@ -1774,25 +1942,42 @@ Err:
     Private Function UnderIO() As Boolean
         On Error GoTo Err
 
-        Dim PrgStart, PrgEnd As Integer
-
-        PrgStart = If(FAddr = 0, Prg(0) + Prg(1) * 256, FAddr)
-
-        If PrgLen = 0 Then
-            PrgEnd = PrgStart + Prg.Length - 3  'Subtract 2 for AddLo and AddHi and 1 more to obtain the address of the last byte of the file
-        Else
-            PrgEnd = PrgStart + FLen - 1        'Subtract 1 to obtain the address of the last byte of the file
-        End If
-
-        If (PrgStart >= &HD000) And (PrgStart < &HE000) Then
+        If (FAddr >= &HD000) And (FAddr < &HE000) Then
+            'File beings under IO
             UnderIO = True
-        ElseIf (PrgEnd >= &HD000) And (PrgEnd < &HE000) Then
+        ElseIf (FAddr + FLen - 1 >= &HD000) And (FAddr + FLen - 1 < &HE000) Then
+            'File ends under IO
             UnderIO = True
-        ElseIf (PrgStart < &HD000) And (PrgEnd >= &HE000) Then
+        ElseIf (FAddr < &HD000) And (FAddr + FLen - 1 >= &HE000) Then
+            'File begins before and ends after IO
             UnderIO = True
         Else
+            'Otherwise
             UnderIO = False
         End If
+
+        ''MsgBox(FAddr.ToString + vbNewLine + FLen.ToString)
+
+        'Dim PrgStart, PrgEnd As Integer
+
+        'PrgStart = If(FAddr = -1, Prg(0) + Prg(1) * 256, FAddr)
+
+        ''If PrgLen = 0 Then
+        'If FLen = 0 Then
+        'PrgEnd = PrgStart + Prg.Length - 3  'Subtract 2 for AddLo and AddHi and 1 more to obtain the address of the last byte of the file
+        'Else
+        'PrgEnd = PrgStart + FLen - 1        'Subtract 1 to obtain the address of the last byte of the file
+        'End If
+
+        'If (PrgStart >= &HD000) And (PrgStart < &HE000) Then
+        'UnderIO = True
+        'ElseIf (PrgEnd >= &HD000) And (PrgEnd < &HE000) Then
+        'UnderIO = True
+        'ElseIf (PrgStart < &HD000) And (PrgEnd >= &HE000) Then
+        'UnderIO = True
+        'Else
+        'UnderIO = False
+        'End If
 
         Exit Function
 Err:
@@ -1800,63 +1985,76 @@ Err:
 
     End Function
 
-    Private Sub UpdateFileParameters(SelNode As TreeNode)
+    Private Sub UpdateFileParameters(FileNode As TreeNode)
         On Error GoTo Err
 
-        If SelNode Is Nothing Then Exit Sub
+        If FileNode Is Nothing Then Exit Sub
 
         If Loading = False Then tv.BeginUpdate()
 
-        If SelNode.Nodes(SelNode.Name + ":FA") Is Nothing Then
-            SelNode.Nodes.Add(SelNode.Name + ":FA", sFileAddr + ConvertNumberToHexString(FAddr Mod 256, Int(FAddr / 256)))
-            With SelNode.Nodes(SelNode.Name + ":FA")
-                .Tag = SelNode.Tag
+        If FileNode.Nodes(FileNode.Name + ":FA") Is Nothing Then
+            FileNode.Nodes.Add(FileNode.Name + ":FA", sFileAddr + ConvertNumberToHexString(FAddr Mod 256, Int(FAddr / 256)))
+            With FileNode.Nodes(FileNode.Name + ":FA")
+                .Tag = FileNode.Tag
                 .ToolTipText = tFileAddr
-                .ForeColor = IIf(DefaultParams = True, Color.RosyBrown, Color.SaddleBrown)
+                .ForeColor = IIf(DFA = True, DefaultCol, ManualCol)
                 .NodeFont = New Font("Consolas", 10)
             End With
         Else
-            SelNode.Nodes(SelNode.Name + ":FA").Text = sFileAddr + ConvertNumberToHexString(FAddr Mod 256, Int(FAddr / 256))
+            FileNode.Nodes(FileNode.Name + ":FA").Text = sFileAddr + ConvertNumberToHexString(FAddr Mod 256, Int(FAddr / 256))
         End If
 
-        If SelNode.Nodes(SelNode.Name + ":FO") Is Nothing Then
-            SelNode.Nodes.Add(SelNode.Name + ":FO", sFileOffs + ConvertNumberToHexString(FOffs Mod 256, Int(FOffs / 256)))
-            With SelNode.Nodes(SelNode.Name + ":FO")
-                .Tag = SelNode.Tag
+        If FileNode.Nodes(FileNode.Name + ":FO") Is Nothing Then
+            FileNode.Nodes.Add(FileNode.Name + ":FO", sFileOffs + ConvertNumberToHexString(FOffs Mod 256, Int(FOffs / 256)))
+            With FileNode.Nodes(FileNode.Name + ":FO")
+                .Tag = FileNode.Tag
                 .ToolTipText = tFileOffs
-                .ForeColor = IIf(DefaultParams = True, Color.RosyBrown, Color.SaddleBrown)
+                .ForeColor = IIf(DFO = True, DefaultCol, ManualCol)
                 .NodeFont = New Font("Consolas", 10)
             End With
         Else
-            SelNode.Nodes(SelNode.Name + ":FO").Text = sFileOffs + ConvertNumberToHexString(FOffs Mod 256, Int(FOffs / 256))
+            FileNode.Nodes(FileNode.Name + ":FO").Text = sFileOffs + ConvertNumberToHexString(FOffs Mod 256, Int(FOffs / 256))
         End If
 
-        If SelNode.Nodes(SelNode.Name + ":FL") Is Nothing Then
-            SelNode.Nodes.Add(SelNode.Name + ":FL", sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256)))
-            With SelNode.Nodes(SelNode.Name + ":FL")
-                .Tag = SelNode.Tag
+        If FileNode.Nodes(FileNode.Name + ":FL") Is Nothing Then
+            FileNode.Nodes.Add(FileNode.Name + ":FL", sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256)))
+            With FileNode.Nodes(FileNode.Name + ":FL")
+                .Tag = FileNode.Tag
                 .ToolTipText = tFileLen
-                .ForeColor = IIf(DefaultParams = True, Color.RosyBrown, Color.SaddleBrown)
+                .ForeColor = IIf(DFL = True, DefaultCol, ManualCol)
                 .NodeFont = New Font("Consolas", 10)
             End With
         Else
-            SelNode.Nodes(SelNode.Name + ":FL").Text = sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
+            FileNode.Nodes(FileNode.Name + ":FL").Text = sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
         End If
 
-        If SelNode.Nodes(SelNode.Name + ":FS") Is Nothing Then
-            SelNode.Nodes.Add(SelNode.Name + ":FS", sFileSize + FileSize.ToString + " block" + IIf(FileSize <> 1, "s", ""))
-            With SelNode.Nodes(SelNode.Name + ":FS")
-                .ToolTipText = tFileSize
-                .Tag = SelNode.Tag
-                .ForeColor = Color.DarkGray
+        If FileNode.Nodes(FileNode.Name + ":FUIO") Is Nothing Then
+            FileNode.Nodes.Add(FileNode.Name + ":FUIO", sFileUIO + IIf(FileUnderIO = True, "yes", " no"))
+            With FileNode.Nodes(FileNode.Name + ":FUIO")
+                '.ToolTipText = tFileSize
+                .Tag = FileNode.Tag
+                .ForeColor = IIf(FileUnderIO = True, Color.Purple, Color.MediumPurple)
+                .NodeFont = New Font("Consolas", 10)
             End With
         Else
-            SelNode.Nodes(SelNode.Name + ":FS").Text = sFileSize + FileSize.ToString + " block" + IIf(FileSize <> 1, "s", "")
+            FileNode.Nodes(FileNode.Name + ":FUIO").Text = sFileUIO + IIf(FileUnderIO = True, "yes", " no")
+        End If
+
+        If FileNode.Nodes(FileNode.Name + ":FS") Is Nothing Then
+            FileNode.Nodes.Add(FileNode.Name + ":FS", sFileSize + FileSize.ToString + " block" + IIf(FileSize <> 1, "s", ""))
+            With FileNode.Nodes(FileNode.Name + ":FS")
+                .ToolTipText = tFileSize
+                .Tag = FileNode.Tag
+                .ForeColor = Color.DarkGray
+                .NodeFont = New Font("Consolas", 10)
+            End With
+        Else
+            FileNode.Nodes(FileNode.Name + ":FS").Text = sFileSize + FileSize.ToString + " block" + IIf(FileSize <> 1, "s", "")
         End If
 
         If Loading = False Then tv.EndUpdate()
 
-        SelNode.Expand()
+        FileNode.Expand()
 
         Exit Sub
 Err:
@@ -1908,6 +2106,7 @@ Err:
 
 NewDisk:
         tv.SelectedNode = tv.Nodes(sAddDisk)
+
         'Reset buffer and other disk variables here
         ResetDiskVariables()
 
@@ -1929,6 +2128,9 @@ FindNext:
 
         Select Case ScriptEntryType
             Case "Path:"
+                If InStr(ScriptEntryArray(0), ":") = 0 Then
+                    ScriptEntryArray(0) = ScriptPath + ScriptEntryArray(0)
+                End If
                 Dim Fnt As New Font("Consolas", 10)
                 UpdateNode(DiskNode.Nodes(sDiskPath + DC.ToString), sDiskPath + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt, tDiskPath)
             Case "Header:"
@@ -1942,7 +2144,7 @@ FindNext:
                 UpdateNode(DiskNode.Nodes(sDemoName + DC.ToString), sDemoName + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt, tDemoName)
             Case "Start:"
                 Dim Fnt As New Font("Consolas", 10)
-                UpdateNode(DiskNode.Nodes(sDemoStart + DC.ToString), sDemoStart + "$" + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt, tDemoStart)
+                UpdateNode(DiskNode.Nodes(sDemoStart + DC.ToString), sDemoStart + "$" + LCase(ScriptEntryArray(0)), DiskNode.Tag, Color.DarkGreen, Fnt, tDemoStart)
             Case "DirArt:"
                 Dim Fnt As New Font("Consolas", 10)
                 If ScriptEntryArray(0) <> "" Then
@@ -1950,9 +2152,12 @@ FindNext:
                         ScriptEntryArray(0) = ScriptPath + ScriptEntryArray(0)
                     End If
                 End If
-
                 UpdateNode(DiskNode.Nodes(sDirArt + DC.ToString), sDirArt + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt, tDirArt)
             Case "ZP:"
+                If CurrentDisk = 1 Then 'ZP can only be set from the first disk
+                    Dim Fnt As New Font("Consolas", 10)
+                    UpdateNode(DiskNode.Nodes(sZP + DC.ToString), sZP + "$" + LCase(ScriptEntryArray(0)), DiskNode.Tag, Color.DarkGreen, Fnt, tDemoStart)
+                End If
             Case "File:"
                 AddFileFromScript(DiskNode)
             Case "New Disk"
@@ -2034,7 +2239,7 @@ Done:
             tv.SelectedNode = DiskNode.Nodes(DiskNode.Name + ":P" + PC.ToString)
         End If
 
-        AddFileToPart()
+        AddFileToPart()     'This will check and correct file parameters to "0000" format
 
         Dim N As TreeNode = tv.SelectedNode.Nodes(sAddFile + PC.ToString)
 
@@ -2067,7 +2272,10 @@ Done:
             FileUnderIO = False
         End If
 
-        DefaultParams = True
+        'DefaultParams = True
+        'DFA = True
+        'DFO = True
+        'DFL = True
 
         'Calculate default file parameters
         'If Ext = "sid" Then
@@ -2088,7 +2296,10 @@ Done:
 
         Select Case ScriptEntryArray.Count
             Case 1      'No file parameters in script, use default parameters
-                DefaultParams = True
+                DFA = True
+                DFO = True
+                DFL = True
+
                 If Ext = "sid" Then                                 'SID file
                     FAddr = Prg(Prg(7)) + (Prg(Prg(7) + 1) * 256)
                     FOffs = Prg(7) + 2
@@ -2104,28 +2315,117 @@ Done:
                     FLen = Prg.Length - FOffs
                 End If
             Case 2  'One file parameter = load address
-                DefaultParams = False
+                DFA = False
+                DFO = True
+                DFL = True
                 FAddr = Convert.ToUInt32(ScriptEntryArray(1), 16)   'New File's load address from script
-                FOffs = 0
+                If Ext = "sid" Then
+                    If FAddr = Prg(Prg(7)) + (Prg(Prg(7) + 1) * 256) Then DFA = True
+                    FOffs = Prg(7) + 2
+                Else
+                    If FAddr = Prg(0) + (Prg(1) * 256) Then
+                        DFA = True
+                        FOffs = 2
+                    Else
+                        FOffs = 0
+                    End If
+                End If
                 FLen = Prg.Length - FOffs
             Case 3  'Two file parameters = load address + offset
-                DefaultParams = False
+                DFA = False
+                DFO = False
+                DFL = True
                 FAddr = Convert.ToUInt32(ScriptEntryArray(1), 16)   'New File's load address from script
                 FOffs = Convert.ToUInt32(ScriptEntryArray(2), 16)   'New File's offset from script
+
                 If FOffs > Prg.Length - 1 Then                      'Make sure offset is valid
                     FOffs = Prg.Length - 1
+                End If
+
+                If Ext = "sid" Then
+                    If FOffs = Prg(7) + 2 Then
+                        DFO = True
+                        If FAddr = Prg(Prg(7)) + (Prg(Prg(7) + 1) * 256) Then
+                            DFA = True
+                        End If
+                    End If
+                Else
+                    If FAddr = Prg(0) + (Prg(1) * 256) Then
+                        If FOffs = 2 Then
+                            DFA = True
+                            DFO = True
+                        End If
+                    Else
+                        If FOffs = 0 Then
+                            DFO = True
+                        End If
+                    End If
                 End If
                 FLen = Prg.Length - FOffs
             Case 4  'All three parameters in script
-                DefaultParams = False
-                FAddr = Convert.ToUInt32(ScriptEntryArray(1), 16)   'New File's load address from script
-                FOffs = Convert.ToUInt32(ScriptEntryArray(2), 16)   'New File's offset from script
-                If FOffs > Prg.Length - 1 Then                      'Make sure offset is valid
-                    FOffs = Prg.Length - 1
-                End If
-                FLen = Convert.ToUInt32(ScriptEntryArray(3), 16)    'New File's length from script
-                If FLen + FOffs > Prg.Length Then                   'Make sure specified length is valid
-                    FLen = Prg.Length - FOffs
+                'DefaultParams = False
+                DFA = False
+                DFO = False
+                DFL = False
+                FAddr = Convert.ToInt32(ScriptEntryArray(1), 16)   'New File's load address from script
+                FOffs = Convert.ToInt32(ScriptEntryArray(2), 16)   'New File's offset from script
+                'If FOffs > Prg.Length - 1 Then                      'Make sure offset is valid
+                'FOffs = Prg.Length - 1
+                'End If
+                FLen = Convert.ToInt32(ScriptEntryArray(3), 16)    'New File's length from script
+                'If FLen + FOffs > Prg.Length Then                   'Make sure specified length is valid
+                'FLen = Prg.Length - FOffs
+                'End If
+                If Ext = "sid" Then
+                    If FAddr = Prg(Prg(7)) + (Prg(Prg(7) + 1) * 256) Then
+                        If FOffs = Prg(7) + 2 Then
+                            If FLen = Prg.Length - FOffs Then
+                                DFA = True
+                                DFO = True
+                                DFL = True
+                            End If
+                        Else
+                            If FLen = Prg.Length - FOffs Then
+                                DFL = True
+                            End If
+                        End If
+                    Else
+                        If FOffs = Prg(7) + 2 Then
+                            If FLen = Prg.Length Then
+                                DFO = True
+                                DFL = True
+                            End If
+                        Else
+                            If FLen = Prg.Length Then
+                                DFL = True
+                            End If
+                        End If
+                    End If
+                Else
+                    If FAddr = Prg(0) + (Prg(1) * 256) Then
+                        If FOffs = 2 Then
+                            If FLen = Prg.Length - FOffs Then
+                                DFA = True
+                                DFO = True
+                                DFL = True
+                            End If
+                        Else
+                            If FLen = Prg.Length - FOffs Then
+                                DFL = True
+                            End If
+                        End If
+                    Else
+                        If FOffs = 0 Then
+                            If FLen = Prg.Length Then
+                                DFO = True
+                                DFL = True
+                            End If
+                        Else
+                            If FLen = Prg.Length Then
+                                DFL = True
+                            End If
+                        End If
+                    End If
                 End If
         End Select
 
@@ -2250,6 +2550,7 @@ Err:
 
         Dim S As String = ScriptHeader + vbNewLine + vbNewLine
         Dim SA, DI, DH As String
+        Dim DP As Integer = 7   'Default first part node index (7 for the first disk, 6 for the rest)
 
         For D As Integer = 0 To tv.Nodes.Count - 2
             Dim N As TreeNode = tv.Nodes(D)
@@ -2283,8 +2584,12 @@ Err:
             "Name:" + vbTab + Strings.Right(N.Nodes(3).Text, N.Nodes(3).Text.Length - Len(sDemoName)) + vbNewLine +
             "Start:" + vbTab + SA + vbNewLine +
             "DirArt:" + vbTab + Strings.Right(N.Nodes(5).Text, N.Nodes(5).Text.Length - Len(sDirArt))
+            If D = 0 Then
+                'ZP only for first disk
+                S += vbNewLine + "ZP:" + vbTab + Strings.Right(N.Nodes(6).Text, N.Nodes(6).Text.Length - Len(sZP + "$"))
+            End If
 
-            For P As Integer = 6 To N.Nodes.Count - 2
+            For P As Integer = DP To N.Nodes.Count - 2
                 If N.Nodes(P).Nodes.Count > 1 Then
                     S += vbNewLine
                     For F As Integer = 0 To N.Nodes(P).Nodes.Count - 2
@@ -2292,31 +2597,90 @@ Err:
 
                         S += vbNewLine + "File:" + vbTab + FN.Text
 
-                        If IO.File.Exists(FN.Text) Then
-                            Dim TPrg() As Byte = IO.File.ReadAllBytes(FN.Text)
-                            Dim TFA As String = IIf(TPrg.Length > 2, ConvertNumberToHexString(TPrg(0), TPrg(1)), "")
-                            Dim TFO As String = IIf(TPrg.Length > 2, ConvertNumberToHexString(2, 0), "")
-                            Dim TFL As String = IIf(TPrg.Length > 2, ConvertNumberToHexString((TPrg.Length - 2) Mod 256, Int((TPrg.Length - 2) / 256)), "")
-
-                            If (TFA <> Strings.Right(FN.Nodes(0).Text, 4)) Or (TFO <> Strings.Right(FN.Nodes(1).Text, 4)) Or (TFL <> Strings.Right(FN.Nodes(2).Text, 4)) Then
-                                S += vbTab +
-                            Strings.Right(FN.Nodes(0).Text, 4) + vbTab +
-                            Strings.Right(FN.Nodes(1).Text, 4) + vbTab +
-                            Strings.Right(FN.Nodes(2).Text, 4)
-                            End If
-
-                        Else
-                            S += vbTab +
-                            Strings.Right(FN.Nodes(0).Text, 4) + vbTab +
-                            Strings.Right(FN.Nodes(1).Text, 4) + vbTab +
-                            Strings.Right(FN.Nodes(2).Text, 4)
+                        If FN.Nodes(0).ForeColor = ManualCol Then
+                            S += vbTab + Strings.Right(FN.Nodes(0).Text, 4)
                         End If
+
+                        If FN.Nodes(1).ForeColor = ManualCol Then
+                            S += vbTab + Strings.Right(FN.Nodes(1).Text, 4)
+                        End If
+
+                        If FN.Nodes(2).ForeColor = ManualCol Then
+                            S += vbTab + Strings.Right(FN.Nodes(2).Text, 4)
+                        End If
+
+                        'If IO.File.Exists(Replace(FN.Text, "*", "")) Then
+                        'Dim TPrg() As Byte = IO.File.ReadAllBytes(Replace(FN.Text, "*", ""))
+                        ''Dim TFA, TFO, TFL As String
+                        'Dim TFAN, TFON, TFLN As Integer
+                        'If LCase(Strings.Right(Replace(FN.Text, "*", ""), 4)) = ".sid" Then
+                        'TFAN = TPrg(TPrg(7)) + (256 * (TPrg(TPrg(7) + 1)))
+                        'TFON = TPrg(7) + 2
+                        'TFLN = TPrg.Length - TFON
+                        ''TFA = ConvertNumberToHexString(TPrg(TPrg(7)), (TPrg(TPrg(7) + 1)))
+                        ''TFO = ConvertNumberToHexString(TPrg(7) + 2)
+                        ''TFL = ConvertNumberToHexString((TPrg.Length - TPrg(7) - 2) Mod 256, Int((TPrg.Length - TPrg(7) - 2) / 256))
+                        'Else
+                        'TFAN = IIf(TPrg.Length > 2, TPrg(0) + (256 * TPrg(1)), 0)
+                        'TFON = IIf(TPrg.Length > 2, 2, 0)
+                        'TFLN = IIf(TPrg.Length > 2, TPrg.Length - TFON, 0)
+                        ''TFA = IIf(TPrg.Length > 2, ConvertNumberToHexString(TPrg(0), TPrg(1)), "")
+                        ''TFO = IIf(TPrg.Length > 2, ConvertNumberToHexString(2, 0), "")
+                        ''TFL = IIf(TPrg.Length > 2, ConvertNumberToHexString((TPrg.Length - 2) Mod 256, Int((TPrg.Length - 2) / 256)), "")
+                        'End If
+
+                        ''MsgBox(Hex(TFAN) + vbNewLine + Hex(TFON) + vbNewLine + Hex(TFLN))
+
+                        'If TFAN <> Convert.ToInt32(Strings.Right(FN.Nodes(0).Text, 4), 16) Then
+                        'S += vbTab + Strings.Right(FN.Nodes(0).Text, 4)
+                        'TFON = 0
+                        'TFLN = TPrg.Length
+
+                        'If TFON <> Convert.ToInt32(Strings.Right(FN.Nodes(1).Text, 4), 16) Then
+                        'S += vbTab + Strings.Right(FN.Nodes(1).Text, 4)
+                        'If TFLN <> Convert.ToInt32(Strings.Right(FN.Nodes(2).Text, 4), 16) Then
+                        'S += vbTab + Strings.Right(FN.Nodes(2).Text, 4)
+                        'End If
+                        'Else
+                        'If TFLN <> Convert.ToInt32(Strings.Right(FN.Nodes(2).Text, 4), 16) Then
+                        'S += vbTab + Strings.Right(FN.Nodes(1).Text, 4) + vbTab + Strings.Right(FN.Nodes(2).Text, 4)
+                        'End If
+                        'End If
+                        'Else
+                        'If TFON <> Convert.ToInt32(Strings.Right(FN.Nodes(1).Text, 4), 16) Then
+                        'S += vbTab + Strings.Right(FN.Nodes(0).Text, 4) + vbTab + Strings.Right(FN.Nodes(1).Text, 4)
+                        'If TFLN <> Convert.ToInt32(Strings.Right(FN.Nodes(2).Text, 4), 16) Then
+                        'S += vbTab + Strings.Right(FN.Nodes(2).Text, 4)
+                        'End If
+                        'Else
+                        'If TFLN <> Convert.ToInt32(Strings.Right(FN.Nodes(2).Text, 4), 16) Then
+                        'S += vbTab + Strings.Right(FN.Nodes(0).Text, 4) + vbTab + Strings.Right(FN.Nodes(1).Text, 4) + vbTab + Strings.Right(FN.Nodes(2).Text, 4)
+                        'End If
+                        'End If
+                        'End If
+
+                        ''If (TFA <> Strings.Right(FN.Nodes(0).Text, 4)) Or (TFO <> Strings.Right(FN.Nodes(1).Text, 4)) Or (TFL <> Strings.Right(FN.Nodes(2).Text, 4)) Then
+                        ''S += vbTab +Strings.Right(FN.Nodes(0).Text, 4)
+                        ''Strings.Right(FN.Nodes(0).Text, 4) + vbTab +
+                        ''Strings.Right(FN.Nodes(1).Text, 4) + vbTab +
+                        ''Strings.Right(FN.Nodes(2).Text, 4)
+                        ''End If
+
+                        'Else
+                        'S += vbTab +
+                        'Strings.Right(FN.Nodes(0).Text, 4) + vbTab +
+                        'Strings.Right(FN.Nodes(1).Text, 4) + vbTab +
+                        'Strings.Right(FN.Nodes(2).Text, 4)
+                        'End If
                     Next
                 End If
             Next
-            If D <tv.Nodes.Count - 2 Then
+            If D < tv.Nodes.Count - 2 Then
                 S += vbNewLine + vbNewLine + "New Disk" + vbNewLine + vbNewLine
             End If
+
+            DP = 6
+
         Next
 
         'If InStr(S, "File:") = 0 Then
@@ -2325,7 +2689,7 @@ Err:
 
         Script = S
 
-        'MsgBox(S)
+        MsgBox(S)
 
         Exit Sub
 Err:
@@ -2605,34 +2969,39 @@ Err:
             Select Case txtEdit.Tag
                 Case sDiskHeader
                     .ToolTipTitle = "Editing the Disk's Header"
-                    TTT = "Type in the disk's header. Press <Enter> or <Tab> to save changes, or <Escape> to cancel editing."
+                    TTT = "Type in the disk's header (max. 16 characters). Press <Enter> or <Tab> to save changes, or <Escape> to cancel editing."
                 Case sDiskID
                     .ToolTipTitle = "Editing the Disk's ID"
-                    TTT = "Type in the disk's ID. Press <Enter> or <Tab> to save changes, or <Escape> to cancel editing."
+                    TTT = "Type in the disk's ID (max. 5 characters). Press <Enter> or <Tab> to save changes, or <Escape> to cancel editing."
                 Case sDemoName
                     .ToolTipTitle = "Editing the Demo's Name"
-                    TTT = "Type in the demo's name which will be shown as the first PRG's name in the directory." +
+                    TTT = "Type in the demo's name  (max. 16 characters) which will be shown as the first PRG's name in the directory." +
                             vbNewLine + "Press <Enter> or <Tab> to save changes, or <Escape> to cancel editing."
                 Case sDemoStart + "$"
                     .ToolTipTitle = "Editing the Start Address of the Demo"
                     TTT = "Type in the demo's entry point." +
-                             vbNewLine + "If this is left empty, Sparkle will use the first file's load address as entry point." +
+                             vbNewLine + "If this field is left empty, Sparkle will use the first file's load address as entry point." +
                              vbNewLine + "Press <Enter> or <Tab> to save changes, or <Escape> to cancel editing."
                 Case sFileAddr
                     .ToolTipTitle = "Editing the file segment's Load Address"
                     TTT = "Type in the hex load address of this data segment." +
-                            vbNewLine + "If this is left empty, Sparkle will use the first two bytes of the file as load address." +
+                            vbNewLine + "If this field is left empty, Sparkle will use the first two bytes of the file as load address." +
                             vbNewLine + "Press <Enter> or <Tab> to save changes, or <Escape> to cancel editing."
                 Case sFileOffs
                     .ToolTipTitle = "Editing the file segment's Offset"
                     TTT = "Type in the hex offset of this data segment (first byte to be loaded)." +
-                            vbNewLine + "If this is left empty, Sparkle will use $0002 as offset." +
+                            vbNewLine + "If this field is left empty, Sparkle will use $0002 as offset." +
                             vbNewLine + "Press <Enter> or <Tab> to save changes, or <Escape> to cancel editing."
                 Case sFileLen
                     .ToolTipTitle = "Editing the file segment's Length"
                     TTT = "Type in the hex length of this data segment." +
-                            vbNewLine + "If this is left empty, Sparkle will use (file length-2) as length." +
+                            vbNewLine + "If this field is left empty, Sparkle will use (file length-2) as length." +
                             vbNewLine + "Press <Enter> or <Tab> to save changes, or <Escape> to cancel editing."
+                Case sZP + "$"
+                    .ToolTipTitle = "Editing the Zeropage Usage of the Loader"
+                    TTT = "Type in the first of the two adjacent zeropage addresses you want the loader to use." +
+                             vbNewLine + "If this field is left empty, Sparkle will use $02-$03 as default." +
+                             vbNewLine + "Press <Enter> or <Tab> to save changes, or <Escape> to cancel editing."
                 Case Else
                     Exit Select
             End Select
@@ -2683,6 +3052,9 @@ Err:
             ElseIf Strings.Right(e.Node.Name, 3) = ":FL" Then
                 .ToolTipTitle = "File Length"
                 TTT = tFileLen
+            ElseIf Strings.Right(e.Node.Name, 5) = ":FUIO" Then
+                .ToolTipTitle = "I/O Status"
+                TTT = tLoadUIO
             ElseIf Strings.InStr(e.Node.Name, ":F") > 0 Then
                 .ToolTipTitle = "Demo File"
                 TTT = tFile
@@ -2713,6 +3085,9 @@ Err:
                     Case sDirArt
                         .ToolTipTitle = "DirtArt"
                         TTT = tDirArt
+                    Case sZP
+                        .ToolTipTitle = "Zeropage Usage"
+                        TTT = tZP
                     Case Else
                 End Select
             End If
@@ -2731,11 +3106,30 @@ Err:
     End Sub
 
     Private Sub SCC_CallBackProc(ByRef m As Message) Handles SCC.CallBackProc
+        On Error GoTo Err
+
         'If txtEdit is visible while we are scrolling - set focus back to Tv and hide txtEdit
         Select Case m.Msg
             Case WM_VSCROLL, WM_HSCROLL, WM_MOUSEWHEEL
                 tv.Focus()
         End Select
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
     End Sub
 
+    Private Sub tv_NodeMouseClick(sender As Object, e As TreeNodeMouseClickEventArgs) Handles tv.NodeMouseClick
+        On Error GoTo Err
+
+        If e.Button = MouseButtons.Right Then
+            tv.SelectedNode = e.Node
+        End If
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
 End Class
