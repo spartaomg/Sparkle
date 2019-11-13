@@ -2126,26 +2126,26 @@ FindNext:
 
         SplitEntry()
 
-        Select Case ScriptEntryType
-            Case "Path:"
+        Select Case LCase(ScriptEntryType)
+            Case "path:"
                 If InStr(ScriptEntryArray(0), ":") = 0 Then
                     ScriptEntryArray(0) = ScriptPath + ScriptEntryArray(0)
                 End If
                 Dim Fnt As New Font("Consolas", 10)
                 UpdateNode(DiskNode.Nodes(sDiskPath + DC.ToString), sDiskPath + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt, tDiskPath)
-            Case "Header:"
+            Case "header:"
                 Dim Fnt As New Font("Consolas", 10)
                 UpdateNode(DiskNode.Nodes(sDiskHeader + DC.ToString), sDiskHeader + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt, tDiskHeader)
-            Case "ID:"
+            Case "id:"
                 Dim Fnt As New Font("Consolas", 10)
                 UpdateNode(DiskNode.Nodes(sDiskID + DC.ToString), sDiskID + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt, tDiskID)
-            Case "Name:"
+            Case "name:"
                 Dim Fnt As New Font("Consolas", 10)
                 UpdateNode(DiskNode.Nodes(sDemoName + DC.ToString), sDemoName + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt, tDemoName)
-            Case "Start:"
+            Case "start:"
                 Dim Fnt As New Font("Consolas", 10)
                 UpdateNode(DiskNode.Nodes(sDemoStart + DC.ToString), sDemoStart + "$" + LCase(ScriptEntryArray(0)), DiskNode.Tag, Color.DarkGreen, Fnt, tDemoStart)
-            Case "DirArt:"
+            Case "dirart:"
                 Dim Fnt As New Font("Consolas", 10)
                 If ScriptEntryArray(0) <> "" Then
                     If InStr(ScriptEntryArray(0), ":") = 0 Then
@@ -2153,14 +2153,14 @@ FindNext:
                     End If
                 End If
                 UpdateNode(DiskNode.Nodes(sDirArt + DC.ToString), sDirArt + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt, tDirArt)
-            Case "ZP:"
+            Case "zp:"
                 If CurrentDisk = 1 Then 'ZP can only be set from the first disk
                     Dim Fnt As New Font("Consolas", 10)
                     UpdateNode(DiskNode.Nodes(sZP + DC.ToString), sZP + "$" + LCase(ScriptEntryArray(0)), DiskNode.Tag, Color.DarkGreen, Fnt, tDemoStart)
                 End If
-            Case "File:"
+            Case "file:"
                 AddFileFromScript(DiskNode)
-            Case "New Disk"
+            Case "new disk"
 
                 'Update last part size and disk size before starting new disk node
                 'If DiskNode.Nodes.Count > 7 Then UpdatePartSize(DiskNode)   'First 6 nodes are disk info, last one is AddPart node
@@ -2689,7 +2689,7 @@ Err:
 
         Script = S
 
-        MsgBox(S)
+        'MsgBox(S)
 
         Exit Sub
 Err:

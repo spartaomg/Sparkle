@@ -827,30 +827,30 @@ FindNext:
         If SplitScriptEntry() = False Then GoTo NoDisk
         'MsgBox(ScriptEntry + vbNewLine + ScriptEntryType)
         'Set disk variables and add files
-        Select Case ScriptEntryType
-            Case "Path:"
+        Select Case LCase(ScriptEntryType)
+            Case "path:"
                 D64Name = ScriptEntryArray(0)
-            Case "Header:"
+            Case "header:"
                 DiskHeader = ScriptEntryArray(0)
-            Case "ID:"
+            Case "id:"
                 DiskID = ScriptEntryArray(0)
-            Case "Name:"
+            Case "name:"
                 DemoName = ScriptEntryArray(0)
-            Case "Start:"
+            Case "start:"
                 DemoStart = ScriptEntryArray(0)
-            Case "DirArt:"
+            Case "dirart:"
                 If InStr(ScriptEntryArray(0), ":") = 0 Then
                     ScriptEntryArray(0) = ScriptPath + ScriptEntryArray(0)
                 End If
                 If IO.File.Exists(ScriptEntryArray(0)) Then
                     DirArt = IO.File.ReadAllText(ScriptEntryArray(0))
                 End If
-            Case "ZP:"
+            Case "zp:"
                 If DiskCnt = 0 Then LoaderZP = ScriptEntryArray(0)  'ZP usage can only be set from first disk
-            Case "File:"
+            Case "file:"
                 'Add files to part array, if new part, it will first sort files in last part then add previous part to disk
                 If AddFile() = False Then GoTo NoDisk
-            Case "New Disk"
+            Case "new disk"
                 'If new disk, sort, compress and add last part, then update part count, add loader & drive code, save disk, then GoTo NewDisk
                 If FinishDisk(False, SaveIt) = False Then GoTo NoDisk
                 GoTo NewDisk
