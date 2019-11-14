@@ -120,6 +120,8 @@
 
     Private Loader() As Byte
 
+    Public CompressPartFromEditor As Boolean = False
+
     Public Sub SetLastSector()
         On Error GoTo Err
 
@@ -916,7 +918,7 @@ Err:
         FinishDisk = True
         If SortPart() = False Then GoTo NoDisk
         If CompressPart() = False Then GoTo NoDisk
-        FinishPart(0, True)
+        If FinishPart(0, True) = False Then GoTo NoDisk
         CloseBuff()
         'Now add compressed parts to disk
         If AddCompressedPartsToDisk() = False Then GoTo NoDisk
@@ -985,8 +987,10 @@ Err:
 
     End Function
 
-    Public Function CompressPart() As Boolean
+    Public Function CompressPart(Optional FromEditor = False) As Boolean
         On Error GoTo Err
+
+        CompressPartFromEditor = FromEditor
 
         CompressPart = True
 
@@ -1000,18 +1004,25 @@ Err:
         Else
             PrgAdd = Convert.ToInt32(FileAddrA(0), 16)
             PrgLen = Convert.ToInt32(FileLenA(0), 16)
-            FinishPart(CheckIO(PrgLen - 1), False)
+            If FinishPart(CheckIO(PrgLen - 1), False) = False Then GoTo NoComp
         End If
 
         NewPart = True
 
         For I As Integer = 0 To Prgs.Count - 1
             'The only two parameters that are needed are FA and FUIO... FileLenA(i) is not used
-            NewLZ(Prgs(I).ToArray, FileAddrA(I),, FileLenA(I), FileIOA(I))  'NewPart is TRUE FOR THE FIRST FILE
+            NewLZ(Prgs(I).ToArray, FileAddrA(I),, FileLenA(I), FileIOA(I))  'NewPart is TRUE FOR THE FIRST FILE ONLY
             If I < Prgs.Count - 1 Then FinishFile()
         Next
 
         LastBlockCnt = BlockCnt
+
+        If LastBlockCnt > 255 Then
+            'Parts cannot be larger than 255 blocks compressed
+            'There is some confusion here how PartCnt is used in the Editor and during Disk building...
+            MsgBox("Part " + IIf(CompressPartFromEditor = True, PartCnt + 1, PartCnt).ToString + " would need " + LastBlockCnt.ToString + " blocks on the disk." + vbNewLine + vbNewLine + "Parts cannot be larger than 255 blocks!", vbOKOnly + vbCritical, "Part exceeds 255-block limit!")
+            If CompressPartFromEditor = False Then GoTo NoComp
+        End If
 
         'IF THE WHOLE PART IS LESS THAN 1 BLOCK, THEN "IT DOES NOT COUNT", Part Counter WILL NOT BE INCREASED
         If PreBCnt = BufferCnt Then
@@ -1663,30 +1674,19 @@ Err:
     Private Sub AddDirEntry()
         On Error GoTo Err
 
-        Disk(Track(DirTrack) + (DirSector * 256) + DirPos + 0) = &H82   '"PRG" -  all dir entries will point to first file in dir
+        Disk(Track(DirTrack) + (DirSector * 256) + DirPos + 0) = &H82   '"PRG" -  all dir entries will point at first file in dir
         Disk(Track(DirTrack) + (DirSector * 256) + DirPos + 1) = 18     'Track 18 (track pointer of boot loader)
         Disk(Track(DirTrack) + (DirSector * 256) + DirPos + 2) = 5      'Sector 5 (sector pointer of boot loader)
 
-        If Right(DirEntry, 1) = Chr(10) Then
-            DirEntry = Left(DirEntry, DirEntry.Length - 1)
-        End If
+        'Remove vbNewLine characters and add 16 SHIFT+SPACE tail characters
+        DirEntry = Replace(Replace(DirEntry, Chr(13), ""), Chr(10), "") + StrDup(16, Chr(160))
 
-        If Right(DirEntry, 1) = Chr(13) Then
-            DirEntry = Left(DirEntry, DirEntry.Length - 1)
-        End If
-
-        If DirEntry.Length > 16 Then
-            DirEntry = Left(DirEntry, 16)
-        ElseIf DirEntry.Length < 16 Then
-            For I As Integer = DirEntry.Length + 1 To 16
-                DirEntry += Chr(160)
-            Next
-        End If
-
+        'Copy only the first 16 characters of the edited DirEntry to the Disk Directory
         For I As Integer = 1 To 16
             Disk(Track(DirTrack) + (DirSector * 256) + DirPos + 2 + I) = Asc(Mid(UCase(DirEntry), I, 1))
         Next
 
+        'Reset DirEntry
         DirEntry = ""
 
         Exit Sub

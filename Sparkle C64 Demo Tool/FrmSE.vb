@@ -313,7 +313,7 @@ Err:
             Case "[Add new file"   'Add new file to current part
                 txtEdit.Visible = False
                 AddNewFile()
-                ToggleFileNodes()
+                'ToggleFileNodesC
                 Exit Sub
             Case Else
                 Exit Select
@@ -503,17 +503,19 @@ Err:
     End Sub
 
     Private Sub TxtEdit_LostFocus(sender As Object, e As EventArgs) Handles txtEdit.LostFocus
-        'On Error GoTo Err
+        On Error GoTo Err
 
         SCC.ReleaseHandle()
 
         tv.Focus()
 
-        txtEdit.Visible = False
-
         CorrectTextLength()
 
-        SelNode.Text = txtEdit.Tag + LCase(txtEdit.Text)
+        SelNode.Text = txtEdit.Tag + txtEdit.Text
+
+        tv.Invalidate(SelNode.Bounds)   'This is to repaint selnode
+
+        txtEdit.Visible = False
 
         Select Case Strings.Right(SelNode.Name, 3)
             Case ":FA", ":FO", ":FL"
@@ -528,13 +530,15 @@ Err:
     End Sub
 
     Private Sub CorrectTextLength()
+        On Error GoTo Err
+
         'Corrects the length of txtEdit to 2 or 4 characters depending on MaxLength
         'Eliminates invalid values
 
         Select Case txtEdit.MaxLength
             Case 2  'ZP value
                 If txtEdit.Text.Length < 2 Then
-                    txtEdit.Text = LCase(Strings.Left("02", 2 - txtEdit.Text.Length) + txtEdit.Text)
+                    txtEdit.Text = Strings.Left("02", 2 - txtEdit.Text.Length) + txtEdit.Text
                 End If
 
                 'Invalid values: 00, 01, ff
@@ -545,9 +549,17 @@ Err:
                 End If
             Case 4  'Address values
                 If (txtEdit.Text.Length < 4) And (txtEdit.Text.Length > 0) Then
-                    txtEdit.Text = LCase(Strings.Left("0000", 4 - txtEdit.Text.Length) + txtEdit.Text)
+                    txtEdit.Text = Strings.Left("0000", 4 - txtEdit.Text.Length) + txtEdit.Text
                 End If
+            Case Else
+                Exit Sub
         End Select
+
+        txtEdit.Text = LCase(txtEdit.Text)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
 
@@ -692,7 +704,6 @@ Done:
         End Select
 
         GoTo Done
-
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 Done:
@@ -723,25 +734,6 @@ Done:
                     DFAN = 2064 'If file is less than3 bytes long, load address is arbitrary 2064
                 End If
                 'Default offset depends on load address
-                'If load address = default then default offset = 2
-                'Otherwise, default offset = 0
-                'If FA = "" Then
-                'DFON = 2
-                'ElseIf FA = ConvertNumberToHexString(DFAN Mod 256, Int(DFAN / 256)) Then
-                'DFON = 2
-                'Else
-                'DFON = 0
-                'End If
-                'If FileNode.Nodes.Count > 0 Then
-                'If Strings.Right(FileNode.Nodes(0).Text, 1) <> "$" Then
-                'DFON = If(Strings.Right(FileNode.Nodes(0).Text, 4) = ConvertNumberToHexString(DFAN Mod 256, Int(DFAN / 256)), 2, 0)
-                'Else
-                ''File address is being reset, so offset=2
-                'DFON = 2
-                'End If
-                'Else
-                'DFON = 2
-                'End If
                 If FA = "" Then
                     DFON = 2
                 ElseIf DFAN = Convert.ToInt32(FA, 16) Then
@@ -752,11 +744,11 @@ Done:
         End Select
 
         'Default length depends on offset
-        '        If FO = "" Then
-        DFLN = PLen - DFON
-        'Else
-        'DFLN = PLen - Convert.ToInt32(FO, 16)
-        'End If
+        If FO = "" Then
+            DFLN = PLen - DFON
+        Else
+            DFLN = PLen - Convert.ToInt32(FO, 16)
+        End If
 
         'Calculate default parameter strings
         DFAS = ConvertNumberToHexString(DFAN Mod 256, Int(DFAN / 256))
@@ -788,7 +780,7 @@ Done:
         'Make sure Offset is within program length
         If FOffs > PLen - 1 Then
             FOffs = PLen - 1
-            'FileNode.Nodes(1).Text = sFileOffs + ConvertNumberToHexString(FOffs Mod 256, Int(FOffs / 256))
+            FileNode.Nodes(1).Text = sFileOffs + ConvertNumberToHexString(FOffs Mod 256, Int(FOffs / 256))
         End If
 
         'Check file length
@@ -796,13 +788,13 @@ Done:
             FLen = PLen - FOffs
             DFLN = FLen
             DFLS = ConvertNumberToHexString(DFLN Mod 256, Int(DFLN / 256))
-            'FileNode.Nodes(2).Text = sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
+            FileNode.Nodes(2).Text = sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
         End If
 
         'Make sure file is within memory
         If FAddr + FLen > &HFFFF Then
             FLen = &H10000 - FAddr
-            'FileNode.Nodes(2).Text = sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
+            FileNode.Nodes(2).Text = sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
         End If
 
         FAS = ConvertNumberToHexString(FAddr Mod 256, Int(FAddr / 256))
@@ -810,6 +802,21 @@ Done:
         FLS = ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256))
 
         FileNode.Text = CalcFileSize(FileNode.Text, FAddr, FLen)
+        FileNode.Nodes(4).Text = sFileSize + FileSize.ToString + " block" + IIf(FileSize = 1, "", "s")
+
+        With FileNode
+            If UnderIO() = False Then
+                .Text = Replace(.Text, "*", "")
+                .Nodes(3).Text = sFileUIO + "n/a"
+                .Nodes(3).ForeColor = Color.MediumPurple
+            ElseIf InStr(.Text, "*") <> 0 Then
+                .Nodes(3).Text = sFileUIO + "yes"
+                .Nodes(3).ForeColor = Color.Purple
+            Else
+                .Nodes(3).Text = sFileUIO + " no"
+                .Nodes(3).ForeColor = Color.MediumPurple
+            End If
+        End With
 
         'If FileUnderIO = True Then
         'If FileNode.Nodes.Count = 4 Then
@@ -826,8 +833,8 @@ Done:
         'End If
 
         'FileNode.Nodes(0).Text = sFileAddr + FAS
-        FileNode.Nodes(1).Text = sFileOffs + FOS
-        FileNode.Nodes(2).Text = sFileLen + FLS
+        'FileNode.Nodes(1).Text = sFileOffs + FOS
+        'FileNode.Nodes(2).Text = sFileLen + FLS
 
         CalcPartSize(FileNode.Parent)
 
@@ -1054,11 +1061,10 @@ Err:
 
         N.Text = CalcFileSize(N.Text, DFAN, DFLN)
 
-        FileSizeA(CurrentFile - 1) = FileSize
-
-        FileNameA(CurrentFile - 1) = NewFile
-
         UpdateFileParameters(N)
+
+        FileNameA(CurrentFile - 1) = N.Text
+        FileSizeA(CurrentFile - 1) = FileSize
 
         CalcPartSize(N.Parent)
 
@@ -1559,7 +1565,13 @@ Err:
                 BitPos = PartBitPosA(CurrentPart - 1)
 
                 SortPart()
-                CompressPart()
+                'CompressPartFromEditor = True
+                CompressPart(True)
+                'CompressPartFromEditor = False
+
+                'If LastBlockCnt > 255 Then
+                'MsgBox("Part " + (PartCnt + 1).ToString + " would need " + LastBlockCnt.ToString + " blocks on the disk." + vbNewLine + vbNewLine + "Parts cannot be larger than 255 blocks!", vbOKOnly + vbCritical, "Part exceeds 255-block limit!")
+                'End If
 
                 If CurrentPart + 1 > PartByteCntA.Count Then
                     ReDim Preserve PartByteCntA(CurrentPart + 1), PartBitCntA(CurrentPart + 1), PartBitPosA(CurrentPart + 1)
@@ -1632,13 +1644,13 @@ NoDisk:
 
         If UnderIO() = True Then
             If DefaultFUIO = False Then
-                If MsgBox(FN + vbNewLine + vbNewLine + "This file ($" + LCase(Hex(FAddr)) + "-$" + LCase(Hex(FAddr + FLen - 1)) + ") overlaps the I/O memory ($d000-$dfff)." + vbNewLine + vbNewLine +
-                          "Do you want to load this file in the RAM under the I/O area?", vbQuestion + vbYesNo, "File overlapping I/O memory") = vbYes Then
-                    FN += "*"
-                    FileUnderIO = True
-                Else
-                    FileUnderIO = False
-                End If
+                'If MsgBox(FN + vbNewLine + vbNewLine + "This file ($" + LCase(Hex(FAddr)) + "-$" + LCase(Hex(FAddr + FLen - 1)) + ") overlaps the I/O memory ($d000-$dfff)." + vbNewLine + vbNewLine +
+                '                 "Do you want to load this file in the RAM under the I/O area?", vbQuestion + vbYesNo, "File overlapping I/O memory") = vbYes Then
+                'FN += "*"
+                'FileUnderIO = True
+                'Else
+                FileUnderIO = False
+                'End If
             Else
                 FN += "*"
                 FileUnderIO = True
@@ -1647,7 +1659,7 @@ NoDisk:
             FileUnderIO = False
         End If
 
-        CalcFileSize = FN
+            CalcFileSize = FN
 
         Exit Function
 Err:
@@ -1663,7 +1675,7 @@ Err:
                 .ForeColor = Color.MediumPurple
                 .Parent.Text = Strings.Replace(.Parent.Text, "*", "")
                 CalcPartSize(.Parent.Parent)
-            Else
+            ElseIf Strings.Right(.Text, 3) = " no" Then
                 FAddr = Convert.ToInt32(Strings.Right(.Parent.Nodes(0).Text, 4), 16)
                 FLen = Convert.ToInt32(Strings.Right(.Parent.Nodes(2).Text, 4), 16)
                 If UnderIO() Then
@@ -1672,6 +1684,7 @@ Err:
                     .Parent.Text = Strings.Replace(.Parent.Text, "*", "") + "*"
                     CalcPartSize(.Parent.Parent)
                 End If
+            Else
             End If
         End With
 
@@ -2029,7 +2042,7 @@ Err:
         End If
 
         If FileNode.Nodes(FileNode.Name + ":FUIO") Is Nothing Then
-            FileNode.Nodes.Add(FileNode.Name + ":FUIO", sFileUIO + IIf(FileUnderIO = True, "yes", " no"))
+            FileNode.Nodes.Add(FileNode.Name + ":FUIO", sFileUIO + IIf(FileUnderIO = True, "yes", IIf(UnderIO() = True, " no", "n/a")))
             With FileNode.Nodes(FileNode.Name + ":FUIO")
                 '.ToolTipText = tFileSize
                 .Tag = FileNode.Tag
@@ -2037,7 +2050,7 @@ Err:
                 .NodeFont = New Font("Consolas", 10)
             End With
         Else
-            FileNode.Nodes(FileNode.Name + ":FUIO").Text = sFileUIO + IIf(FileUnderIO = True, "yes", " no")
+            FileNode.Nodes(FileNode.Name + ":FUIO").Text = sFileUIO + IIf(FileUnderIO = True, "yes", IIf(UnderIO() = True, " no", "n/a"))
         End If
 
         If FileNode.Nodes(FileNode.Name + ":FS") Is Nothing Then
@@ -2497,7 +2510,13 @@ NoDisk:
         BitCnt = PartBitCntA(PC - 1)
         BitPos = PartBitPosA(PC - 1)
 
-        If CompressPart() = False Then Exit Sub
+        'CompressPartFromEditor = True
+        If CompressPart(True) = False Then Exit Sub
+        'CompressPartFromEditor = False
+
+        'If LastBlockCnt > 10 Then
+        'MsgBox("Part " + (PartCnt + 1).ToString + " would need " + LastBlockCnt.ToString + " blocks on the disk." + vbNewLine + vbNewLine + "Parts cannot be larger than 255 blocks!", vbOKOnly + vbCritical, "Part exceeds 255-block limit!")
+        'End If
 
         'Save current parts compressed size to array
         ReDim Preserve PartSizeA(PC)
@@ -2506,7 +2525,7 @@ NoDisk:
         For I As Integer = 0 To DiskNode.Nodes.Count - 1
             'Find the first part node under this disk node
             If Strings.Left(DiskNode.Nodes(I).Text, 5) = "[Part" Then
-                'If our current part node is the first one under this disk, then increase BufferCnt
+                'If our current part node is the first one on this disk, then increase BufferCnt
                 If DiskNode.Nodes(DiskNode.Name + ":P" + PC.ToString).Index = I Then
                     If Prgs.Count <> 0 Then BufferCnt += 1
                 End If
@@ -2735,8 +2754,9 @@ Err:
         On Error GoTo Err
 
         If txtEdit.Visible Then
-            SelNode.Text = txtEdit.Tag + txtEdit.Text
-            txtEdit.Visible = False
+            tv.Focus()
+            'SelNode.Text = txtEdit.Tag + txtEdit.Text
+            'txtEdit.Visible = False
         End If
 
         With My.Settings
@@ -2943,7 +2963,7 @@ Err:
 
     End Sub
 
-    Private Sub txtEdit_MouseHover(sender As Object, e As EventArgs) Handles txtEdit.MouseHover
+    Private Sub TxtEdit_MouseHover(sender As Object, e As EventArgs) Handles txtEdit.MouseHover
         On Error GoTo Err
 
         ShowTT()
@@ -3019,7 +3039,7 @@ Err:
 
     End Sub
 
-    Private Sub tv_NodeMouseHover(sender As Object, e As TreeNodeMouseHoverEventArgs) Handles tv.NodeMouseHover
+    Private Sub Tv_NodeMouseHover(sender As Object, e As TreeNodeMouseHoverEventArgs) Handles tv.NodeMouseHover
         On Error GoTo Err
 
         TT.Hide(tv)
@@ -3120,12 +3140,23 @@ Err:
 
     End Sub
 
-    Private Sub tv_NodeMouseClick(sender As Object, e As TreeNodeMouseClickEventArgs) Handles tv.NodeMouseClick
+    Private Sub Tv_NodeMouseClick(sender As Object, e As TreeNodeMouseClickEventArgs) Handles tv.NodeMouseClick
         On Error GoTo Err
 
         If e.Button = MouseButtons.Right Then
             tv.SelectedNode = e.Node
         End If
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub TxtEdit_MouseWheel(sender As Object, e As MouseEventArgs) Handles txtEdit.MouseWheel
+        On Error GoTo Err
+
+        tv.Focus()
 
         Exit Sub
 Err:

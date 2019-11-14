@@ -1435,8 +1435,10 @@ Err:
 
     End Function
 
-    Public Sub FinishPart(Optional NextFileIO As Integer = 1, Optional LastPartOnDisk As Boolean = False)
+    Public Function FinishPart(Optional NextFileIO As Integer = 1, Optional LastPartOnDisk As Boolean = False) As Boolean
         On Error GoTo Err
+
+        FinishPart = True
 
         'ADDS NEW PART TAG (Long Match Tag + End Tag) TO THE END OF THE PART, AND RESERVES LAST BYTE IN BUFFER FOR BLOCK COUNT
         Dim Bytes, Bits As Integer
@@ -1481,14 +1483,8 @@ NextPart:
 
             If ByteSt.Count > BlockPtr Then     'Only save block count if block is already added to ByteSt
                 ByteSt(BlockPtr) = LastBlockCnt
-                'PartSizeA(TotalParts - 1) = LastBlockCnt
                 LoaderParts += 1
-            Else
-                'PartSizeA(TotalParts - 1) = 0
-                'If TotalParts = 1 Then PartSizeA(TotalParts - 1) = 1
             End If
-
-            'DiskSizeA(DiskCnt) += PartSizeA(TotalParts - 1)
 
             LitCnt = -1                                                 'Reset LitCnt here
         Else
@@ -1502,16 +1498,27 @@ NextPart:
             AddLitBits()                'WE NEED THIS HERE, AS THIS IS THE BEGINNING OF THE BUFFER, AND 1ST BIT WILL BE CHANGED TO COMPRESSION BIT
             ByteCnt = 252
             LastBlockCnt += 1
+
+            If LastBlockCnt > 255 Then
+                'Parts cannot be larger than 255 blocks compressed
+                'There is some confusion here how PartCnt is used in the Editor and during Disk building...
+                MsgBox("Part " + IIf(CompressPartFromEditor = True, PartCnt + 1, PartCnt).ToString + " would need " + LastBlockCnt.ToString + " blocks on the disk." + vbNewLine + vbNewLine + "Parts cannot be larger than 255 blocks!", vbOKOnly + vbCritical, "Part exceeds 255-block limit!")
+                If CompressPartFromEditor = False Then GoTo NoGo
+            End If
+
             BlockCnt -= 1
             'THEN GOTO NEXT PART SECTION
             GoTo NextPart
         End If
 
-        Exit Sub
+        Exit Function
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
-    End Sub
+NoGo:
+        FinishPart = False
+
+    End Function
 
     Public Sub FinishFile()
         On Error GoTo Err

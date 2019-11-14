@@ -9,8 +9,8 @@
     Private ReadOnly UndoT(255) As String
     Private Undo, UndoStep As Integer
     Private PartT() As Integer, PartS(), PartDiskLoc(), PartNo As Integer
-    Dim PETSCII As Image = My.Resources.PETSCII_BW
-    Dim BM As New Bitmap(256, 256)
+    Private ReadOnly PETSCII As Image = My.Resources.PETSCII_BW
+    Private ReadOnly BM As New Bitmap(256, 256)
 
     Private Sub FrmMain_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         On Error GoTo Err
@@ -63,7 +63,7 @@
                         Cursor = Cursors.WaitCursor
                         Dim frm As New FrmDisk
                         frm.Show()
-                        MakeDisk(sender, e)
+                        MakeDisk(sender, e, True)
                         frm.Close()
                         Cursor = Cursors.Default
                         End                                    '...and exit app!!!
@@ -420,6 +420,11 @@ Err:
             FileChanged = True
             StatusFileName(D64Name)
             ScanDiskForParts()
+            'Else
+        End If
+
+        If DiskOK = False Then
+            MsgBox("Disk could not be built!", vbOKOnly + vbCritical, "Sparkle could not build the disk")
         End If
 
         GoTo Done
@@ -1319,6 +1324,8 @@ Err:
         Else
             D64Name = "C:\"
         End If
+
+        CurrentDisk = -1    'This is needed if we have a script loaded when a test disk is being built
 
         TsbSaveAs_Click(sender, e)
 
