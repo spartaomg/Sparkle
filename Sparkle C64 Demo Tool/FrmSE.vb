@@ -828,7 +828,6 @@ Done:
         tv.BeginUpdate()
         With N
             .Text = "[Disk " + DC.ToString + "]"
-            '.ToolTipText = tDisk
             .Name = "D" + DC.ToString
             .ForeColor = Color.DarkRed
             .Tag = DC * &H1000000
@@ -836,14 +835,14 @@ Done:
 
         Dim Fnt As New Font("Consolas", 10)
 
-        AddNode(N, sDiskPath + DC.ToString, sDiskPath + "C:\demo.d64", N.Tag, Color.DarkGreen, Fnt, tDiskPath)
-        AddNode(N, sDiskHeader + DC.ToString, sDiskHeader + "demo disk " + Year(Now).ToString, N.Tag, Color.DarkGreen, Fnt, tDiskHeader)
-        AddNode(N, sDiskID + DC.ToString, sDiskID + "sprkl", N.Tag, Color.DarkGreen, Fnt, tDiskID)
-        AddNode(N, sDemoName + DC.ToString, sDemoName + "demo", N.Tag, Color.DarkGreen, Fnt, tDemoName)
-        AddNode(N, sDemoStart + DC.ToString, sDemoStart + "$", N.Tag, Color.DarkGreen, Fnt, tDemoStart)
-        AddNode(N, sDirArt + DC.ToString, sDirArt, N.Tag, Color.DarkGreen, Fnt, tDirArt)
+        AddNode(N, sDiskPath + DC.ToString, sDiskPath + "C:\demo.d64", N.Tag, Color.DarkGreen, Fnt)
+        AddNode(N, sDiskHeader + DC.ToString, sDiskHeader + "demo disk " + Year(Now).ToString, N.Tag, Color.DarkGreen, Fnt)
+        AddNode(N, sDiskID + DC.ToString, sDiskID + "sprkl", N.Tag, Color.DarkGreen, Fnt)
+        AddNode(N, sDemoName + DC.ToString, sDemoName + "demo", N.Tag, Color.DarkGreen, Fnt)
+        AddNode(N, sDemoStart + DC.ToString, sDemoStart + "$", N.Tag, Color.DarkGreen, Fnt)
+        AddNode(N, sDirArt + DC.ToString, sDirArt, N.Tag, Color.DarkGreen, Fnt)
         If DC = 1 Then
-            AddNode(N, sZP + DC.ToString, sZP + "$02", N.Tag, Color.DarkGreen, Fnt, tZP)
+            AddNode(N, sZP + DC.ToString, sZP + "$02", N.Tag, Color.DarkGreen, Fnt)
         End If
 
         AddNewPartNode(N)       '[Add new part...]
@@ -866,17 +865,11 @@ Err:
 
     End Sub
 
-    Private Sub AddNode(Parent As TreeNode, Name As String, Text As String, Optional Tag As Integer = 0, Optional NodeColor As Color = Nothing, Optional NodeFnt As Font = Nothing, Optional ToolTipText As String = "")
+    Private Sub AddNode(Parent As TreeNode, Name As String, Text As String, Optional Tag As Integer = 0, Optional NodeColor As Color = Nothing, Optional NodeFnt As Font = Nothing)
         On Error GoTo Err
 
         Parent.Nodes.Add(Name, Text)
         Parent.Nodes(Name).Tag = Tag
-
-        'If ToolTipText <> "" Then
-        'Parent.Nodes(Name).ToolTipText = ToolTipText
-        'Else
-        'Parent.Nodes(Name).ToolTipText = Parent.Nodes(Name).Text
-        'End If
 
         Parent.Nodes(Name).ForeColor = If(NodeColor = Nothing, Color.Black, NodeColor)
 
@@ -890,13 +883,12 @@ Err:
 
     End Sub
 
-    Private Sub UpdateNode(Node As TreeNode, Text As String, Optional Tag As Integer = 0, Optional NodeColor As Color = Nothing, Optional NodeFnt As Font = Nothing) ', Optional ToolTipText As String = "")
+    Private Sub UpdateNode(Node As TreeNode, Text As String, Optional Tag As Integer = 0, Optional NodeColor As Color = Nothing, Optional NodeFnt As Font = Nothing)
         On Error GoTo Err
 
         With Node
             .Text = Text
             .Tag = Tag
-            '.ToolTipText = ToolTipText
             .ForeColor = NodeColor
             .NodeFont = NodeFnt
         End With
@@ -912,7 +904,6 @@ Err:
 
         tv.Nodes.Add(sAddDisk, "[Add new disk]")
         tv.Nodes(sAddDisk).Tag = 0                     'There is only ONE AddDisk node, its tag=0
-        'tv.Nodes(sAddDisk).ToolTipText = tAddDisk
         tv.Nodes(sAddDisk).ForeColor = Color.DarkBlue
 
         Exit Sub
@@ -929,7 +920,6 @@ Err:
         'Names of Add Part nodes are unique, tag is the same of the disk node's tag, to identify disk easily
         DiskNode.Nodes.Add(NPID, "[Add new part to this disk]")
         DiskNode.Nodes(NPID).Tag = DiskNode.Tag
-        'DiskNode.Nodes(NPID).ToolTipText = tAddPart
         DiskNode.Nodes(NPID).ForeColor = Color.DarkBlue
         tv.SelectedNode = DiskNode.Nodes(NPID)
 
@@ -947,7 +937,6 @@ Err:
         'Names of Add File nodes are unique, tag is the same of the part node's tag, to identify disk and part easily
         PartNode.Nodes.Add(NFID, "[Add new file to this part]")
         PartNode.Nodes(NFID).Tag = PartNode.Tag
-        'PartNode.Nodes(NFID).ToolTipText = tAddFile
         PartNode.Nodes(NFID).ForeColor = Color.DarkBlue
 
         Exit Sub
@@ -965,7 +954,6 @@ Err:
         CurrentPart = PC
         With tv.SelectedNode
             .Text = "[Part " + PC.ToString + "]"
-            '.ToolTipText = tPart
             .Name = .Parent.Name + ":P" + PC.ToString
             .Tag = .Parent.Tag + PC * &H1000
             .ForeColor = Color.DarkMagenta
@@ -1002,8 +990,6 @@ Err:
         FAddr = -1
         FOffs = -1
         FLen = 0
-
-        'tv.Enabled = False
 
         If N.Index = 0 Then
             BlockCnt = 0
@@ -1906,7 +1892,6 @@ Err:
             FileNode.Nodes.Add(FileNode.Name + ":FA", sFileAddr + ConvertNumberToHexString(FAddr Mod 256, Int(FAddr / 256)))
             With FileNode.Nodes(FileNode.Name + ":FA")
                 .Tag = FileNode.Tag
-                '.ToolTipText = tFileAddr
                 .ForeColor = IIf(DFA = True, DefaultCol, ManualCol)
                 .NodeFont = New Font("Consolas", 10)
             End With
@@ -1918,7 +1903,6 @@ Err:
             FileNode.Nodes.Add(FileNode.Name + ":FO", sFileOffs + ConvertNumberToHexString(FOffs Mod 256, Int(FOffs / 256)))
             With FileNode.Nodes(FileNode.Name + ":FO")
                 .Tag = FileNode.Tag
-                '.ToolTipText = tFileOffs
                 .ForeColor = IIf(DFO = True, DefaultCol, ManualCol)
                 .NodeFont = New Font("Consolas", 10)
             End With
@@ -1930,7 +1914,6 @@ Err:
             FileNode.Nodes.Add(FileNode.Name + ":FL", sFileLen + ConvertNumberToHexString(FLen Mod 256, Int(FLen / 256)))
             With FileNode.Nodes(FileNode.Name + ":FL")
                 .Tag = FileNode.Tag
-                '.ToolTipText = tFileLen
                 .ForeColor = IIf(DFL = True, DefaultCol, ManualCol)
                 .NodeFont = New Font("Consolas", 10)
             End With
@@ -1941,7 +1924,6 @@ Err:
         If FileNode.Nodes(FileNode.Name + ":FUIO") Is Nothing Then
             FileNode.Nodes.Add(FileNode.Name + ":FUIO", sFileUIO + IIf(FileUnderIO = True, "yes", IIf(UnderIO() = True, " no", "n/a")))
             With FileNode.Nodes(FileNode.Name + ":FUIO")
-                '.ToolTipText = tFileSize
                 .Tag = FileNode.Tag
                 .ForeColor = IIf(FileUnderIO = True, Color.Purple, Color.MediumPurple)
                 .NodeFont = New Font("Consolas", 10)
@@ -1953,7 +1935,6 @@ Err:
         If FileNode.Nodes(FileNode.Name + ":FS") Is Nothing Then
             FileNode.Nodes.Add(FileNode.Name + ":FS", sFileSize + FileSize.ToString + " block" + IIf(FileSize <> 1, "s", ""))
             With FileNode.Nodes(FileNode.Name + ":FS")
-                '.ToolTipText = tFileSize
                 .Tag = FileNode.Tag
                 .ForeColor = Color.DarkGray
                 .NodeFont = New Font("Consolas", 10)
@@ -2152,8 +2133,6 @@ Done:
 
         With N
             .Text = FilePath                                 'New File's Path
-            '.ToolTipText = "File" + vbNewLine + "Double click or press <Enter> to change file." + vbNewLine +
-            '   "Press <Delete> to remove file."
             .Name = N.Parent.Name + ":F" + FC.ToString
             .ForeColor = Color.Black
             .Tag = .Parent.Tag + FC
@@ -2361,7 +2340,6 @@ NoDisk:
             tv.SelectedNode.Text = "[Part " + PC.ToString + ": " + BufferCnt.ToString + " block" + IIf(BufferCnt <> 1, "s", "") + " compressed, " _
                + UncomPartSize.ToString + "% of uncompressed size]"
         End If
-        'tv.SelectedNode.ToolTipText = tPart
 
         If Loading = False Then tv.EndUpdate()
 
