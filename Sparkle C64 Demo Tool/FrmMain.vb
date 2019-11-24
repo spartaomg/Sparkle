@@ -48,7 +48,6 @@
 
         'CalcILTab()
 
-        'PRGCnt = 0
         CmdLine = False
         For Each Path In CmdArg
             Select Case Strings.Right(Path, 4)
@@ -75,7 +74,6 @@
         Next
 
         txtSector.AllowDrop = True
-        'txtASCII.AllowDrop = True
 
         If D64Name = "" Then TsbNew_Click(sender, e)
 
@@ -111,15 +109,12 @@ Err:
                 Case 31 To 35
                     Tr(T + 1) = Tr(T) + 17
             End Select
-            'MsgBox(Tr(T + 1).ToString)
         Next
-
 
         For T As Integer = 35 To 1 Step -1
             If T = 18 Then
                 T += 1
                 S += 2
-                'I += 19
             End If
             SCnt = 0
 
@@ -226,21 +221,18 @@ Err:
             End Select
         End If
 
-        OpenDLG.Filter = "D64 Files (*.d64)|*.d64"
-        OpenDLG.Title = "Open D64 File"
-        'OpenDLG.InitialDirectory = "C:\Users\Tamas\OneDrive\C64\Coding"
-        OpenDLG.RestoreDirectory = True
+        With OpenDLG
+            .Filter = "D64 Files (*.d64)|*.d64"
+            .Title = "Open D64 File"
+            .RestoreDirectory = True
 
-        DialogResult = OpenDLG.ShowDialog
+            DialogResult = OpenDLG.ShowDialog
 
-        If DialogResult = Windows.Forms.DialogResult.OK Then
-            D64Name = OpenDLG.FileName
-            OpenFile()
-        ElseIf DialogResult = Windows.Forms.DialogResult.Cancel Then
-
-        End If
-
-        'AddDirArt()
+            If DialogResult = Windows.Forms.DialogResult.OK Then
+                D64Name = .FileName
+                OpenFile()
+            End If
+        End With
 
         Exit Sub
 Err:
@@ -330,10 +322,6 @@ Err:
     Private Sub SaveFile()
         On Error GoTo ErrSaveFile
 
-        'If CurrentDisk <> -1 Then
-        'If D64NameA(CurrentDisk) <> "" Then D64Name = D64NameA(CurrentDisk)
-        'End If
-
         IO.File.WriteAllBytes(D64Name, Disk)
 
         Exit Sub
@@ -352,8 +340,6 @@ ErrSaveFile:
         With OpenDLG
             .Filter = "Sparkle Loader Script files (*.sls)|*.sls"
             .Title = "Open Sparkle Loader Script"
-            '.InitialDirectory = My.Computer.FileSystem.SpecialDirectories.MyDocuments
-            '.FileName = "Demo 2019.sls"
             .RestoreDirectory = True
 
             Dim R As DialogResult = .ShowDialog(Me)
@@ -368,9 +354,6 @@ ErrSaveFile:
                     MakeDisk(sender, e)
                     Cursor = Cursors.Default
                 End If
-                'MakeDisk(sender, e)
-                'ElseIf R = Windows.Forms.DialogResult.Cancel Then
-                'Script = ""
             End If
         End With
 
@@ -420,7 +403,6 @@ Err:
             FileChanged = True
             StatusFileName(D64Name)
             ScanDiskForParts()
-            'Else
         End If
 
         If DiskOK = False Then
@@ -428,8 +410,6 @@ Err:
         End If
 
         GoTo Done
-
-        'Exit Sub
 
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
@@ -622,7 +602,6 @@ Err:
         If CS <> MaxSector Then
             CS += 1
             ShowSector()
-
         End If
 
         Exit Sub
@@ -846,16 +825,9 @@ Err:
                     ' Copy that part of the image.
                     Gr.DrawImage(PETSCII, dst_rect, src_rect, GraphicsUnit.Pixel)
                 End Using
-                'If Tmp < 32 Then
-                'TA += "."
-                'Else
-                'TA += Chr(Tmp)
-                'End If
             Next
-            'txtASCII.Text += TA
             If R < 15 Then
                 tmpSect += vbNewLine
-                'txtASCII.Text += vbNewLine
             End If
         Next
 
@@ -863,8 +835,6 @@ Err:
 
         Pbx.Image = BM
         Pbx.Refresh()
-
-        'ShowPETSCII()
 
         CursorPos(0)
 
@@ -878,34 +848,6 @@ Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
-
-    'Private Sub ShowPETSCII()
-
-    ''Dim PETSCII As Image = My.Resources.PETSCII
-    ''Dim BM As New Bitmap(128, 256)
-    'Dim Tmp As Integer
-    'Dim L, T As Integer
-    'For R = 0 To 15
-    'For C = 0 To 15
-    'Tmp = Disk(CP + R * 16 + C)
-    'L = (Tmp Mod 16) * 16
-    'T = (Int(Tmp / 16)) * 16
-    'Using Gr As Graphics = Graphics.FromImage(BM)
-    '' Define source and destination rectangles.
-    'Dim src_rect As New Rectangle(L, T, 16, 16)
-    'Dim dst_rect As New Rectangle((C * 16) + 2, (R * 16) + 2, 16, 16)
-
-    '' Copy that part of the image.
-    'Gr.DrawImage(PETSCII, dst_rect, src_rect, GraphicsUnit.Pixel)
-    'End Using
-    'Next
-    'Next
-
-    '' Display the result.
-    'Pbx.Image = BM
-    'Pbx.Refresh()
-
-    'End Sub
 
     Private Function ByteToChar(B As Byte) As String
         On Error GoTo Err
@@ -937,7 +879,6 @@ Err:
         Else
             Text = "Sparkle"
             txtSector.ForeColor = Color.Black
-            'txtASCII.ForeColor = Color.Black
         End If
 
         Exit Sub
@@ -961,10 +902,6 @@ Err:
         End If
 
         Disk(Track(CT) + CS * 256 + CY * 16 + CX) = B
-
-        'txtASCII.Select((CY * 17) + CX, 1)
-        'txtASCII.SelectionColor = If(Undo = False, Color.Red, Color.Black)
-        'txtASCII.SelectedText = If(B < 32, ".", Chr(B))
 
         Dim Tmp As Integer
         Dim L, T As Integer
@@ -1083,9 +1020,6 @@ Err:
         Using A As New FrmSE
             A.ShowDialog(Me)
         End Using
-        'FrmSE.ShowDialog(Me)
-
-        'If Script = "" Then Exit Sub
 
         If bBuildDisk = True Then
             If InStr(Script, "File:") = 0 Then
@@ -1102,30 +1036,6 @@ Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
-
-    'Private Sub TxtASCII_KeyDown(sender As Object, e As KeyEventArgs)
-    'On Error GoTo Err
-
-    'Select Case e.KeyCode
-    'Case Keys.Left
-    'If txtASCII.SelectionStart = 0 Then GoTo SuppressKey
-    'Case Keys.Right
-    'If txtASCII.SelectionStart = txtASCII.TextLength Then GoTo SuppressKey
-    'Case Keys.Up
-    'If txtASCII.SelectionStart <= 16 Then GoTo SuppressKey
-    'Case Keys.Down
-    'If txtASCII.SelectionStart >= txtASCII.TextLength - 16 Then GoTo SuppressKey
-    'Case Else
-    'SuppressKey:
-    'e.SuppressKeyPress = True
-    'e.Handled = True
-    'End Select
-
-    'Exit Sub
-    'Err:
-    'MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
-    'End Sub
 
     Private Sub TxtCT_GotFocus(sender As Object, e As EventArgs) Handles txtCT.GotFocus
         On Error GoTo Err
@@ -1296,7 +1206,6 @@ Err:
 
         Dim A As New FrmAbout
         A.Show(Me)
-        'FrmAbout.Show(Me)
 
         Exit Sub
 Err:
@@ -1309,10 +1218,6 @@ Err:
 
         MakeTestDisk()
 
-        If IO.File.Exists("C:\Users\Tamas\OneDrive\C64\Coding\Loader\LoaderTests\SparkleTest\dirart.txt") Then
-            DirArt = IO.File.ReadAllText("C:\Users\Tamas\OneDrive\C64\Coding\Loader\LoaderTests\SparkleTest\dirart.txt")
-            AddDirArt()
-        End If
         ScanDiskForParts()
 
         CT = 18

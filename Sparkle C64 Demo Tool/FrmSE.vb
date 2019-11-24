@@ -2061,6 +2061,7 @@ FindNext:
 
                 GoTo NewDisk
             Case Else
+                'Figure out what to do with comments here...
         End Select
 
         If SE < Script.Length Then GoTo FindNext
@@ -2334,6 +2335,7 @@ NoDisk:
         tv.SelectedNode = DiskNode.Nodes(DiskNode.Name + ":P" + PC.ToString)
 
         If Loading = False Then tv.BeginUpdate()
+
         If Prgs.Count = 0 Then
             tv.SelectedNode.Text = "[Part " + PC.ToString + "]"
         Else

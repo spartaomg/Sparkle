@@ -369,12 +369,12 @@ Err:
 
         BP = Track(18) + (T * 4) + 1 + Int(S / 8)
         BB = 255 - (2 ^ (S Mod 8))    '=0-7
-        'MsgBox(Hex(BP) + " : " + Hex(BB))
+
         Disk(BP) = Disk(BP) And BB
 
         BP = Track(18) + (T * 4)
         Disk(BP) -= 1
-        'MsgBox(Disk(BP).ToString)
+
         If UpdateBlocksFree = True Then BlocksFree -= 1
 
         Exit Sub
@@ -590,7 +590,6 @@ Err:
                     Disk(Track(ST) + SS * 256 + 1) = ((Loader.Length) Mod 254) + 1
                 End If
             End If
-
         Next
 
         CT = 18 : CS = 1
@@ -827,7 +826,6 @@ FindNext:
         If FindNextScriptEntry() = False Then GoTo NoDisk
         'Split String
         If SplitScriptEntry() = False Then GoTo NoDisk
-        'MsgBox(ScriptEntry + vbNewLine + ScriptEntryType)
         'Set disk variables and add files
         Select Case LCase(ScriptEntryType)
             Case "path:"
@@ -947,7 +945,6 @@ NoDisk:
 
         SaveDisk = True
 
-        'If D64Name = "" Then D64Name = "Demo Disk" + IIf(DiskCnt > 0, " " + (CurrentDisk + 1).ToString, "") + ".d64"
         If D64Name = "" Then D64Name = "Demo Disk " + (DiskCnt + 1).ToString + ".d64"
 
         If InStr(D64Name, ":") = 0 Then
@@ -1044,18 +1041,6 @@ NoComp:
 
         If NewPart = True Then
             If PartDone() = False Then GoTo NoDisk
-            ''First finish last part, if it exists
-            'If PartCnt > 0 Then
-            ''Sort files in part
-            'If SortPart() = False Then GoTo NoDisk
-            ''Then compress files and add them to part
-            'If CompressPart() = False Then GoTo NoDisk     'THIS WILL RESET NewPart TO FALSE
-            '
-            'End If
-            '
-            ''Then reset part variables (file arrays, prg array, block cnt), increase part counter
-            'ResetPartVariables()
-
         End If
 
         'Then add file to part
@@ -1123,9 +1108,6 @@ NoDisk:
                     If (OLS >= &HD000) And (OLE <= &HDFFF) And (FileIOA(O) <> FileIOA(I)) Then
                         'Overlap is IO memory only and different IO status - NO OVERLAP
                     Else
-                        'If MsgBox("The following two files overlap in Part " + PartCnt.ToString + ":" _
-                        '  + vbNewLine + vbNewLine + FileNameA(I) + " ($" + Hex(FSI) + " - $" + Hex(FEI) + ")" + vbNewLine + vbNewLine _
-                        '  + FileNameA(O) + " ($" + Hex(FSO) + " - $" + Hex(FEO) + ")" + vbNewLine + vbNewLine + "Do you want to proceed?", vbYesNo + vbExclamation) = vbNo Then GoTo NoSort
                         MsgBox("The following two files overlap in Part " + PartCnt.ToString + ":" _
                            + vbNewLine + vbNewLine + FileNameA(I) + " ($" + Hex(FSI) + " - $" + Hex(FEI) + ")" + vbNewLine + vbNewLine _
                            + FileNameA(O) + " ($" + Hex(FSO) + " - $" + Hex(FEO) + ")", vbOKOnly + vbExclamation)
@@ -1193,11 +1175,11 @@ Prepend:                PO = Prgs(O)
                 End If
 
                 If Change = True Then
-                    'Update merged file's IO status
-                    FileIOA(O) = FileIOA(O) Or FileIOA(I)   'BUG FIX - REPORTED BY RAISTLIN/G*P
-                    'New file's length is the length of the two merged files
-                    FEO += FEI
-                    FileLenA(O) = ConvertNumberToHexString(FEO Mod 256, Int(FEO / 256))
+					'Update merged file's IO status
+					FileIOA(O) = FileIOA(O) Or FileIOA(I)   'BUG FIX - REPORTED BY RAISTLIN/G*P
+					'New file's length is the length of the two merged files
+					FEO += FEI
+					FileLenA(O) = ConvertNumberToHexString(FEO Mod 256, Int(FEO / 256))
                     'Remove File(I) and all its parameters
                     For J As Integer = I To Prgs.Count - 2
                         FileNameA(J) = FileNameA(J + 1)
@@ -1288,13 +1270,9 @@ NoSort:
         'Correct file parameter length to 4 characters
         For I As Integer = 1 To ScriptEntryArray.Count - 1
             If ScriptEntryArray(I).Length < 4 Then
-                'MsgBox(ScriptEntryArray(I))
                 ScriptEntryArray(I) = Left("0000", 4 - Strings.Len(ScriptEntryArray(I))) + ScriptEntryArray(I)
-                'MsgBox(ScriptEntryArray(I))
             ElseIf ScriptEntryArray(I).Length > 4 Then
-                'MsgBox(ScriptEntryArray(I))
                 ScriptEntryArray(I) = Right(ScriptEntryArray(I), 4)
-                'MsgBox(ScriptEntryArray(I))
             End If
         Next
 
@@ -1341,11 +1319,6 @@ NoSort:
                     End If                                                  'Length=prg length- offset
                     FL = ScriptEntryArray(3)
             End Select
-
-            'FA = If(ScriptEntryArray.Count > 1, ScriptEntryArray(1), ConvertNumberToHexString(P(0), P(1)))
-            'FO = If(ScriptEntryArray.Count > 2, ScriptEntryArray(2), "0002")
-            'FL = If(ScriptEntryArray.Count = 4, ScriptEntryArray(3), ConvertNumberToHexString((P.Length - 2) Mod 256, Int((P.Length - 2) / 256)))
-            'MsgBox(FA + vbNewLine + FO + vbNewLine + FL)
 
             FAN = Convert.ToInt32(FA, 16)
             FON = Convert.ToInt32(FO, 16)
@@ -1540,13 +1513,6 @@ Err:
             GoTo NoDisk
         End If
 
-        'CT = T
-        'CS = S
-
-        'If SectorOK(CT, CS) = False Then
-        'FindNextFreeSector()
-        'End If
-
         For I = 0 To BufferCnt - 1
             CT = TabT(I)
             CS = TabS(I)
@@ -1558,8 +1524,8 @@ Err:
         Next
 
         If BufferCnt < 664 Then
-            NextTrack = TabT(BufferCnt)     'CT
-            NextSector = TabS(BufferCnt)    'CS
+            NextTrack = TabT(BufferCnt)
+            NextSector = TabS(BufferCnt)
         Else
             NextTrack = 18
             NextSector = 0
@@ -1721,10 +1687,10 @@ Err:
         On Error GoTo Err
 
         If InStr(Script, ScriptPath) <> 0 Then
-            Dim S As String = "This script could be simplified using the relative path of the script as a base folder." + vbNewLine
+            Dim S As String = "This script could be simplified using the script's foler as a relative path." + vbNewLine
             S += vbNewLine + "Do you want to simplify the script before saving it?" + vbNewLine + vbNewLine
             S += "(Note: the simplified script will only work if it remains in its current folder!)"
-            If MsgBox(S, vbYesNo + vbInformation, "Simplify script?") = vbYes Then
+            If MsgBox(S, vbYesNo + vbQuestion, "Simplify script?") = vbYes Then
                 Script = Replace(Script, ScriptPath, "")
             End If
         End If
