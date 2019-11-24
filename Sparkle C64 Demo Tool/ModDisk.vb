@@ -576,9 +576,9 @@ Err:
                     Disk(Track(CT) + CS * 256 + 2 + Cnt) = Loader(I * 254 + Cnt)
                 End If
             Next
-            DeleteBit(CT, CS, True)
+			DeleteBit(CT, CS, True)
 
-            AddInterleave(IL)   'Go to next free sector with Interleave IL
+			AddInterleave(IL)   'Go to next free sector with Interleave IL
             If I < L - 1 Then
                 Disk(Track(ST) + SS * 256 + 0) = CT
                 Disk(Track(ST) + SS * 256 + 1) = CS

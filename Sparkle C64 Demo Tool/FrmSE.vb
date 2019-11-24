@@ -2049,8 +2049,8 @@ FindNext:
                     Dim Fnt As New Font("Consolas", 10)
                     UpdateNode(DiskNode.Nodes(sZP + DC.ToString), sZP + "$" + LCase(ScriptEntryArray(0)), DiskNode.Tag, Color.DarkGreen, Fnt) ', tDemoStart)
                 End If
-            Case "file:"
-                AddFileFromScript(DiskNode)
+			Case "file:"
+				AddFileFromScript(DiskNode)
             Case "new disk"
 
                 'Update last part size and disk size before starting new disk node

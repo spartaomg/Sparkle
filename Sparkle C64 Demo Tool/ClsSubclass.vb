@@ -27,7 +27,7 @@ Err:
             End If
             MyBase.WndProc(m)
 
-            Exit Sub
+			Exit Sub
 Err:
             MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 

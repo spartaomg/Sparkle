@@ -1025,12 +1025,12 @@ CheckBitLen:
             'If (FileUnderIO = True) And (BlockUnderIO = 0) And (SequenceUnderIO = 1) And (LastByte <> ByteCnt) Then
             If (BlockUnderIO = 0) And (SequenceUnderIO = 1) And (LastByte <> ByteCnt) Then
 
-                'This is the first byte in the block that will go UIO, so lets update the buffer to include the IO flag
+				'This is the first byte in the block that will go UIO, so lets update the buffer to include the IO flag
 
-                For I As Integer = ByteCnt To AdHiPos            'Move all data to the left in buffer, including AdHi
-                    Buffer(I - 1) = Buffer(I)
-                Next
-                Buffer(AdHiPos) = 0                             'IO Flag to previous AdHi Position
+				For I As Integer = ByteCnt To AdHiPos            'Move all data to the left in buffer, including AdHi
+					Buffer(I - 1) = Buffer(I)
+				Next
+				Buffer(AdHiPos) = 0                             'IO Flag to previous AdHi Position
 				ByteCnt -= 1                                    'Update ByteCt to next empty position in buffer
 				LastByteCt -= 1                                 'Last Match pointer also needs to be updated (BUG FIX - REPORTED BY RAISTLIN/G*P)
 				AdHiPos -= 1                                    'Update AdHi Position in Buffer

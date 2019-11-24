@@ -173,7 +173,7 @@ Err:
             End If
         End Using
 
-        Exit Function
+		Exit Function
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 

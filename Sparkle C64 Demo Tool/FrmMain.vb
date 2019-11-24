@@ -1216,9 +1216,9 @@ Err:
     Private Sub TsmTestDisk_Click(sender As Object, e As EventArgs) Handles TsmTestDisk.Click
         On Error GoTo Err
 
-        MakeTestDisk()
+		MakeTestDisk()
 
-        ScanDiskForParts()
+		ScanDiskForParts()
 
         CT = 18
         CS = 1
