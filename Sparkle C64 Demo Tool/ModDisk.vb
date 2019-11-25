@@ -671,25 +671,30 @@ Err:
             LoaderZP = "fe"
         End If
 
-        Loader(334) = ZP
-        Loader(363) = ZP
-        Loader(396) = ZP
-        Loader(398) = ZP
-        Loader(442) = ZP
-        Loader(444) = ZP
-        Loader(461) = ZP
-        Loader(478) = ZP
-        Loader(480) = ZP
-        Loader(492) = ZP
-        Loader(508) = ZP
+		'ZP=02 is the default, no need for update
+		If ZP = 2 Then Exit Sub
 
-        Loader(349) = ZP + 1
-        Loader(406) = ZP + 1
-        Loader(448) = ZP + 1
-        Loader(484) = ZP + 1
-        Loader(497) = ZP + 1
+		Dim Offset As Integer = 0   'Will use this if loader code changes
 
-        Exit Sub
+		Loader(334 + Offset) = ZP
+		Loader(363 + Offset) = ZP
+		Loader(396 + Offset) = ZP
+		Loader(398 + Offset) = ZP
+		Loader(442 + Offset) = ZP
+		Loader(444 + Offset) = ZP
+		Loader(461 + Offset) = ZP
+		Loader(478 + Offset) = ZP
+		Loader(480 + Offset) = ZP
+		Loader(492 + Offset) = ZP
+		Loader(508 + Offset) = ZP
+
+		Loader(349 + Offset) = ZP + 1
+		Loader(406 + Offset) = ZP + 1
+		Loader(448 + Offset) = ZP + 1
+		Loader(484 + Offset) = ZP + 1
+		Loader(497 + Offset) = ZP + 1
+
+		Exit Sub
 
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
