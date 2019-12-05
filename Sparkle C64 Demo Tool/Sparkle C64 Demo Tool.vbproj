@@ -31,7 +31,7 @@
     <SuiteName>Sparkle</SuiteName>
     <OpenBrowserOnPublish>false</OpenBrowserOnPublish>
     <ApplicationRevision>0</ApplicationRevision>
-    <ApplicationVersion>1.1.1.0</ApplicationVersion>
+    <ApplicationVersion>1.2.0.0</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -146,6 +146,7 @@
     </Compile>
     <Compile Include="ModDisk.vb" />
     <Compile Include="ModNewLZ.vb" />
+    <Compile Include="ModPack.vb" />
     <Compile Include="ModRegistry.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">

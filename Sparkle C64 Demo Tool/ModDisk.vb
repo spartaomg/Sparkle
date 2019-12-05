@@ -1,6 +1,10 @@
 ﻿Friend Module ModDisk
+	Public ReadOnly UserDeskTop As String = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
+	Public ReadOnly UserFolder As String = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
 
-    Public Drive() As Byte
+	Public Packer As Integer = 2     '1= faster, 2=better
+
+	Public Drive() As Byte
 
     Public BlocksFree As Integer = 664
 
@@ -19,9 +23,10 @@
 
     Public ByteSt(), BitSt(), Buffer(255), BitPos, LastByte, AdLo, AdHi As Byte
     Public Match, MaxBit, MatchSave(), PrgLen, Distant As Integer
-    Public MatchOffset(), MatchCnt, RLECnt, MatchLen(), MaxSave, MaxOffset, MaxLen, LitCnt, Bits, BuffAdd, PrgAdd As Integer
-    Public DistAd(), DistLen(), DistSave(), DistCnt, DistBase As Integer
-    Public DtPos, CmPos, CmLast, DtLen, MatchStart, BitCnt As Integer
+	Public MatchOffset(), MatchCnt, RLECnt, MatchLen(), MaxSave, MaxOffset, MaxLen, LitCnt, Bits, BuffAdd, PrgAdd As Integer
+	Public MaxSLen, MaxSOff, MaxSSave As Integer
+	Public DistAd(), DistLen(), DistSave(), DistCnt, DistBase As Integer
+	Public DtPos, CmPos, CmLast, DtLen, MatchStart, BitCnt As Integer
     Public ByteCnt As Integer    'Points at the next empty byte in buffer
     Public MatchType(), MaxType As String
 
@@ -121,8 +126,9 @@
     Private Loader() As Byte
 
     Public CompressPartFromEditor As Boolean = False
+	Public LastFileOfPart As Boolean = False
 
-    Public Sub SetLastSector()
+	Public Sub SetLastSector()
         On Error GoTo Err
 
         Select Case CT
@@ -807,11 +813,13 @@ Err:
     End Sub
 
     Public Function BuildDemoFromScript(Optional SaveIt As Boolean = True) As Boolean
-        On Error GoTo Err
+		'On Error GoTo Err
 
-        BuildDemoFromScript = True
+		BuildDemoFromScript = True
 
-        SS = 1 : SE = 1
+		Packer = My.Settings.DefaultPacker     'Default packer (1 - faster, 2 - better)
+
+		SS = 1 : SE = 1
 
         'Check if this is a valid script
         If FindNextScriptEntry() = False Then GoTo NoDisk
@@ -843,8 +851,14 @@ FindNext:
                 DemoName = ScriptEntryArray(0)
             Case "start:"
                 DemoStart = ScriptEntryArray(0)
-            Case "dirart:"
-                If InStr(ScriptEntryArray(0), ":") = 0 Then
+			Case "packer:"
+				If LCase(ScriptEntryArray(0)) = "faster" Then
+					Packer = 1
+				Else
+					Packer = 2
+				End If
+			Case "dirart:"
+				If InStr(ScriptEntryArray(0), ":") = 0 Then
                     ScriptEntryArray(0) = ScriptPath + ScriptEntryArray(0)
                 End If
                 If IO.File.Exists(ScriptEntryArray(0)) Then
@@ -916,15 +930,20 @@ Err:
     End Sub
 
     Private Function FinishDisk(LastDisk As Boolean, Optional SaveIt As Boolean = True) As Boolean
-        On Error GoTo Err
+		'On Error GoTo Err
 
-        FinishDisk = True
+		FinishDisk = True
         If SortPart() = False Then GoTo NoDisk
         If CompressPart() = False Then GoTo NoDisk
-        If FinishPart(0, True) = False Then GoTo NoDisk
-        CloseBuff()
-        'Now add compressed parts to disk
-        If AddCompressedPartsToDisk() = False Then GoTo NoDisk
+		If Packer = 1 Then
+			If FinishPart(0, True) = False Then GoTo NoDisk
+			CloseBuff()
+		Else
+			If ClosePart(0, True) = False Then GoTo NoDisk
+			CloseBuffer()
+		End If
+		'Now add compressed parts to disk
+		If AddCompressedPartsToDisk() = False Then GoTo NoDisk
         AddHeaderAndID()
         If InjectLoader(-1, 18, 5, 6) = False Then GoTo NoDisk
         If InjectDriveCode(DiskCnt + 1, LoaderParts, IIf(LastDisk = False, DiskCnt + 2, 0)) = False Then GoTo NoDisk
@@ -990,9 +1009,9 @@ Err:
     End Function
 
     Public Function CompressPart(Optional FromEditor = False) As Boolean
-        On Error GoTo Err
+		'On Error GoTo Err
 
-        CompressPartFromEditor = FromEditor
+		CompressPartFromEditor = FromEditor
 
         CompressPart = True
 
@@ -1006,18 +1025,29 @@ Err:
         Else
             PrgAdd = Convert.ToInt32(FileAddrA(0), 16)
             PrgLen = Convert.ToInt32(FileLenA(0), 16)
-            If FinishPart(CheckIO(PrgLen - 1), False) = False Then GoTo NoComp
-        End If
+			If Packer = 1 Then
+				If FinishPart(CheckIO(PrgLen - 1), False) = False Then GoTo NoComp
+			Else
+				If ClosePart(CheckIO(PrgLen - 1), False) = False Then GoTo NoComp
+			End If
+		End If
 
-        NewPart = True
+		NewPart = True
+		LastFileOfPart = False
+		For I As Integer = 0 To Prgs.Count - 1
+			'Mark the last file in a part for better compression
+			If I = Prgs.Count - 1 Then LastFileOfPart = True
+			'The only two parameters that are needed are FA and FUIO... FileLenA(i) is not used
+			If Packer = 1 Then
+				NewLZ(Prgs(I).ToArray, FileAddrA(I), FileIOA(I))  'NewPart is TRUE FOR THE FIRST FILE ONLY
+				If I < Prgs.Count - 1 Then FinishFile()
+			Else
+				PackFile(Prgs(I).ToArray, FileAddrA(I), FileIOA(I))
+				If I < Prgs.Count - 1 Then CloseFile()
+			End If
+		Next
 
-        For I As Integer = 0 To Prgs.Count - 1
-            'The only two parameters that are needed are FA and FUIO... FileLenA(i) is not used
-            NewLZ(Prgs(I).ToArray, FileAddrA(I),, FileLenA(I), FileIOA(I))  'NewPart is TRUE FOR THE FIRST FILE ONLY
-            If I < Prgs.Count - 1 Then FinishFile()
-        Next
-
-        LastBlockCnt = BlockCnt
+		LastBlockCnt = BlockCnt
 
         If LastBlockCnt > 255 Then
             'Parts cannot be larger than 255 blocks compressed
@@ -1040,9 +1070,9 @@ NoComp:
     End Function
 
     Private Function AddFile() As Boolean
-        On Error GoTo Err
+		'On Error GoTo Err
 
-        AddFile = True
+		AddFile = True
 
         If NewPart = True Then
             If PartDone() = False Then GoTo NoDisk
@@ -1059,7 +1089,7 @@ NoDisk:
 
     End Function
     Private Function PartDone() As Boolean
-        On Error GoTo Err
+        'On Error GoTo Err
 
         PartDone = True
 

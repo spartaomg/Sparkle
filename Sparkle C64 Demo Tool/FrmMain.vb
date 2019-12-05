@@ -12,81 +12,83 @@
     Private ReadOnly PETSCII As Image = My.Resources.PETSCII_BW
     Private ReadOnly BM As New Bitmap(256, 256)
 
-    Private Sub FrmMain_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        On Error GoTo Err
+	Private Sub FrmMain_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+		On Error GoTo Err
 
-        If DotNetVersion() = False Then
-            MsgBox("Sparkle requires .NET Framework version 4.5 or later!", vbOKOnly, "Please install .NET Framework")
-            End
-        End If
+		If DotNetVersion() = False Then
+			MsgBox("Sparkle requires .NET Framework version 4.5 or later!", vbOKOnly, "Please install .NET Framework")
+			End
+		End If
 
-        DoRegistryMagic()
+		DoRegistryMagic()
 
-        Dim T As Integer
-        Dim CmdArg As String() = Environment.GetCommandLineArgs()
+		Dim T As Integer
+		Dim CmdArg As String() = Environment.GetCommandLineArgs()
 
-        ResetArrays()
+		ResetArrays()
 
-        ReDim PartT(-1), PartS(-1), PartDiskLoc(-1)
+		ReDim PartT(-1), PartS(-1), PartDiskLoc(-1)
 
-        TabT = My.Resources.TabT
-        TabS = My.Resources.TabS
+		TabT = My.Resources.TabT
+		TabS = My.Resources.TabS
 
-        Track(1) = 0
-        For T = 1 To 34
-            Select Case T
-                Case 1 To 17
-                    Track(T + 1) = Track(T) + (21 * 256)
-                Case 18 To 24
-                    Track(T + 1) = Track(T) + (19 * 256)
-                Case 25 To 30
-                    Track(T + 1) = Track(T) + (18 * 256)
-                Case 31 To 35
-                    Track(T + 1) = Track(T) + (17 * 256)
-            End Select
-        Next
+		Packer = My.Settings.DefaultPacker
 
-        'CalcILTab()
+		Track(1) = 0
+		For T = 1 To 34
+			Select Case T
+				Case 1 To 17
+					Track(T + 1) = Track(T) + (21 * 256)
+				Case 18 To 24
+					Track(T + 1) = Track(T) + (19 * 256)
+				Case 25 To 30
+					Track(T + 1) = Track(T) + (18 * 256)
+				Case 31 To 35
+					Track(T + 1) = Track(T) + (17 * 256)
+			End Select
+		Next
 
-        CmdLine = False
-        For Each Path In CmdArg
-            Select Case Strings.Right(Path, 4)
-                Case ".sls"
-                    CmdLine = True
-                    Script = IO.File.ReadAllText(Path)     'open script...!!
-                    SetScriptPath(Path)
-                    If InStr(Script, "File:") = 0 Then
-                        MsgBox("This script does not contain any files", vbOKOnly, "Unable to build disk")
-                        End
-                    Else
-                        Cursor = Cursors.WaitCursor
-                        Dim frm As New FrmDisk
-                        frm.Show()
-                        MakeDisk(sender, e, True)
-                        frm.Close()
-                        Cursor = Cursors.Default
-                        End                                    '...and exit app!!!
-                    End If
-                Case ".d64"
-                    D64Name = Path
-                    OpenFile()
-            End Select
-        Next
+		'CalcILTab()
 
-        txtSector.AllowDrop = True
+		CmdLine = False
+		For Each Path In CmdArg
+			Select Case Strings.Right(Path, 4)
+				Case ".sls"
+					CmdLine = True
+					Script = IO.File.ReadAllText(Path)     'open script...!!
+					SetScriptPath(Path)
+					If InStr(Script, "File:") = 0 Then
+						MsgBox("This script does not contain any files", vbOKOnly, "Unable to build disk")
+						End
+					Else
+						Cursor = Cursors.WaitCursor
+						Dim frm As New FrmDisk
+						frm.Show()
+						MakeDisk(sender, e, True)
+						frm.Close()
+						Cursor = Cursors.Default
+						End                                    '...and exit app!!!
+					End If
+				Case ".d64"
+					D64Name = Path
+					OpenFile()
+			End Select
+		Next
 
-        If D64Name = "" Then TsbNew_Click(sender, e)
+		txtSector.AllowDrop = True
 
-        CX = 0 : CY = 0 : CB = 0
-        CursorPos(0)
+		If D64Name = "" Then TsbNew_Click(sender, e)
 
-        Exit Sub
+		CX = 0 : CY = 0 : CB = 0
+		CursorPos(0)
+
+		Exit Sub
 Err:
-        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+		MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
-    End Sub
+	End Sub
 
-    Private Sub CalcILTab()
+	Private Sub CalcILTab()
         On Error GoTo Err
 
         Dim SMax, IL As Integer
@@ -152,10 +154,10 @@ NextSector:
             End If
         Next
 
-        IO.File.WriteAllBytes("C:\Users\Tamas\OneDrive\C64\Coding\TabT.prg", TabT)
-        IO.File.WriteAllBytes("C:\Users\Tamas\OneDrive\C64\Coding\TabS.prg", TabS)
+		IO.File.WriteAllBytes(UserFolder + "\OneDrive\C64\Coding\TabT.prg", TabT)
+		IO.File.WriteAllBytes(UserFolder + "\OneDrive\C64\Coding\TabS.prg", TabS)
 
-        Exit Sub
+		Exit Sub
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
@@ -333,9 +335,9 @@ ErrSaveFile:
     End Sub
 
     Private Sub TsbBuildDisk_ButtonClick(sender As Object, e As EventArgs) Handles tsbBuildDisk.ButtonClick
-        On Error GoTo Err
+		'On Error GoTo Err
 
-        Dim OpenDLG As New OpenFileDialog
+		Dim OpenDLG As New OpenFileDialog
 
         With OpenDLG
             .Filter = "Sparkle Loader Script files (*.sls)|*.sls"
@@ -373,9 +375,9 @@ Err:
             If InStr(Script, "File:") = 0 Then
                 MsgBox("This script does not contain any files", vbOKOnly, "Unable to build disk")
             Else
-                Cursor = Cursors.WaitCursor
-                MakeDisk(sender, e)
-                Cursor = Cursors.Default
+				'Cursor = Cursors.WaitCursor
+				MakeDisk(sender, e)
+                'Cursor = Cursors.Default
             End If
         End If
 
@@ -386,9 +388,9 @@ Err:
     End Sub
 
     Private Sub MakeDisk(sender As Object, e As EventArgs, Optional OnTheFly As Boolean = False)  'Args needed for button Sub calls
-        On Error GoTo Err
+		'On Error GoTo Err
 
-        Dim DiskOK As Boolean
+		Dim DiskOK As Boolean
 
         Cursor = Cursors.WaitCursor
 
@@ -1025,10 +1027,10 @@ Err:
             If InStr(Script, "File:") = 0 Then
                 MsgBox("This script does not contain any files", vbOKOnly, "Unable to build disk")
             Else
-                Cursor = Cursors.WaitCursor
-                MakeDisk(sender, e)
-                Cursor = Cursors.Default
-            End If
+				'Cursor = Cursors.WaitCursor
+				MakeDisk(sender, e)
+				'Cursor = Cursors.Default
+			End If
         End If
 
         Exit Sub
@@ -1224,10 +1226,10 @@ Err:
         CS = 1
 
         ShowSector()
-        If IO.Directory.Exists("C:\Users\Tamas\Desktop") Then
-            D64Name = "C:\Users\Tamas\Desktop\Loader Test.d64"
-        Else
-            D64Name = "C:\"
+		If IO.Directory.Exists(UserDeskTop) Then
+			D64Name = UserDeskTop + "\Loader Test.d64"
+		Else
+			D64Name = "C:\"
         End If
 
         CurrentDisk = -1    'This is needed if we have a script loaded when a test disk is being built

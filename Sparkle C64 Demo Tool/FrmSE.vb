@@ -65,8 +65,9 @@ Public Class FrmSE
     Private ReadOnly sFileLen As String = "File Length:  $"
     Private ReadOnly sDirArt As String = "DirArt: "
     Private ReadOnly sZP As String = "Zeropage: "
+	Private ReadOnly sPacker As String = "Packer: "
 
-    Private ReadOnly TT As New ToolTip
+	Private ReadOnly TT As New ToolTip
 
     Private ReadOnly tDiskPath As String = "Double click or press <Enter> to specify where your demo disk will be saved in D64 format."
     Private ReadOnly tDiskHeader As String = "Double click or press <Enter> to edit the disk's header."
@@ -89,11 +90,14 @@ Public Class FrmSE
     Private ReadOnly tFile As String = "Double click or press <Enter> to change this file." + vbNewLine +
                 "Press <Delete> to delete this file from this part."
     Private ReadOnly tZP As String = "Double click or press <Enter> to edit the loader's zeropage usage."
+	Private ReadOnly tPacker As String = "Double click or press <Enter> to change the loader's packer selection." + vbNewLine +
+				"The 'faster' option results in a faster but less effective compression and somewhat faster loading." + vbNewLine +
+				"The 'better' option results in a slower but more effective compression and somewhat slower loading."
 
-    Private Sub FrmSE_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+	Private Sub FrmSE_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         On Error GoTo Err
 
-        If My.Settings.EditorWindowMax = True Then
+		If My.Settings.EditorWindowMax = True Then
             WindowState = FormWindowState.Maximized
         Else
             WindowState = FormWindowState.Normal
@@ -101,7 +105,13 @@ Public Class FrmSE
             Height = My.Settings.EditorHeight
         End If
 
-        With TT
+		If My.Settings.DefaultPacker = 1 Then
+			OptFaster.Checked = True
+		Else
+			OptBetter.Checked = True
+		End If
+
+		With TT
             .ToolTipIcon = ToolTipIcon.Info
             .UseFading = True
             .InitialDelay = 2000
@@ -408,9 +418,17 @@ FileData:
                         N.Text = .Tag
                         .Left = tv.Left + N.Bounds.Left + N.Bounds.Width
                         .MaxLength = 2
-                        .Visible = True
-                    Case Else
-                        .Visible = False
+						.Visible = True
+					Case sPacker
+						.Visible = False
+						Select Case LCase(Strings.Right(N.Text, 6))
+							Case "faster"
+								N.Text = sPacker + "better"
+							Case "better"
+								N.Text = sPacker + "faster"
+						End Select
+					Case Else
+						.Visible = False
                 End Select
                 .Top = tv.Top + N.Bounds.Top + 3
                 .ForeColor = N.ForeColor
@@ -841,11 +859,12 @@ Done:
         AddNode(N, sDemoName + DC.ToString, sDemoName + "demo", N.Tag, Color.DarkGreen, Fnt)
         AddNode(N, sDemoStart + DC.ToString, sDemoStart + "$", N.Tag, Color.DarkGreen, Fnt)
         AddNode(N, sDirArt + DC.ToString, sDirArt, N.Tag, Color.DarkGreen, Fnt)
-        If DC = 1 Then
-            AddNode(N, sZP + DC.ToString, sZP + "$02", N.Tag, Color.DarkGreen, Fnt)
-        End If
+		If DC = 1 Then
+			AddNode(N, sZP + DC.ToString, sZP + "$02", N.Tag, Color.DarkGreen, Fnt)
+			AddNode(N, sPacker + DC.ToString, sPacker + IIf(My.Settings.DefaultPacker = 1, "faster", "better"), N.Tag, Color.DarkGreen, Fnt)
+		End If
 
-        AddNewPartNode(N)       '[Add new part...]
+		AddNewPartNode(N)       '[Add new part...]
 
         UpdateNewPartNode()     '->[Part 1] + [Add new file...]
 
@@ -1329,56 +1348,56 @@ Err:
 
     End Sub
 
-    Private Sub BtnCancel_Click(sender As Object, e As EventArgs) Handles btnCancel.Click
-        On Error GoTo Err
+	Private Sub BtnCancel_Click(sender As Object, e As EventArgs) Handles btnCancel.Click
+		On Error GoTo Err
 
-        bBuildDisk = False
+		bBuildDisk = False
 
-        Me.Close()
+		Me.Close()
 
-        Exit Sub
+		Exit Sub
 Err:
-        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+		MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
-    End Sub
+	End Sub
 
-    Private Sub SaveFile(Optional dlgTitle As String = "", Optional dlgFilter As String = "", Optional dlgPath As String = "", Optional dlgFile As String = "", Optional OW As Boolean = True)
-        On Error GoTo Err
+	Private Sub SaveFile(Optional dlgTitle As String = "", Optional dlgFilter As String = "", Optional dlgPath As String = "", Optional dlgFile As String = "", Optional OW As Boolean = True)
+		On Error GoTo Err
 
-        If dlgTitle = "" Then
-            dlgTitle = "Save"
-        End If
+		If dlgTitle = "" Then
+			dlgTitle = "Save"
+		End If
 
-        If dlgFilter = "" Then
-            dlgFilter = "Sparkle Loader Script files (*.sls)|*.sls"
-        End If
+		If dlgFilter = "" Then
+			dlgFilter = "Sparkle Loader Script files (*.sls)|*.sls"
+		End If
 
-        If dlgPath = "" Then
-            dlgPath = "C:\Users\Tamas\OneDrive\C64\Coding"
-        End If
+		If dlgPath = "" Then
+			dlgPath = UserFolder + "\OneDrive\C64\Coding"
+		End If
 
-        If dlgFile = "" Then
-            dlgFile = ScriptName
-        End If
+		If dlgFile = "" Then
+			dlgFile = ScriptName
+		End If
 
-        Dim SaveDLG As New SaveFileDialog
+		Dim SaveDLG As New SaveFileDialog
 
-        With SaveDLG
-            .Title = dlgTitle
-            .Filter = dlgFilter
-            .FileName = dlgFile
-            .OverwritePrompt = OW
-            .RestoreDirectory = True
-            Dim R As DialogResult = SaveDLG.ShowDialog(Me)
+		With SaveDLG
+			.Title = dlgTitle
+			.Filter = dlgFilter
+			.FileName = dlgFile
+			.OverwritePrompt = OW
+			.RestoreDirectory = True
+			Dim R As DialogResult = SaveDLG.ShowDialog(Me)
 
-            If R = Windows.Forms.DialogResult.OK Then
-                NewFile = .FileName
-            Else
-                NewFile = ""
-            End If
-        End With
+			If R = Windows.Forms.DialogResult.OK Then
+				NewFile = .FileName
+			Else
+				NewFile = ""
+			End If
+		End With
 
-        Exit Sub
+		Exit Sub
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
@@ -1995,6 +2014,8 @@ Err:
         tv.Nodes.Clear()
         AddNewDiskNode()
 
+		Packer = My.Settings.DefaultPacker
+
 NewDisk:
         tv.SelectedNode = tv.Nodes(sAddDisk)
 
@@ -2043,12 +2064,23 @@ FindNext:
                         ScriptEntryArray(0) = ScriptPath + ScriptEntryArray(0)
                     End If
                 End If
-                UpdateNode(DiskNode.Nodes(sDirArt + DC.ToString), sDirArt + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt)', tDirArt)
-            Case "zp:"
-                If CurrentDisk = 1 Then 'ZP can only be set from the first disk
-                    Dim Fnt As New Font("Consolas", 10)
-                    UpdateNode(DiskNode.Nodes(sZP + DC.ToString), sZP + "$" + LCase(ScriptEntryArray(0)), DiskNode.Tag, Color.DarkGreen, Fnt) ', tDemoStart)
-                End If
+				UpdateNode(DiskNode.Nodes(sDirArt + DC.ToString), sDirArt + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt)
+			Case "zp:"
+				If CurrentDisk = 1 Then 'ZP can only be set from the first disk
+					Dim Fnt As New Font("Consolas", 10)
+					UpdateNode(DiskNode.Nodes(sZP + DC.ToString), sZP + "$" + LCase(ScriptEntryArray(0)), DiskNode.Tag, Color.DarkGreen, Fnt)
+				End If
+			Case "packer:"
+				If CurrentDisk = 1 Then 'ZP can only be set from the first disk
+					Dim Fnt As New Font("Consolas", 10)
+					UpdateNode(DiskNode.Nodes(sPacker + DC.ToString), sPacker + LCase(ScriptEntryArray(0)), DiskNode.Tag, Color.DarkGreen, Fnt)
+					Select Case LCase(ScriptEntryArray(0))
+						Case "faster"
+							Packer = 1
+						Case "better"
+							Packer = 2
+					End Select
+				End If
 			Case "file:"
 				AddFileFromScript(DiskNode)
             Case "new disk"
@@ -2401,9 +2433,10 @@ Err:
             "Start:" + vbTab + SA + vbNewLine +
             "DirArt:" + vbTab + Strings.Right(N.Nodes(5).Text, N.Nodes(5).Text.Length - Len(sDirArt))
             If D = 0 Then
-                'ZP only for first disk
-                S += vbNewLine + "ZP:" + vbTab + Strings.Right(N.Nodes(6).Text, N.Nodes(6).Text.Length - Len(sZP + "$"))
-            End If
+				'ZP only for first disk
+				S += vbNewLine + "ZP:" + vbTab + Strings.Right(N.Nodes(6).Text, N.Nodes(6).Text.Length - Len(sZP + "$"))
+				S += vbNewLine + "Packer:" + vbTab + Strings.Right(N.Nodes(7).Text, N.Nodes(7).Text.Length - Len(sPacker))
+			End If
 
             For P As Integer = DP To N.Nodes.Count - 2
                 If N.Nodes(P).Nodes.Count > 1 Then
@@ -2482,17 +2515,18 @@ Err:
 
         If txtEdit.Visible Then tv.Focus()
 
-        With My.Settings
-            .ShowFileDetails = chkExpand.Checked
-            .ShowToolTips = chkToolTips.Checked
-            .EditorWindowMax = Me.WindowState = FormWindowState.Maximized
-            If WindowState = FormWindowState.Normal Then
-                .EditorHeight = Height
-                .EditorWidth = Width
-            End If
-        End With
+		With My.Settings
+			.DefaultPacker = IIf(OptFaster.Checked, 1, 2)
+			.ShowFileDetails = chkExpand.Checked
+			.ShowToolTips = chkToolTips.Checked
+			.EditorWindowMax = Me.WindowState = FormWindowState.Maximized
+			If WindowState = FormWindowState.Normal Then
+				.EditorHeight = Height
+				.EditorWidth = Width
+			End If
+		End With
 
-        ConvertNodesToScript()
+		ConvertNodesToScript()
 
         Exit Sub
 Err:
@@ -2533,18 +2567,28 @@ Err:
 
     End Sub
 
-    Private Sub Tv_DragDrop(sender As Object, e As DragEventArgs) Handles tv.DragDrop
-        On Error GoTo Err
+	Private Sub OptFaster_CheckedChanged(sender As Object, e As EventArgs) Handles OptFaster.CheckedChanged
 
-        FrmSE_DragDrop(sender, e)
+		If OptFaster.Checked = True Then
+			My.Settings.DefaultPacker = 1
+		Else
+			My.Settings.DefaultPacker = 2
+		End If
 
-        Exit Sub
+	End Sub
+
+	Private Sub Tv_DragDrop(sender As Object, e As DragEventArgs) Handles tv.DragDrop
+		On Error GoTo Err
+
+		FrmSE_DragDrop(sender, e)
+
+		Exit Sub
 Err:
-        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+		MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
-    End Sub
+	End Sub
 
-    Private Sub Tv_DragEnter(sender As Object, e As DragEventArgs) Handles tv.DragEnter
+	Private Sub Tv_DragEnter(sender As Object, e As DragEventArgs) Handles tv.DragEnter
         On Error GoTo Err
 
         FrmSE_DragEnter(sender, e)
@@ -2653,9 +2697,10 @@ Err:
             BtnPartDown.Left = .Left
             chkExpand.Left = .Left
             chkToolTips.Left = .Left
-        End With
+			PnlPacker.Left = .Left - 11
+		End With
 
-        With btnOK
+		With btnOK
             .Top = tv.Top + tv.Height - .Height
             .Left = btnNew.Left
         End With
@@ -2665,7 +2710,8 @@ Err:
             .Left = btnNew.Left
         End With
 
-        Exit Sub
+
+		Exit Sub
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
@@ -2829,9 +2875,12 @@ Err:
                         TTT = tDirArt
                     Case sZP
                         .ToolTipTitle = "Zeropage Usage"
-                        TTT = tZP
-                    Case Else
-                End Select
+						TTT = tZP
+					Case sPacker
+						.ToolTipTitle = "Packer to be used"
+						TTT = tPacker
+					Case Else
+				End Select
             End If
 
             If TTT <> "" Then

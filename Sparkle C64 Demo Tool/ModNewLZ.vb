@@ -6,11 +6,11 @@
 	Private ReadOnly DoDebug As Boolean = False
 	Private ReadOnly MaxLit As Integer = 1 + 4 + 8 + 32 - 1  '=44 - this seems to be optimal, 1+4+8+16 and 1+4+8+64 are worse...
 
-	Private ReadOnly LongMatchTag As Byte = &HF8    'Could be changed to &H00, but this is more economical
-	Private ReadOnly NextFileTag As Byte = &HFC
-	Private ReadOnly EndTag As Byte = 0             'Could be changed to &HF8, but this is more economical (Number of EndTags > Number of LongMatchTags)
+	Public ReadOnly LongMatchTag As Byte = &HF8    'Could be changed to &H00, but this is more economical
+	Public ReadOnly NextFileTag As Byte = &HFC
+	Public ReadOnly EndTag As Byte = 0             'Could be changed to &HF8, but this is more economical (Number of EndTags > Number of LongMatchTags)
 
-    Private FirstBlockOfNextFile As Boolean = False 'If true, this is the first block of next file in same buffer, Lit Selector Bit NOT NEEEDED
+	Private FirstBlockOfNextFile As Boolean = False 'If true, this is the first block of next file in same buffer, Lit Selector Bit NOT NEEEDED
     Private NextFileInBuffer As Boolean = False     'Indicates whether the next file is added to the same buffer
 
     Private BlockUnderIO As Integer = 0
@@ -21,208 +21,208 @@
     Private PreOL As Boolean = False
     Private PostOL As Boolean = False
 
-    Public Sub NewLZ(PN As Byte(), Optional FA As String = "", Optional FO As String = "", Optional FL As String = "", Optional FUIO As Boolean = False)
-        On Error GoTo Err
-        'The only two parameters that are needed are FA and FUIO
+	Public Sub NewLZ(PN As Byte(), Optional FA As String = "", Optional FUIO As Boolean = False)
+		On Error GoTo Err
+		'The only two parameters that are needed are FA and FUIO
 
-        Dim FAN, FON, FLN As Integer
+		'Dim FAN, FON, FLN As Integer
 
-        '----------------------------------------------------------------------------------------------------------
-        'PROCESS FILE
-        '----------------------------------------------------------------------------------------------------------
+		'----------------------------------------------------------------------------------------------------------
+		'PROCESS FILE
+		'----------------------------------------------------------------------------------------------------------
 
-        'If TypeOf PN Is Byte() Then
-        'This does not need to be trimmed!!!
-        Prg = PN
-        FileUnderIO = FUIO
-        PrgAdd = Convert.ToInt32(FA, 16)
-        PrgLen = Prg.Length     'Convert.ToInt32(FL,16)
+		'If TypeOf PN Is Byte() Then
+		'This does not need to be trimmed!!!
+		Prg = PN
+		FileUnderIO = FUIO
+		PrgAdd = Convert.ToInt32(FA, 16)
+		PrgLen = Prg.Length     'Convert.ToInt32(FL,16)
 
-        'MsgBox(Hex(PrgAdd) + vbNewLine + Hex(PrgLen))
+		'MsgBox(Hex(PrgAdd) + vbNewLine + Hex(PrgLen))
 
-        'ElseIf TypeOf PN Is String Then     'THIS IS NO LONGER USED
-        'ReDim Prg(0)
+		'ElseIf TypeOf PN Is String Then     'THIS IS NO LONGER USED
+		'ReDim Prg(0)
 
-        ''Read file to prg()
-        'If Strings.Right(PN, 1) = "*" Then
-        'If IO.File.Exists(Left(PN, Len(PN) - 1)) = True Then
-        'Prg = IO.File.ReadAllBytes(Left(PN, Len(PN) - 1))
-        'FileUnderIO = True
-        'Else
-        'MsgBox(PN + vbNewLine + vbNewLine + "does not exist!", vbInformation + vbOKOnly)
-        'Exit Sub
-        'End If
-        'Else
-        'If IO.File.Exists(PN) = True Then
-        'Prg = IO.File.ReadAllBytes(PN)
-        'FileUnderIO = False
-        'Else
-        'MsgBox(PN + vbNewLine + vbNewLine + "does not exist!", vbInformation + vbOKOnly)
-        'Exit Sub
-        'End If
-        'End If
+		''Read file to prg()
+		'If Strings.Right(PN, 1) = "*" Then
+		'If IO.File.Exists(Left(PN, Len(PN) - 1)) = True Then
+		'Prg = IO.File.ReadAllBytes(Left(PN, Len(PN) - 1))
+		'FileUnderIO = True
+		'Else
+		'MsgBox(PN + vbNewLine + vbNewLine + "does not exist!", vbInformation + vbOKOnly)
+		'Exit Sub
+		'End If
+		'Else
+		'If IO.File.Exists(PN) = True Then
+		'Prg = IO.File.ReadAllBytes(PN)
+		'FileUnderIO = False
+		'Else
+		'MsgBox(PN + vbNewLine + vbNewLine + "does not exist!", vbInformation + vbOKOnly)
+		'Exit Sub
+		'End If
+		'End If
 
-        'If InStr(LCase(PN), ".sid") <> 0 Then               'SID file
-        'FAN = Prg(Prg(7)) + (Prg(Prg(7) + 1) * 256)
-        'FON = Prg(7) + 2
-        'FLN = Prg.Length - FON
-        'Else                                                'any other file
-        ''Update File Start Address
-        'If FA = "" Then                                 'if address is not specified then
-        'If Prg.Length > 2 Then                      'we need at least 3 bytes
-        'FAN = Prg(1) * 256 + Prg(0)             'address = first 2 bytes of file
-        'FON = 2                                 'offset = 2
-        'FLN = Prg.Length - FON                  'length = prg length - 2
-        'Else                                        'short file without parameters, stop process and ask for clarification
-        'MsgBox("File parameters are needed for the following file:" + vbNewLine + vbNewLine + PN, vbCritical + vbOKOnly, "Missing file parameters")
-        'Exit Sub
-        'End If
-        'Else
-        'FAN = Convert.ToInt32(FA, 16)               'address specified in script, check if offset is specified
-        ''Update File Start Offset
-        'If FO = "" Then                             'if offset not specified then
-        'FON = 0                                 'offset = 0
-        'FLN = Prg.Length                        'length = prg length
-        'Else
-        'FON = Convert.ToInt32(FO, 16)           'offset specified in script, check if length is specified
-        'If FON > Prg.Length - 1 Then
-        'FON = Prg.Length - 1
-        'End If
-        ''Update File Length
-        'If FL = "" Then                         'if length is not specified then
-        'FLN = Prg.Length - FON              'length = prg length - 2
-        'Else
-        'FLN = Convert.ToInt32(FL, 16)       'length is specified
-        'If FLN + FON > Prg.Length Then      'make sure specified length is valid
-        'FLN = Prg.Length - FON
-        'End If
-        'End If
-        'End If
-        'End If
-        'End If
-        'PrgAdd = FAN
-        'PrgLen = FLN
+		'If InStr(LCase(PN), ".sid") <> 0 Then               'SID file
+		'FAN = Prg(Prg(7)) + (Prg(Prg(7) + 1) * 256)
+		'FON = Prg(7) + 2
+		'FLN = Prg.Length - FON
+		'Else                                                'any other file
+		''Update File Start Address
+		'If FA = "" Then                                 'if address is not specified then
+		'If Prg.Length > 2 Then                      'we need at least 3 bytes
+		'FAN = Prg(1) * 256 + Prg(0)             'address = first 2 bytes of file
+		'FON = 2                                 'offset = 2
+		'FLN = Prg.Length - FON                  'length = prg length - 2
+		'Else                                        'short file without parameters, stop process and ask for clarification
+		'MsgBox("File parameters are needed for the following file:" + vbNewLine + vbNewLine + PN, vbCritical + vbOKOnly, "Missing file parameters")
+		'Exit Sub
+		'End If
+		'Else
+		'FAN = Convert.ToInt32(FA, 16)               'address specified in script, check if offset is specified
+		''Update File Start Offset
+		'If FO = "" Then                             'if offset not specified then
+		'FON = 0                                 'offset = 0
+		'FLN = Prg.Length                        'length = prg length
+		'Else
+		'FON = Convert.ToInt32(FO, 16)           'offset specified in script, check if length is specified
+		'If FON > Prg.Length - 1 Then
+		'FON = Prg.Length - 1
+		'End If
+		''Update File Length
+		'If FL = "" Then                         'if length is not specified then
+		'FLN = Prg.Length - FON              'length = prg length - 2
+		'Else
+		'FLN = Convert.ToInt32(FL, 16)       'length is specified
+		'If FLN + FON > Prg.Length Then      'make sure specified length is valid
+		'FLN = Prg.Length - FON
+		'End If
+		'End If
+		'End If
+		'End If
+		'End If
+		'PrgAdd = FAN
+		'PrgLen = FLN
 
-        ''Update File Start Address
-        ''If FA = "" Then
-        ''FAN = Prg(1) * 256 + Prg(0)
-        ''Else
-        ''FAN = Convert.ToInt32(FA, 16)
-        ''End If
-        ''PrgAdd = FAN
+		''Update File Start Address
+		''If FA = "" Then
+		''FAN = Prg(1) * 256 + Prg(0)
+		''Else
+		''FAN = Convert.ToInt32(FA, 16)
+		''End If
+		''PrgAdd = FAN
 
-        ''Update File Start Offset
-        ''If FO = "" Then
-        ''FON = 2
-        ''Else
-        ''FON = Convert.ToInt32(FO, 16)
-        ''End If
+		''Update File Start Offset
+		''If FO = "" Then
+		''FON = 2
+		''Else
+		''FON = Convert.ToInt32(FO, 16)
+		''End If
 
-        ''Update File Length
-        ''If FL = "" Then
-        ''FLN = Prg.Length - FON
-        ''Else
-        ''FLN = Convert.ToInt32(FL, 16)
-        ''If FLN + FON > Prg.Length Then
-        ''FLN = Prg.Length - FON
-        ''End If
-        ''End If
-        ''PrgLen = FLN    'Prg.Length
+		''Update File Length
+		''If FL = "" Then
+		''FLN = Prg.Length - FON
+		''Else
+		''FLN = Convert.ToInt32(FL, 16)
+		''If FLN + FON > Prg.Length Then
+		''FLN = Prg.Length - FON
+		''End If
+		''End If
+		''PrgLen = FLN    'Prg.Length
 
 
-        ''Trim prg from offset to a length of FLN
-        'For I As Integer = 0 To FLN - 1
-        'Prg(I) = Prg(FON + I)
-        'Next
-        'ReDim Preserve Prg(FLN - 1)
-        'End If
+		''Trim prg from offset to a length of FLN
+		'For I As Integer = 0 To FLN - 1
+		'Prg(I) = Prg(FON + I)
+		'Next
+		'ReDim Preserve Prg(FLN - 1)
+		'End If
 
-        '----------------------------------------------------------------------------------------------------------
-        'DETECT BUFFER STATUS AND INITIALIZE COMPRESSION
-        '----------------------------------------------------------------------------------------------------------
+		'----------------------------------------------------------------------------------------------------------
+		'DETECT BUFFER STATUS AND INITIALIZE COMPRESSION
+		'----------------------------------------------------------------------------------------------------------
 
-        If ((BufferCnt = 0) And (ByteCnt = 254)) Or (ByteCnt = 255) Then
-            FirstBlockOfNextFile = False                            'First block in buffer, Lit Selector Bit is needed (will be compression bit)
-            NextFileInBuffer = False                                'This is the first file that is being added to an empty buffer
-        Else
-            FirstBlockOfNextFile = True                             'First block of next file in same buffer, Lit Selector Bit NOT NEEEDED
-            NextFileInBuffer = True                                 'Next file is being added to buffer that already has data
-        End If
+		If ((BufferCnt = 0) And (ByteCnt = 254)) Or (ByteCnt = 255) Then
+			FirstBlockOfNextFile = False                            'First block in buffer, Lit Selector Bit is needed (will be compression bit)
+			NextFileInBuffer = False                                'This is the first file that is being added to an empty buffer
+		Else
+			FirstBlockOfNextFile = True                             'First block of next file in same buffer, Lit Selector Bit NOT NEEEDED
+			NextFileInBuffer = True                                 'Next file is being added to buffer that already has data
+		End If
 
-        If NewPart Then
-            BlockPtr = ByteSt.Count + 255                           'If this is a new part, store Block Counter Pointer
-            NewPart = False
-        End If
+		If NewPart Then
+			BlockPtr = ByteSt.Count + 255                           'If this is a new part, store Block Counter Pointer
+			NewPart = False
+		End If
 
-        Buffer(ByteCnt) = (PrgAdd + PrgLen - 1) Mod 256             'Add Address Hi Byte
-        AdLoPos = ByteCnt
+		Buffer(ByteCnt) = (PrgAdd + PrgLen - 1) Mod 256             'Add Address Hi Byte
+		AdLoPos = ByteCnt
 
-        If CheckIO(PrgLen - 1) = 1 Then                             'Check if last byte of block is under IO or in ZP
-            BlockUnderIO = 1                                        'Yes, set BUIO flag
-            ByteCnt -= 1                                            'And skip 1 byte (=0) for IO Flag
-        Else
-            BlockUnderIO = 0
-        End If
+		If CheckIO(PrgLen - 1) = 1 Then                             'Check if last byte of block is under IO or in ZP
+			BlockUnderIO = 1                                        'Yes, set BUIO flag
+			ByteCnt -= 1                                            'And skip 1 byte (=0) for IO Flag
+		Else
+			BlockUnderIO = 0
+		End If
 
-        Buffer(ByteCnt - 1) = Int((PrgAdd + PrgLen - 1) / 256)      'Add Address Lo Byte
-        AdHiPos = ByteCnt - 1
+		Buffer(ByteCnt - 1) = Int((PrgAdd + PrgLen - 1) / 256)      'Add Address Lo Byte
+		AdHiPos = ByteCnt - 1
 
-        ByteCnt -= 2
-        LitCnt = -1                                                 'Reset LitCnt here
-        LastByte = ByteCnt                       'The first byte of the ByteStream after (BlockCnt and IO Flag and) Address Bytes (251..253)
+		ByteCnt -= 2
+		LitCnt = -1                                                 'Reset LitCnt here
+		LastByte = ByteCnt                       'The first byte of the ByteStream after (BlockCnt and IO Flag and) Address Bytes (251..253)
 
-        'BufferCt = 0                           'First buffer of new file
-        MatchStart = PrgLen - 1    '2
-        Buffer(ByteCnt) = Prg(PrgLen - 1)        'Add last byte of Prg to buffer
-        LitCnt += 1
-        ByteCnt -= 1
+		'BufferCt = 0                           'First buffer of new file
+		MatchStart = PrgLen - 1    '2
+		Buffer(ByteCnt) = Prg(PrgLen - 1)        'Add last byte of Prg to buffer
+		LitCnt += 1
+		ByteCnt -= 1
 
-        '----------------------------------------------------------------------------------------------------------
-        'COMPRESS FILE
-        '----------------------------------------------------------------------------------------------------------
+		'----------------------------------------------------------------------------------------------------------
+		'COMPRESS FILE
+		'----------------------------------------------------------------------------------------------------------
 
-        For POffset = PrgLen - 2 To 0 Step -1   'Skip Last byte
+		For POffset = PrgLen - 2 To 0 Step -1   'Skip Last byte
 
 Restart:
 
-            If FindMatch() = True Then
+			If FindMatch() = True Then
 
-                'MATCH
-                'Longest Match found, now check if it is a Longmatch, a Farmatch or a ShortMatch
-                If MaxLen > MaxMidLen Then
-                    'MaxLen=63-255
-                    If LongMatch() = False Then GoTo Restart        'FALSE means nothing fit in buffer, new buffer was started
-                ElseIf MaxLen > MaxShortLen Then
-                    'MaxLen=4-62
-                    If MidMatch() = False Then GoTo Restart
-                Else
-                    'MaxLen=1-3
-                    If MaxOffset > 64 Then
-                        'MaxOffset>64
-                        If MidMatch() = False Then GoTo Restart
-                    Else
-                        'MaxOffset=<64
-                        If ShortMatch() = False Then GoTo Restart
-                    End If
-                End If
-            Else
-                If Literal() = False Then GoTo Restart
-            End If
-        Next
+				'MATCH
+				'Longest Match found, now check if it is a Longmatch, a Farmatch or a ShortMatch
+				If MaxLen > MaxMidLen Then
+					'MaxLen=63-255
+					If LongMatch() = False Then GoTo Restart        'FALSE means nothing fit in buffer, new buffer was started
+				ElseIf MaxLen > MaxShortLen Then
+					'MaxLen=4-62
+					If MidMatch() = False Then GoTo Restart
+				Else
+					'MaxLen=1-3
+					If MaxOffset > 64 Then
+						'MaxOffset>64
+						If MidMatch() = False Then GoTo Restart
+					Else
+						'MaxOffset=<64
+						If ShortMatch() = False Then GoTo Restart
+					End If
+				End If
+			Else
+				If Literal() = False Then GoTo Restart
+			End If
+		Next
 
-        'Done with file, check literal counter, and update bitstream if LitCnt > -1
-        If LitCnt > -1 Then AddLitBits()
+		'Done with file, check literal counter, and update bitstream if LitCnt > -1
+		If LitCnt > -1 Then AddLitBits()
 
 
-        'All Lit Bytes and Bits are now added, but LitCnt is NOT reset here (needed for next match tag in buffer if another file is added)
+		'All Lit Bytes and Bits are now added, but LitCnt is NOT reset here (needed for next match tag in buffer if another file is added)
 
-        Exit Sub
+		Exit Sub
 Err:
-        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+		MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
-    End Sub
+	End Sub
 
-    Private Function FindMatch(Optional PO As Integer = -1) As Boolean
+	Private Function FindMatch(Optional PO As Integer = -1) As Boolean
         'FINDS MATCHES AND IDENTIFIES THE ONE THAT SAVES THE MOST
 
         On Error GoTo Err
@@ -238,10 +238,10 @@ Err:
 		'If BlockCnt > 1 Then
 		If CMStart > MatchStart Then CMStart = MatchStart
 		'Else
-		'If CMStart > PrgLen - 1 Then           'The first block is always loaded first, so the 2nd block can reach back to the 1st
-		'CMStart = PrgLen - 1                   'looking for matches
-		'End If                                 'Same applies to the last block which is always loaded last so it can search
-		'End If                                 'the next to last for matches
+		'If CMStart > PrgLen - 1 Then            'The first block is always loaded first, so the 2nd block can reach back to the 1st
+		'CMStart = PrgLen - 1                'looking for matches
+		'End If                                  'Same applies to the last block which is always loaded last so it can search
+		'End If                                      'the next to last for matches
 
 
 		'       PO                            CMPos (CMStart=PO+256 vs MatchStart)
@@ -265,7 +265,7 @@ NextByte:
 			If MLen > 1 Then    'Match length of at least 2 bytes
 				MLen -= 1
 				If (CmPos - PO > 64) And (MLen = 1) Then
-					'Exclude 2-byte mid matches
+					'Exclude 2 - Byte mid matches
 				Else
 					'Save it to Match List
 					MatchCnt += 1
@@ -273,18 +273,19 @@ NextByte:
 					ReDim Preserve MatchLen(MatchCnt)
 					ReDim Preserve MatchSave(MatchCnt)
 					ReDim Preserve MatchType(MatchCnt)
+
 					MatchOffset(MatchCnt) = CmPos - PO          'Save offset
 					MatchLen(MatchCnt) = MLen                   'Save len
 
 					If MLen > MaxMidLen Then                    'Calculate number of saved bytes and store it in MatchSave
-						'LongMatch (MLen=62-254)
+						'LongMatch (MLen=62-254) (actual length 63-255)
 						MatchSave(MatchCnt) = MLen - 2
 						MatchType(MatchCnt) = "l"
 					ElseIf MLen > MaxShortLen Then
-						'MidMatch (MLen=04-61)
+						'MidMatch (MLen=04-61) (actual length 05-62)
 						MatchSave(MatchCnt) = MLen - 1
 						MatchType(MatchCnt) = "m"
-					Else    'MLen=01-03
+					Else    'MLen=01-03 (actual length 02-04)
 						If MatchOffset(MatchCnt) > 64 Then
 							'MidMatch
 							MatchSave(MatchCnt) = MLen - 1
@@ -301,39 +302,47 @@ NextByte:
 		Next
 
 		If MatchCnt > 0 Then
-            'MATCHES FOUND, IDENTIFY MOST ECONOMIC ONE
+			'MATCHES FOUND, IDENTIFY MOST ECONOMIC ONE
 
-            'Find longest match in Match List
-            MaxSave = MatchSave(1)
+			'Reset MaxS variables for max short match
+			MaxSLen = 0
+			MaxSOff = 0
+			'Find longest match in Match List
+			MaxSave = MatchSave(1)
             MaxLen = MatchLen(1)
             MaxOffset = MatchOffset(1)
             MaxType = MatchType(1)
             Match = 1
-            For I = 1 To MatchCnt
-                If MatchSave(I) = MaxSave Then      'If next item saves the same number of bytes,
+			For I = 1 To MatchCnt
+				If MatchSave(I) = MaxSave Then      'If next item saves the same number of bytes,
 
-                    If MatchLen(I) > MaxLen Then    'Update, if match sequence is longer
-                        MaxSave = MatchSave(I)
-                        MaxLen = MatchLen(I)
-                        MaxOffset = MatchOffset(I)
-                        MaxType = MatchType(I)
-                        Match = I
-                    End If
+					If MatchLen(I) > MaxLen Then    'Update, if match sequence is longer
+						MaxSave = MatchSave(I)
+						MaxLen = MatchLen(I)
+						MaxOffset = MatchOffset(I)
+						MaxType = MatchType(I)
+						Match = I
+					End If
 
-                ElseIf MatchSave(I) > MaxSave Then  'Otherwise, update if saves more (decompression is faster this way)
+				ElseIf MatchSave(I) > MaxSave Then  'Otherwise, update if saves more (decompression is faster this way)
 
-                    MaxSave = MatchSave(I)
-                    MaxLen = MatchLen(I)
-                    MaxOffset = MatchOffset(I)
-                    MaxType = MatchType(I)
-                    Match = I
+					MaxSave = MatchSave(I)
+					MaxLen = MatchLen(I)
+					MaxOffset = MatchOffset(I)
+					MaxType = MatchType(I)
+					Match = I
 
-                End If
-            Next
+				End If
+				'This will save the longest short match in case a longer match would not fit in the buffer
+				If (MatchOffset(I) <= 64) And (MatchLen(I) < 4) And (MatchLen(I) > MaxSLen) Then
+					MaxSLen = MatchLen(I)
+					MaxSOff = MatchOffset(I)
+				End If
+			Next
 
-            If MaxSave = 0 Then
-                FindMatch = False
-            Else
+			If MaxSave = 0 Then
+				FindMatch = False
+			Else
                 FindMatch = True
             End If
         Else
@@ -346,7 +355,208 @@ Err:
 
     End Function
 
-    Private Function Find2ByteMatches() As Boolean
+	Private Function ReplaceMidWithShort() As Boolean
+		On Error GoTo Err
+		Dim Before As String = ""
+		Dim After As String = ""
+
+		'For I As Integer = 0 To LastMLen
+		'Before = Hex(Prg(LastPOffset + LastMOffset - I)) + " " + Before
+		'Next
+		'Before = "| " + Before
+		'For I As Integer = 0 To MaxLen
+		'Before = Hex(Prg(POffset + MaxOffset - I)) + " " + Before
+		'Next
+
+		ReplaceMidWithShort = False
+
+		Dim LastPO As Integer = LastPOffset
+		Dim TmpPO As Integer = POffset - MaxLen
+
+		Dim ReplaceLength As Byte = MaxLen + LastMLen + 2
+		If ReplaceLength < 6 Then GoTo NoReplace
+
+		Dim MaxL As Integer = 1         'Max match length found
+		Dim MaxO As Integer = 0         'Offset of match found
+		Dim MaxSL As Integer = IIf(ReplaceLength >= 8, 4, ReplaceLength - 4)        'Max length of short match we need
+
+		Dim FrstML, FrstMO As Integer
+		Dim ScndML, ScndMO As Integer
+		Dim ThrdML, ThrdMO As Integer
+
+		'Offset = 1 to 64 or what's left of prg.length
+		For O As Integer = IIf(Prg.Length - 1 - LastPOffset < 64, Prg.Length - 1 - LastPOffset, 64) To 1 Step -1
+			'Length = 0 to MaxSL or what's left till prg start
+			For L As Integer = 0 To IIf(LastPOffset >= MaxSL, MaxSL, LastPOffset)
+				If Prg(LastPOffset - L) <> Prg(LastPOffset + O - L) Then
+					If L > MaxL Then
+						'Match of at least 2 bytes
+						MaxL = L
+						MaxO = O
+					End If
+					Exit For
+				ElseIf L = MaxSL Then
+					MaxL = L
+					MaxO = O
+					Exit For
+				End If
+			Next
+			If MaxL = MaxSL Then
+				'We have found a max length match, search is complete
+				Exit For
+			End If
+		Next
+
+		'No match, matches cannot be replaced
+		If MaxL < 2 Then GoTo NoReplace
+
+		'Update shearch variables
+		ReplaceLength -= MaxL
+
+		'Remaining length is too long for 2 short matches
+		If ReplaceLength > 8 Then GoTo NoReplace
+
+		'Save first short match parameters
+		FrstML = MaxL
+		FrstMO = MaxO
+
+		'For L As Integer = 0 To FrstML - 1
+		'After = Hex(Prg(LastPOffset + FrstMO - L)) + " " + After
+		'Next
+		'After = "| " + After
+
+		MaxSL = IIf(ReplaceLength >= 6, 4, ReplaceLength - 2)
+
+		If MaxSL < 2 Then GoTo NoReplace
+
+		LastPOffset -= FrstML
+
+		MaxL = 0
+		MaxO = 0
+
+		'Offset = 1 to 64 or what's left of prg.length
+		For O As Integer = 1 To IIf(Prg.Length - 1 - LastPOffset < 64, Prg.Length - 1 - LastPOffset, 64)
+			'Length = 0 to MaxSL or what's left till prg start
+			For L As Integer = 0 To IIf(LastPOffset >= MaxSL, MaxSL, LastPOffset)
+				If Prg(LastPOffset - L) <> Prg(LastPOffset + O - L) Then
+					If Prg(LastPOffset - L) <> Prg(LastPOffset + O - L) Then
+						If L > MaxL Then
+							'Match of at least 2 bytes
+							MaxL = L
+							MaxO = O
+						End If
+						Exit For
+					ElseIf L = MaxSL Then
+						MaxL = L
+						MaxO = O
+						Exit For
+					End If
+				End If
+			Next
+			If MaxL = MaxSL Then
+				'We have found a max length match, search is complete
+				Exit For
+			End If
+		Next
+
+		'No match, matches cannot be replaced
+		If MaxL < 2 Then GoTo NoReplace
+
+		ReplaceLength -= MaxL
+
+		'More than 4 bytes left, longer than short match, replacement cannot be done
+		If ReplaceLength > 4 Then GoTo NoReplace
+
+		'Save second short match parameters
+		ScndML = MaxL
+		ScndMO = MaxO
+
+		'For I As Integer = 0 To MaxL - 1
+		'After = Hex(Prg(LastPOffset + MaxO - I)) + " " + After
+		'Next
+		'After = "| " + After
+
+		LastPOffset -= ScndML
+
+		MaxL = 0
+		MaxO = 0
+
+		'Offset = 1 to 64 or what's left of prg.length
+		For O As Integer = 1 To IIf(Prg.Length - 1 - LastPOffset < 64, Prg.Length - 1 - LastPOffset, 64)
+			'Length = 0 to 4 or what's left till prg start
+			For L As Integer = 0 To IIf(LastPOffset >= ReplaceLength, ReplaceLength, LastPOffset)
+				If Prg(LastPOffset - L) <> Prg(LastPOffset + O - L) Then
+					If L >= ReplaceLength Then
+						MaxL = ReplaceLength
+						MaxO = O
+					End If
+					Exit For
+				End If
+			Next
+			If MaxL = ReplaceLength Then
+				Exit For
+			End If
+		Next
+
+		'Last Match must be = remaining length to be replaced
+		If MaxL <> ReplaceLength Then GoTo NoReplace
+
+		'Save third short match parameters
+		ThrdML = MaxL
+		ThrdMO = MaxO
+
+
+		'For I As Integer = 0 To MaxL - 1
+		'After = Hex(Prg(LastPOffset + MaxO - I)) + " " + After
+		'Next
+
+		'Debug.Print(Before + vbTab + After)
+
+		'Debug.Print("Replacement found: " + (MaxLen + 1).ToString + "(" + MaxOffset.ToString + ") +" +
+		'			(LastMLen + 1).ToString + "(" + LastMOffset.ToString + ") " + vbTab +
+		'FrstML.ToString + "(" + FrstMO.ToString + ") " +
+		'			"+" + ScndML.ToString + "(" + ScndMO.ToString + ") " +
+		'			"+" + ThrdML.ToString + "(" + ThrdMO.ToString + ") ")
+
+		'GoTo NoReplace
+		'------------------------------------------------------------------
+		'	WE HAVE ALL 3 SHORT MATCHES TO REPLACE TO MID MATCHES WITH
+		'------------------------------------------------------------------
+
+		FrstML -= 1
+		ScndML -= 1
+		ThrdML -= 1
+
+		Buffer(ByteCnt + 2) = ((FrstMO - 1) * 4) + FrstML
+		AddRBits(0, 1)
+		Buffer(ByteCnt + 1) = ((ScndMO - 1) * 4) + ScndML
+		AddRBits(0, 1)
+		Buffer(ByteCnt + 0) = ((ThrdMO - 1) * 4) + ThrdML
+
+		LastByteCt = ByteCnt
+		LastMOffset = ThrdMO
+		LastMLen = ThrdML
+		LastMType = "s"
+
+		ByteCnt -= 1
+
+		POffset = LastPOffset - ThrdML
+
+		'Debug.Print(TmpPO = POffset)
+
+		ReplaceMidWithShort = True
+
+		Exit Function
+Err:
+		MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+NoReplace:
+		'Restore LastPOffset
+		LastPOffset = LastPO
+
+	End Function
+
+	Private Function Find2ByteMatches() As Boolean
         On Error GoTo Err
 
         Find2ByteMatches = False
@@ -627,9 +837,9 @@ Err:
     Private Sub SavePreMatch()
         On Error GoTo Err
 
-        'We are overwriting the first 2 literal bytes of the last literal sequence with a short MidMatch
+		'We are overwriting the first 2 literal bytes of the last literal sequence with a ShortMatch
 
-        Dim PreByteCnt As Integer = ByteCnt + LitCnt + 1        'Calculate update position in ByteStream
+		Dim PreByteCnt As Integer = ByteCnt + LitCnt + 1        'Calculate update position in ByteStream
 
         AddRBits(0, 1)                                          'We need Match Tag
 
@@ -728,9 +938,10 @@ Err:
 
     Private Sub SavePostMatch()
         On Error GoTo Err
-        'We are overwriting the last 2 literal bytes of the last literal sequence with a short MidMatch
 
-        Dim PostByteCnt As Integer = ByteCnt + 2                'Calculate update position in ByteStream
+		'We are overwriting the last 2 literal bytes of the last literal sequence with a short MidMatch
+
+		Dim PostByteCnt As Integer = ByteCnt + 2                'Calculate update position in ByteStream
 
         LitCnt -= 2                                             'New Literal Count
 
@@ -743,7 +954,13 @@ Err:
 
         LitCnt = -1
 
-        PostM = False
+		LastByteCt = PostByteCnt
+		LastMOffset = PostMOffset
+		LastMLen = 1
+		LastMType = "m"
+		LastPOffset = POffset + 2
+
+		PostM = False
 
         Exit Sub
 Err:
@@ -754,23 +971,29 @@ Err:
     Private Sub SavePostOverlap()
         On Error GoTo Err
 
-        'We are overwriting the last literal byte of the last literal sequence with a short MidMatch
+		'We are overwriting the last literal byte of the last literal sequence with a ShortMatch
 
-        Dim PreByteCnt As Integer = ByteCnt + 1         'Calculate update position in ByteStream
+		Dim PostByteCnt As Integer = ByteCnt + 1         'Calculate update position in ByteStream
 
-        LitCnt -= 1                                     'New Literal Count
+		LitCnt -= 1                                     'New Literal Count
 
         AddLitBits()                                    'Save literal bits
 
         If (LitCnt = -1) Or (LitCnt Mod (MaxLit + 1) = MaxLit) Then AddRBits(0, 1)   'If last Literal Length was -1 or Max, we need the Match Tag
 
-        Buffer(PreByteCnt) = ((PostOLMO - 1) * 4) + 1   'Length is always 1
+		Buffer(PostByteCnt) = ((PostOLMO - 1) * 4) + 1   'Length is always 1
 
-        LitCnt = -1                                     'reset Literal counter
+		LitCnt = -1                                     'reset Literal counter
 
-        PostOL = False
+		LastByteCt = PostByteCnt
+		LastMOffset = PostOLMO
+		LastMLen = 1
+		LastMType = "s"
+		LastPOffset = POffset + 1
 
-        Exit Sub
+		PostOL = False
+
+		Exit Sub
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
@@ -803,15 +1026,17 @@ Err:
                 AddMidM()
                 GoTo BufferFull
             Else
-                If MaxLen > MaxShortLen Then MaxLen = MaxShortLen     'Adjust MaxLen for ShortMatch
-                If (MaxOffset <= 64) And (DataFits(1, Bits, LitCnt, CheckIO(POffset - MaxLen + 1))) Then
-                    'Add short match here
-                    AddLitBits()
-                    AddShortM()
-                    GoTo BufferFull
-                Else
-                    'Match does not fit, check if we can add byte as literal
-                    CalcNeededBits()
+				If (MaxSLen <> 0) And ((DataFits(1, Bits, LitCnt, CheckIO(POffset - MaxLen + 1)))) Then
+					'MsgBox("!!")
+					MaxLen = MaxSLen
+					MaxOffset = MaxSOff
+					'Add short match here
+					AddLitBits()
+					AddShortM()
+					GoTo BufferFull
+				Else
+					'Match does not fit, check if we can add byte as literal
+					CalcNeededBits()
                     If DataFits(1, Bits, LitCnt + 1, CheckIO(POffset)) Then AddLitByte()        'Add Byte As literal And update LitCnt
                     AddLitBits()
 BufferFull:
@@ -833,24 +1058,35 @@ Err:
         If DoDebug Then Debug.Print("MidMatch")
         MidMatch = True
 
-        'MIDMATCH
+		'MIDMATCH
 
-        If LitCnt > -1 Then
-            'If there is a PostOverLap then we exit function and start FindMatch from next POffset again`
-            If Find2ByteMatches() = True Then Exit Function
-        End If
+		If LitCnt > -1 Then
+			'If there is a PostOverLap then we exit function and start FindMatch from next POffset again`
+			If Find2ByteMatches() = True Then Exit Function
+		End If
 
-        CalcNeededBits(True)
+		CalcNeededBits(True)
 
         'Check if Far Match fits
         If DataFits(2, Bits, LitCnt, CheckIO(POffset - MaxLen + 1)) = True Then
-            AddLitBits()        'First close last literal sequence
-            AddMidM()           'Then add Far Bytes
-        Else
-            If MaxLen > MaxShortLen Then MaxLen = MaxShortLen
-            If (MaxOffset <= 64) And DataFits(1, Bits, LitCnt, CheckIO(POffset - MaxLen + 1)) = True Then
-                AddLitBits()
-                AddShortM()
+			AddLitBits()        'First close last literal sequence, will not do anything if LitCnt=-1
+
+			'If no literals and MidMatch is preceded by another MidMatch and total length = 6-12 bytes
+			'then see if we can replace them with 3 ShortMatches (3B3b vs 4B2b) to save 7 bits
+			If (LitCnt = -1) And (LastMType = "m") And (MaxLen + 1 + LastMLen + 1 <= 12) And (MaxLen + 1 + LastMLen + 1 >= 6) Then
+				'--------------------------------------------------------------
+				'If ReplaceMidWithShort() = True Then Exit Function
+				'--------------------------------------------------------------
+			End If
+
+			AddMidM()           'Then add Mid Match
+		Else
+			If (MaxSLen <> 0) And ((DataFits(1, Bits, LitCnt, CheckIO(POffset - MaxLen + 1)))) Then
+				'MsgBox("!")
+				MaxLen = MaxSLen
+				MaxOffset = MaxSOff
+				AddLitBits()
+				AddShortM()
                 GoTo BufferFull
             Else
                 'Match does not fit, check if we can add byte as literal
@@ -879,8 +1115,8 @@ Err:
         'SHORTMATCH
 
         If LitCnt > -1 Then
-            'If there is a PostOverLap then we exit function and start FindMatch from next POffset again`
-            If Find2ByteMatches() = True Then Exit Function
+			'If there is a PostOverLap then we exit function and start FindMatch from next POffset again
+			If Find2ByteMatches() = True Then Exit Function
         End If
 
         CalcNeededBits(True)
@@ -1062,9 +1298,9 @@ Err:
         Buffer(ByteCnt - 2) = MaxOffset - 1
         ByteCnt -= 3
 
-        POffset -= MaxLen
+		POffset -= MaxLen
 
-        LitCnt = -1
+		LitCnt = -1
 
         LM += 1
 
@@ -1087,9 +1323,9 @@ Err:
         Buffer(ByteCnt - 1) = MaxOffset - 1
         ByteCnt -= 2
 
-        POffset -= MaxLen
+		POffset -= MaxLen
 
-        LitCnt = -1
+		LitCnt = -1
 
         Exit Sub
 Err:
@@ -1109,9 +1345,9 @@ Err:
         Buffer(ByteCnt) = ((MaxOffset - 1) * 4) + MaxLen
         ByteCnt -= 1
 
-        POffset -= MaxLen
+		POffset -= MaxLen
 
-        LitCnt = -1
+		LitCnt = -1
 
         Exit Sub
 Err:
@@ -1402,13 +1638,14 @@ Err:
 
         FilesInBuffer = 1
 
-        If BufferCnt = 0 Then
-            ByteCnt = 254        'First file in part, last byte of first block will be BlockCnt
-        Else
-            ByteCnt = 255        'All other blocks:	Bytestream start at the end of the buffer
+		If BufferCnt = 0 Then
+			ByteCnt = 254        'First file in part, last byte of first block will be BlockCnt
+
+		Else
+			ByteCnt = 255        'All other blocks:	Bytestream start at the end of the buffer
         End If
 
-        BitCnt = 0               'Bitstream always starts at the beginning of the buffer
+		BitCnt = 0               'Bitstream always starts at the beginning of the buffer
 
         BitPos = 15             'Reset Bit Position Counter (counts 16 bits backwards: 15-0)
 
@@ -1435,92 +1672,92 @@ Err:
 
     End Function
 
-    Public Function FinishPart(Optional NextFileIO As Integer = 1, Optional LastPartOnDisk As Boolean = False) As Boolean
-        On Error GoTo Err
+	Public Function FinishPart(Optional NextFileIO As Integer = 1, Optional LastPartOnDisk As Boolean = False) As Boolean
+		On Error GoTo Err
 
-        FinishPart = True
+		FinishPart = True
 
-        'ADDS NEW PART TAG (Long Match Tag + End Tag) TO THE END OF THE PART, AND RESERVES LAST BYTE IN BUFFER FOR BLOCK COUNT
-        Dim Bytes, Bits As Integer
+		'ADDS NEW PART TAG (Long Match Tag + End Tag) TO THE END OF THE PART, AND RESERVES LAST BYTE IN BUFFER FOR BLOCK COUNT
+		Dim Bytes, Bits As Integer
 
-        Bytes = 6 'BYTES NEEDED: BlockCnt + Long Match Tag + End Tag + AdLo + AdHi + 1st Literal (ByC=7 if BlockUnderIO=true - checked at DataFits)
+		Bytes = 6 'BYTES NEEDED: BlockCnt + Long Match Tag + End Tag + AdLo + AdHi + 1st Literal (ByC=7 if BlockUnderIO=true - checked at DataFits)
 
-        IIf((LitCnt = -1) Or (LitCnt Mod (MaxLit + 1) = MaxLit), Bits = 1, Bits = 0)   'Calculate whether Match Bit is needed for new part
+		IIf((LitCnt = -1) Or (LitCnt Mod (MaxLit + 1) = MaxLit), Bits = 1, Bits = 0)   'Calculate whether Match Bit is needed for new part
 
-        If DataFits(Bytes, Bits, LitCnt, NextFileIO) Then
+		If DataFits(Bytes, Bits, LitCnt, NextFileIO) Then
 
-            'Buffer has enough space for New Part Tag and New Part Info and first Literal byte (and IO flag if needed)
+			'Buffer has enough space for New Part Tag and New Part Info and first Literal byte (and IO flag if needed)
 
-            If (LitCnt = -1) Or (LitCnt Mod (MaxLit + 1) = MaxLit) Then AddRBits(0, 1)  'Add Match Selector Bit only if needed
+			If (LitCnt = -1) Or (LitCnt Mod (MaxLit + 1) = MaxLit) Then AddRBits(0, 1)  'Add Match Selector Bit only if needed
 NextPart:
 
-            FilesInBuffer += 1  'There is going to be more than 1 file in the buffer
+			FilesInBuffer += 1  'There is going to be more than 1 file in the buffer
 
-            If (BufferCnt > 0) And (FilesInBuffer = 2) Then         'Reserve last byte in buffer for Block Count...
-                For I = ByteCnt + 1 To 255                          '... only once, when the 2nd file is added to the same buffer
-                    Buffer(I - 1) = Buffer(I)
-                Next
-                ByteCnt -= 1
-                Buffer(255) = 1                                     'Last byte reserved for BlockCnt
-            End If
+			If (BufferCnt > 0) And (FilesInBuffer = 2) Then         'Reserve last byte in buffer for Block Count...
+				For I = ByteCnt + 1 To 255                          '... only once, when the 2nd file is added to the same buffer
+					Buffer(I - 1) = Buffer(I)
+				Next
+				ByteCnt -= 1
+				Buffer(255) = 1                                     'Last byte reserved for BlockCnt
+			End If
 
-            Buffer(ByteCnt) = LongMatchTag                          'Then add New File Match Tag
-            Buffer(ByteCnt - 1) = EndTag
-            ByteCnt -= 2
+			Buffer(ByteCnt) = LongMatchTag                          'Then add New File Match Tag
+			Buffer(ByteCnt - 1) = EndTag
+			ByteCnt -= 2
 
-            If LastPartOnDisk = True Then
-                Buffer(ByteCnt) = ByteCnt - 2   'Finish disk with a dummy literal byte that overwrites itself to reset LastX for next disk side
-                Buffer(ByteCnt - 1) = &H3
-                Buffer(ByteCnt - 2) = &H0
-                LitCnt = 0
-                AddRBits(0, 1)
-                'AddLitBits()                   'NOT NEEDED, WE ARE IN THE MIDDLE OF THE BUFFER, 1ST BIT NEEDS TO BE OMITTED
-                Buffer(ByteCnt - 3) = &H0       'ADD 2ND BIT SEPARATELY (0-BIT, TECHNCALLY, THIS IS NOT NEEDED)
-                ByteCnt -= 4
-            End If
+			If LastPartOnDisk = True Then
+				Buffer(ByteCnt) = ByteCnt - 2   'Finish disk with a dummy literal byte that overwrites itself to reset LastX for next disk side
+				Buffer(ByteCnt - 1) = &H3
+				Buffer(ByteCnt - 2) = &H0
+				LitCnt = 0
+				AddRBits(0, 1)
+				'AddLitBits()                   'NOT NEEDED, WE ARE IN THE MIDDLE OF THE BUFFER, 1ST BIT NEEDS TO BE OMITTED
+				Buffer(ByteCnt - 3) = &H0       'ADD 2ND BIT SEPARATELY (0-BIT, TECHNCALLY, THIS IS NOT NEEDED)
+				ByteCnt -= 4
+			End If
 
-            'DO NOT CLOSE LAST BUFFER HERE, WE ARE GOING TO ADD NEXT PART TO LAST BUFFER
+			'DO NOT CLOSE LAST BUFFER HERE, WE ARE GOING TO ADD NEXT PART TO LAST BUFFER
 
-            If ByteSt.Count > BlockPtr Then     'Only save block count if block is already added to ByteSt
-                ByteSt(BlockPtr) = LastBlockCnt
-                LoaderParts += 1
-            End If
+			If ByteSt.Count > BlockPtr Then     'Only save block count if block is already added to ByteSt
+				ByteSt(BlockPtr) = LastBlockCnt
+				LoaderParts += 1
+			End If
 
-            LitCnt = -1                                                 'Reset LitCnt here
-        Else
-            'Next File Info does not fit, so close buffer
-            CloseBuff()
-            'Then add 1 dummy literal byte to new block (blocks must start with 1 literal, next part tag is a match tag)
-            Buffer(255) = &HFC          'Dummy Address ($03fc* - first literal's address in buffer... (*NextPart above, will reserve BlockCnt)
-            Buffer(254) = &H3           '...we are overwriting it with the same value
-            Buffer(253) = &H0           'Dummy value, will be overwritten with itself
-            LitCnt = 0
-            AddLitBits()                'WE NEED THIS HERE, AS THIS IS THE BEGINNING OF THE BUFFER, AND 1ST BIT WILL BE CHANGED TO COMPRESSION BIT
-            ByteCnt = 252
-            LastBlockCnt += 1
+			LitCnt = -1                                                 'Reset LitCnt here
+		Else
+			'Next File Info does not fit, so close buffer
+			CloseBuff()
+			'Then add 1 dummy literal byte to new block (blocks must start with 1 literal, next part tag is a match tag)
+			Buffer(255) = &HFC          'Dummy Address ($03fc* - first literal's address in buffer... (*NextPart above, will reserve BlockCnt)
+			Buffer(254) = &H3           '...we are overwriting it with the same value
+			Buffer(253) = &H0           'Dummy value, will be overwritten with itself
+			LitCnt = 0
+			AddLitBits()                'WE NEED THIS HERE, AS THIS IS THE BEGINNING OF THE BUFFER, AND 1ST BIT WILL BE CHANGED TO COMPRESSION BIT
+			ByteCnt = 252
+			LastBlockCnt += 1
 
-            If LastBlockCnt > 255 Then
-                'Parts cannot be larger than 255 blocks compressed
-                'There is some confusion here how PartCnt is used in the Editor and during Disk building...
-                MsgBox("Part " + IIf(CompressPartFromEditor = True, PartCnt + 1, PartCnt).ToString + " would need " + LastBlockCnt.ToString + " blocks on the disk." + vbNewLine + vbNewLine + "Parts cannot be larger than 255 blocks!", vbOKOnly + vbCritical, "Part exceeds 255-block limit!")
-                If CompressPartFromEditor = False Then GoTo NoGo
-            End If
+			If LastBlockCnt > 255 Then
+				'Parts cannot be larger than 255 blocks compressed
+				'There is some confusion here how PartCnt is used in the Editor and during Disk building...
+				MsgBox("Part " + IIf(CompressPartFromEditor = True, PartCnt + 1, PartCnt).ToString + " would need " + LastBlockCnt.ToString + " blocks on the disk." + vbNewLine + vbNewLine + "Parts cannot be larger than 255 blocks!", vbOKOnly + vbCritical, "Part exceeds 255-block limit!")
+				If CompressPartFromEditor = False Then GoTo NoGo
+			End If
 
-            BlockCnt -= 1
-            'THEN GOTO NEXT PART SECTION
-            GoTo NextPart
-        End If
+			BlockCnt -= 1
+			'THEN GOTO NEXT PART SECTION
+			GoTo NextPart
+		End If
 
-        Exit Function
+		Exit Function
 Err:
-        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+		MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
 NoGo:
-        FinishPart = False
+		FinishPart = False
 
-    End Function
+	End Function
 
-    Public Sub FinishFile()
+	Public Sub FinishFile()
         On Error GoTo Err
 
         'ADDS NEXT FILE TAG TO BUFFER
