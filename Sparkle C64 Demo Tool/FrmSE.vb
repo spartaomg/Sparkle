@@ -421,13 +421,16 @@ FileData:
 						.Visible = True
 					Case sPacker
 						.Visible = False
-						Select Case LCase(Strings.Right(N.Text, 6))
-							Case "faster"
-								N.Text = sPacker + "better"
-							Case "better"
-								N.Text = sPacker + "faster"
-						End Select
-					Case Else
+                        Select Case LCase(Strings.Right(N.Text, 6))
+                            Case "faster"
+                                N.Text = sPacker + "better"
+                                Packer = 2
+                            Case "better"
+                                N.Text = sPacker + "faster"
+                                Packer = 1
+                        End Select
+                        CalcPartSize(SelNode.Parent.Nodes(SelNode.Index + 1))
+                    Case Else
 						.Visible = False
                 End Select
                 .Top = tv.Top + N.Bounds.Top + 3
@@ -1406,6 +1409,8 @@ Err:
     Public Sub CalcPartSize(PartNode As TreeNode)
         On Error GoTo Err
 
+        Dim Frm As New FrmDisk
+
         Cursor = Cursors.WaitCursor
 
         Dim FN As String
@@ -1437,6 +1442,8 @@ Err:
             tv.Refresh()
             GoTo Done
         End If
+
+        Frm.Show(Me)
 
         For K = PartNode.Index To PartNode.Parent.Nodes.Count - 2
 
@@ -1539,9 +1546,9 @@ Err:
                 UncomPartSize = Int(10000 * BufferCnt / UncomPartSize) / 100
 
                 If Prgs.Count = 0 Then
-                    PNT(K) = "[Part " + (K - 5).ToString + "]"
+                    PNT(K) = "[Part " + (K - (NI - 1)).ToString + "]"
                 Else
-                    PNT(K) = "[Part " + (K - 5).ToString + ": " + BufferCnt.ToString + " block" + IIf(BufferCnt <> 1, "s", "") + " compressed, " _
+                    PNT(K) = "[Part " + (K - (NI - 1)).ToString + ": " + BufferCnt.ToString + " block" + IIf(BufferCnt <> 1, "s", "") + " compressed, " _
                 + UncomPartSize.ToString + "% of uncompressed size]"
                 End If
             End If
@@ -1559,13 +1566,17 @@ Err:
 Done:
         CalcDiskNodeSize(PartNode.Parent)
 
-        If Loading = False Then Cursor = Cursors.Default
+        GoTo NoDisk
 
-        Exit Sub
+        'If Loading = False Then Cursor = Cursors.Default
+        'Frm.Close()
+        'Exit Sub
+
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 NoDisk:
         If Loading = False Then Cursor = Cursors.Default
+        Frm.Close()
 
     End Sub
 
@@ -1977,6 +1988,9 @@ Err:
 
         ConvertScriptToNodes = True
 
+        Dim Frm As New FrmDisk
+        Frm.Show(Me)
+
         Cursor = Cursors.WaitCursor
 
         SS = 1 : SE = 1
@@ -2121,6 +2135,8 @@ Done:
         Loading = False
 
         Cursor = Cursors.Default
+
+        Frm.Close()
 
     End Function
 

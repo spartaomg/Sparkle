@@ -1,4 +1,4 @@
-﻿Friend Module ModPack
+﻿Friend Module ModBetterPacker
 
 	Private FirstBlockOfNextFile As Boolean = False 'If true, this is the first block of next file in same buffer, Lit Selector Bit NOT NEEEDED
 	Private NextFileInBuffer As Boolean = False     'Indicates whether the next file is added to the same buffer
@@ -255,7 +255,7 @@ Restart:
 
 				BufferFull = False
 				Do While LitCnt > -1
-					If SequenceFits(LitCnt + 1, CalcLitBits(LitCnt), LitCnt, CheckIO(SI - LitCnt)) = True Then
+					If SequenceFits(LitCnt + 1, CalcLitBits(LitCnt), CheckIO(SI - LitCnt)) = True Then
 						AddLitBytes(LitCnt)
 						Exit Do
 					End If
@@ -285,7 +285,7 @@ Restart:
 					'--------------------------------------------------------------------
 					'Long Match
 					'--------------------------------------------------------------------
-					If SequenceFits(3, CalcLitBits(LitCnt), LitCnt, CheckIO(SI - MLen + 1)) Then
+					If SequenceFits(3, CalcLitBits(LitCnt), CheckIO(SI - MLen + 1)) Then
 						AddLitBits()
 						'Add long match
 						AddLongMatch()
@@ -298,7 +298,7 @@ Restart:
 					'--------------------------------------------------------------------
 					'Mid Match
 					'--------------------------------------------------------------------
-CheckMid:           If SequenceFits(2, CalcLitBits(LitCnt), LitCnt, CheckIO(SI - MLen + 1)) Then
+CheckMid:           If SequenceFits(2, CalcLitBits(LitCnt), CheckIO(SI - MLen + 1)) Then
 						AddLitBits()
 						'Add mid match
 						AddMidMatch()
@@ -316,7 +316,7 @@ CheckMid:           If SequenceFits(2, CalcLitBits(LitCnt), LitCnt, CheckIO(SI -
 					'--------------------------------------------------------------------
 					'Short Match
 					'--------------------------------------------------------------------
-CheckShort:         If SequenceFits(1, CalcLitBits(LitCnt), LitCnt, CheckIO(SI - MLen + 1)) Then
+CheckShort:         If SequenceFits(1, CalcLitBits(LitCnt), CheckIO(SI - MLen + 1)) Then
 						AddLitBits()
 						'Add short match
 						AddShortMatch()
@@ -326,7 +326,7 @@ CheckShort:         If SequenceFits(1, CalcLitBits(LitCnt), LitCnt, CheckIO(SI -
 						'--------------------------------------------------------------------
 						BufferFull = True
 CheckLit:               MLen = 1    'This is needed here for accurate Bit count calculation in SequenceFits (indicates Literal, not Match)
-						If SequenceFits(1, CalcLitBits(LitCnt + 1), LitCnt + 1, CheckIO(SI - LitCnt)) Then
+						If SequenceFits(1, CalcLitBits(LitCnt + 1), CheckIO(SI - LitCnt)) Then
 							'MLen = 1        '1 based
 							LitCnt += 1     '0 based
 							AddLitBits()
@@ -372,7 +372,7 @@ Done:
 	Private Function CalcLitBits(Lits As Integer) As Integer     'LitCnt is 0 based
 
 		If Lits = -1 Then
-			CalcLitBits = 0
+			CalcLitBits = 0 + 1                     '0	1 type selector bit for match
 		Else
 			CalcLitBits = Fix(Lits / (MaxLitLen + 1)) * 9
 
@@ -394,47 +394,32 @@ Done:
 
 	End Function
 
-
-	Private Function SequenceFits(BytesToAdd As Integer, BitsToAdd As Integer, Literals As Integer, Optional SequenceUnderIO As Integer = 0) As Boolean
+	Private Function SequenceFits(BytesToAdd As Integer, BitsToAdd As Integer, Optional SequenceUnderIO As Integer = 0) As Boolean
 		On Error GoTo Err
 
 		'Calculate total bit count in buffer from ByteCnt, BitCnt, and BitPos
 		Dim BitsInBuffer As Integer = ((255 - ByteCnt) * 8) + (BitCnt * 8) + 16 - BitPos
 
-		'Add close byte
-		BytesToAdd += 1
+		'Add Close Byte + IO Byte ONLY if this is the first sequence in the block that goes under IO
+		BytesToAdd += 1 + If((BlockUnderIO = 0) And (SequenceUnderIO = 1), 1, 0)
 
-		'Add a close bit (match tag for close byte) only if the last sequence to be added is a match
-		'Say we are trying ot add a match here. If this is the last sequence that fits in the buffer
-		'The it will need to be followed by a close match bit and a close byte
-		'This is the close match bit
-		If MLen > 1 Then BitsToAdd += 1     'We know we are tryin to add a match sequence here if MLen>1
+		'Add Close Bit if this sequence is a match
+		BitsToAdd += If(MLen > 1, 1, 0)
 
-		'Check if we have pending Literals
-		'If no pending Literals, or Literals=MaxLit, then we need to save 1 bit for match tag
-		'Otherwise, next item must be a match, we do not need a match tag
-		If (Literals = -1) Or (Literals Mod (MaxLitLen + 1) = MaxLitLen) Then BitsToAdd += 1
-
-		If (BlockUnderIO = 0) And (SequenceUnderIO = 1) Then
-			'Some blocks of the file will go UIO, but sofar this block is not UIO, and next byte is the first one that goes UIO
-			BytesToAdd += 1    'Need an extra byte if the next byte in sequence is the first one that goes UIO
-		End If
-
+		'Check if sequence will fit within block size limits
 		If BitsInBuffer + (BytesToAdd * 8) + BitsToAdd <= 2048 Then
 			SequenceFits = True
 			'Data will fit
-			If (BlockUnderIO = 0) And (SequenceUnderIO = 1) And (LastByte <> ByteCnt) Then
-
+			If (BlockUnderIO = 0) And (SequenceUnderIO = 1) Then
 				'This is the first byte in the block that will go UIO, so lets update the buffer to include the IO flag
-
-				For I As Integer = ByteCnt To AdHiPos            'Move all data to the left in buffer, including AdHi
+				For I As Integer = ByteCnt To AdHiPos   'Move all data to the left in buffer, including AdHi
 					Buffer(I - 1) = Buffer(I)
 				Next
-				Buffer(AdHiPos) = 0                             'IO Flag to previous AdHi Position
-				ByteCnt -= 1                                    'Update ByteCt to next empty position in buffer
-				LastByteCt -= 1                                 'Last Match pointer also needs to be updated (BUG FIX - REPORTED BY RAISTLIN/G*P)
-				AdHiPos -= 1                                    'Update AdHi Position in Buffer
-				BlockUnderIO = 1                                'Set BlockUnderIO Flag
+				Buffer(AdHiPos) = 0                     'IO Flag to previous AdHi Position
+				ByteCnt -= 1                            'Update ByteCt to next empty position in buffer
+				LastByteCt -= 1                         'Last Match pointer also needs to be updated (BUG FIX - REPORTED BY RAISTLIN/G*P)
+				AdHiPos -= 1                            'Update AdHi Position in Buffer
+				BlockUnderIO = 1                        'Set BlockUnderIO Flag
 			End If
 		Else
 			SequenceFits = False
@@ -447,6 +432,7 @@ Err:
 		SequenceFits = False
 
 	End Function
+
 	Private Sub AddLongMatch()
 
 		If (LitCnt = -1) Or (LitCnt Mod (MaxLitLen + 1) = MaxLitLen) Then AddRBits(0, 1)   '0		Last Literal Length was -1 or Max, we need the Match Tag
@@ -585,12 +571,12 @@ Err:
 		Buffer(ByteCnt) = EndTag
 		Buffer(0) = Buffer(0) And &H7F                    'Delete Compression Bit (Default (i.e. compressed) value is 0)
 
-		'FIND UNCOMPRESSIBLE BLOCKS (only applies to first file in buffer in which case LastByte points at the very first data byte in stream)
-
+		'FIND UNCOMPRESSIBLE BLOCKS (only used if there is ONE file in the BLOCK)
+		'THE COMPRESSION BITs ADD 80.5 BYTES TO THE DISK, BUT THIS MAKES DEPACKING OF UNCOMPRESSIBLE BLOCKS MUCH FASTER
 		If (StartPos - SI <= LastByte) And (StartPos > LastByte - 1) And (NextFileInBuffer = False) Then
 			'If (StartPos - SI <= 100) And (StartPos > LastByte - 1) And (NextFileInBuffer = False) Then
-			'MsgBox(Hex(StartPos - SI))
-			'Less than 252/253 bytes        AND  not the end of File     AND       No other files in this buffer
+			'MsgBox(Hex(LastByte - (StartPos - SI)))
+			'Less than 252/253 bytes   AND  Not the end of File      AND  No other files in this buffer
 			LastByte = AdLoPos - 2
 
 			'Check uncompressed Block IO Status
@@ -656,14 +642,12 @@ Err:
 		ByteCnt -= 2
 		LastByte = ByteCnt               'LastByte = the first byte of the ByteStream after and Address Bytes (253 or 252 with blockCnt)
 
-		CalcSequence(IIf(SI > 1, SI, 1), IIf(SI > 1, SI, 1))
-		If BlockCnt > 1 Then
-			If (Seq(SI).Bit + 8 < LastByte * 8) And (LastFileOfPart = True) Then
-				'MsgBox("!")
-				'CalcSequence(IIf(SI > 1, SI, 1), IIf(SI - 256 > 1, SI - 256, 1))
-			Else
-				CalcSequence(IIf(SI > 1, SI, 1), IIf(SI - 256 > 1, SI - 256, 1))
-			End If
+		If (BlockCnt = 1) Or ((Seq(SI).Bit + 8 < LastByte * 8) And (LastFileOfPart = True)) Then
+			'For the 2nd and last block only recalculate the first byte's sequence
+			CalcSequence(IIf(SI > 1, SI, 1), IIf(SI > 1, SI, 1))
+		Else
+			'For all other blocks recalculate the first 256 bytes' sequence
+			CalcSequence(IIf(SI > 1, SI, 1), IIf(SI - 256 > 1, SI - 256, 1))
 		End If
 
 		StartPos = SI
@@ -685,12 +669,12 @@ Err:
 
 		Dim Bits As Integer = IIf((LitCnt = -1) Or (LitCnt Mod (MaxLitLen + 1) = MaxLitLen), 1, 0)   'Calculate whether Match Bit is needed for new part
 
-		If SequenceFits(Bytes, Bits, LitCnt, NextFileIO) Then
+		If SequenceFits(Bytes, Bits, NextFileIO) Then
 
 			'Buffer has enough space for New Part Tag and New Part Info and first Literal byte (and IO flag if needed)
 
 			If Bits = 1 Then AddRBits(0, 1)
-			'If (LitCnt = -1) Or (LitCnt Mod (MaxLitLen + 1) = MaxLitLen) Then AddRBits(0, 1)  'Add Match Selector Bit only if needed
+
 NextPart:
 			FilesInBuffer += 1  'There is going to be more than 1 file in the buffer
 
@@ -767,12 +751,11 @@ NoGo:
 		Dim Bytes As Integer = 4 'BYTES NEEDED: End Tag + AdLo + AdHi + 1st Literal (ByC=5 only if BlockUnderIO=true - checked at SequenceFits()
 		Dim Bits As Integer = IIf((LitCnt = -1) Or (LitCnt Mod (MaxLitLen + 1) = MaxLitLen), 1, 0)   'Calculate whether Match Bit is needed for new file
 
-		If SequenceFits(Bytes, Bits, LitCnt, CheckIO(PrgLen - 1)) Then
+		If SequenceFits(Bytes, Bits, CheckIO(PrgLen - 1)) Then
 
 			'Buffer has enough space for New File Match Tag and New File Info and first Literal byte (and IO flag if needed)
 
 			If Bits = 1 Then AddRBits(0, 1)
-			'If (LitCnt = -1) Or (LitCnt Mod (MaxLitLen + 1) = MaxLitLen) Then AddRBits(0, 1)  'Add Match Selector Bit only if needed
 
 			Buffer(ByteCnt) = NextFileTag                           'Then add New File Match Tag
 			ByteCnt -= 1

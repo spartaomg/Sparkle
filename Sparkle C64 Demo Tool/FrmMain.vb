@@ -61,13 +61,13 @@
 						MsgBox("This script does not contain any files", vbOKOnly, "Unable to build disk")
 						End
 					Else
-						Cursor = Cursors.WaitCursor
-						Dim frm As New FrmDisk
-						frm.Show()
-						MakeDisk(sender, e, True)
-						frm.Close()
-						Cursor = Cursors.Default
-						End                                    '...and exit app!!!
+                        'Cursor = Cursors.WaitCursor
+                        'Dim frm As New FrmDisk
+                        'frm.Show(Me)
+                        MakeDisk(sender, e, True)
+                        'frm.Close()
+                        'Cursor = Cursors.Default
+                        End                                    '...and exit app!!!
 					End If
 				Case ".d64"
 					D64Name = Path
@@ -271,14 +271,14 @@ Err:
 
     Private Sub TsbSaveAs_Click(sender As Object, e As EventArgs) Handles tsbSaveAs.Click
         On Error GoTo Err
-
-        If CurrentDisk <> -1 Then
-            If D64NameA(CurrentDisk) <> "" Then
-                D64Name = D64NameA(CurrentDisk)
-            Else
-                D64Name = "Demo Disk" + IIf(DiskCnt > 0, " " + (CurrentDisk + 1).ToString, "")
-            End If
-        End If
+        'If CurrentDisk <> -1 Then
+        'If D64NameA.Count = CurrentDisk Then
+        'If D64NameA(CurrentDisk) <> "" Then
+        'D64Name = D64NameA(CurrentDisk - 1)
+        'Else
+        'D64Name = "Demo Disk" + IIf(DiskCnt > 0, " " + (CurrentDisk).ToString, "")
+        'End If
+        'End If
 
         Dim SaveDLG As New SaveFileDialog With {
             .Filter = "D64 Files (*.d64)|*.d64",
@@ -352,9 +352,12 @@ ErrSaveFile:
                 If InStr(Script, "File:") = 0 Then
                     MsgBox("This script does not contain any files", vbOKOnly, "Unable to build disk")
                 Else
-                    Cursor = Cursors.WaitCursor
+                    'Dim F As New FrmDisk
+                    'F.Show(Me)
+                    'Cursor = Cursors.WaitCursor
                     MakeDisk(sender, e)
-                    Cursor = Cursors.Default
+                    'Cursor = Cursors.Default
+                    'F.Close()
                 End If
             End If
         End With
@@ -375,9 +378,12 @@ Err:
             If InStr(Script, "File:") = 0 Then
                 MsgBox("This script does not contain any files", vbOKOnly, "Unable to build disk")
             Else
-				'Cursor = Cursors.WaitCursor
-				MakeDisk(sender, e)
+                'Dim F As New FrmDisk
+                'F.Show(Me)
+                'Cursor = Cursors.WaitCursor
+                MakeDisk(sender, e)
                 'Cursor = Cursors.Default
+                'F.Close()
             End If
         End If
 
@@ -391,6 +397,9 @@ Err:
 		'On Error GoTo Err
 
 		Dim DiskOK As Boolean
+
+        Dim frm As New FrmDisk
+        frm.Show(Me)
 
         Cursor = Cursors.WaitCursor
 
@@ -418,6 +427,7 @@ Err:
 Done:
         Cursor = Cursors.Default
 
+        frm.Close()
     End Sub
 
     Private Sub TsbBAM_Click(sender As Object, e As EventArgs) Handles tsbBAM.Click
@@ -1027,10 +1037,13 @@ Err:
             If InStr(Script, "File:") = 0 Then
                 MsgBox("This script does not contain any files", vbOKOnly, "Unable to build disk")
             Else
-				'Cursor = Cursors.WaitCursor
-				MakeDisk(sender, e)
-				'Cursor = Cursors.Default
-			End If
+                'Cursor = Cursors.WaitCursor
+                'Dim F As New FrmDisk
+                'F.Show(Me)
+                MakeDisk(sender, e)
+                'Cursor = Cursors.Default
+                'F.Close()
+            End If
         End If
 
         Exit Sub

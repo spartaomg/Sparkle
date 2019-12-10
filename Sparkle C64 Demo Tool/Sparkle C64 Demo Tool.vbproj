@@ -145,8 +145,8 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="ModDisk.vb" />
-    <Compile Include="ModNewLZ.vb" />
-    <Compile Include="ModPack.vb" />
+    <Compile Include="ModFasterPacker.vb" />
+    <Compile Include="ModBetterPacker.vb" />
     <Compile Include="ModRegistry.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
