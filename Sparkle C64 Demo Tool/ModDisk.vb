@@ -680,12 +680,17 @@ Err:
 		'ZP=02 is the default, no need for update
 		If ZP = 2 Then Exit Sub
 
-		Dim Offset As Integer = 0   'Will use this if loader code changes
+        Dim Offset As Integer = 0
+        Offset = 5                  'For V1.2
 
-		Loader(334 + Offset) = ZP
+        Loader(334 + Offset) = ZP
 		Loader(363 + Offset) = ZP
-		Loader(396 + Offset) = ZP
-		Loader(398 + Offset) = ZP
+        Loader(349 + Offset) = ZP + 1
+
+        Offset = -4                 'For V1.2
+
+        Loader(396 + Offset) = ZP
+        Loader(398 + Offset) = ZP
 		Loader(442 + Offset) = ZP
 		Loader(444 + Offset) = ZP
 		Loader(461 + Offset) = ZP
@@ -693,10 +698,8 @@ Err:
 		Loader(480 + Offset) = ZP
 		Loader(492 + Offset) = ZP
 		Loader(508 + Offset) = ZP
-
-		Loader(349 + Offset) = ZP + 1
-		Loader(406 + Offset) = ZP + 1
-		Loader(448 + Offset) = ZP + 1
+        Loader(406 + Offset) = ZP + 1
+        Loader(448 + Offset) = ZP + 1
 		Loader(484 + Offset) = ZP + 1
 		Loader(497 + Offset) = ZP + 1
 
