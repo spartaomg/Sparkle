@@ -829,7 +829,6 @@ Partial Class FrmMain
 		Me.DoubleBuffered = True
 		Me.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog
 		Me.Icon = CType(resources.GetObject("$this.Icon"), System.Drawing.Icon)
-		Me.KeyPreview = True
 		Me.MaximizeBox = False
 		Me.Name = "FrmMain"
 		Me.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen
