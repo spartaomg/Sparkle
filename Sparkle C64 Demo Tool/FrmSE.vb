@@ -65,9 +65,9 @@ Public Class FrmSE
     Private ReadOnly sFileLen As String = "File Length:  $"
     Private ReadOnly sDirArt As String = "DirArt: "
     Private ReadOnly sZP As String = "Zeropage: "
-	Private ReadOnly sPacker As String = "Packer: "
+    Private ReadOnly sPacker As String = "Packer: "
 
-	Private ReadOnly TT As New ToolTip
+    Private ReadOnly TT As New ToolTip
 
     Private ReadOnly tDiskPath As String = "Double click or press <Enter> to specify where your demo disk will be saved in D64 format."
     Private ReadOnly tDiskHeader As String = "Double click or press <Enter> to edit the disk's header."
@@ -90,14 +90,14 @@ Public Class FrmSE
     Private ReadOnly tFile As String = "Double click or press <Enter> to change this file." + vbNewLine +
                 "Press <Delete> to delete this file from this part."
     Private ReadOnly tZP As String = "Double click or press <Enter> to edit the loader's zeropage usage."
-	Private ReadOnly tPacker As String = "Double click or press <Enter> to change the loader's packer selection." + vbNewLine +
-				"The 'faster' option results in a faster but less effective compression and somewhat faster loading." + vbNewLine +
-				"The 'better' option results in a slower but more effective compression and somewhat slower loading."
+    Private ReadOnly tPacker As String = "Double click or press <Enter> to change the loader's packer selection." + vbNewLine +
+                "The 'faster' option results in a faster but less effective compression and somewhat faster loading." + vbNewLine +
+                "The 'better' option results in a slower but more effective compression and somewhat slower loading."
 
-	Private Sub FrmSE_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+    Private Sub FrmSE_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         On Error GoTo Err
 
-		If My.Settings.EditorWindowMax = True Then
+        If My.Settings.EditorWindowMax = True Then
             WindowState = FormWindowState.Maximized
         Else
             WindowState = FormWindowState.Normal
@@ -105,29 +105,20 @@ Public Class FrmSE
             Height = My.Settings.EditorHeight
         End If
 
-		If My.Settings.DefaultPacker = 1 Then
-			OptFaster.Checked = True
-		Else
-			OptBetter.Checked = True
-		End If
-
-		With TT
-            .ToolTipIcon = ToolTipIcon.Info
-            .UseFading = True
-            .InitialDelay = 2000
-            .AutomaticDelay = 2000
-            .AutoPopDelay = 1000
-            .ReshowDelay = 1000
-        End With
+        If My.Settings.DefaultPacker = 1 Then
+            OptFaster.Checked = True
+        Else
+            OptBetter.Checked = True
+        End If
 
         Refresh()
 
         bBuildDisk = False
 
-        tv.AllowDrop = True
+        TV.AllowDrop = True
 
-        chkExpand.Checked = My.Settings.ShowFileDetails
-        chkToolTips.Checked = My.Settings.ShowToolTips
+        ChkExpand.Checked = My.Settings.ShowFileDetails
+        ChkToolTips.Checked = My.Settings.ShowToolTips
 
         DC = 0
         PC = 0
@@ -152,7 +143,7 @@ Public Class FrmSE
             ConvertScriptToNodes()
             Tv_GotFocus(sender, e)
         Else
-            tv.SelectedNode = tv.Nodes(sAddDisk)
+            TV.SelectedNode = TV.Nodes(sAddDisk)
             BlankDiskStructure()
         End If
 
@@ -164,7 +155,7 @@ Err:
 
     End Sub
 
-    Private Sub Tv_AfterSelect(sender As Object, e As TreeViewEventArgs) Handles tv.AfterSelect
+    Private Sub Tv_AfterSelect(sender As Object, e As TreeViewEventArgs) Handles TV.AfterSelect
         On Error GoTo Err
 
         NodeSelect()
@@ -175,7 +166,7 @@ Err:
 
     End Sub
 
-    Private Sub Tv_GotFocus(sender As Object, e As EventArgs) Handles tv.GotFocus
+    Private Sub Tv_GotFocus(sender As Object, e As EventArgs) Handles TV.GotFocus
         On Error GoTo Err
 
         NodeSelect()
@@ -189,15 +180,15 @@ Err:
     Private Sub NodeSelect()
         On Error GoTo Err
 
-        If tv.SelectedNode Is Nothing Then Exit Sub
+        If TV.SelectedNode Is Nothing Then Exit Sub
 
-        SelNode = tv.SelectedNode
+        SelNode = TV.SelectedNode
 
         CurrentDisk = Int(SelNode.Tag / &H1000000)
         CurrentPart = Int((SelNode.Tag And &HFFF000) / &H1000)
         CurrentFile = SelNode.Tag And &HFFF
 
-        If (tv.Enabled = False) Or (Loading) Then Exit Sub
+        If (TV.Enabled = False) Or (Loading) Then Exit Sub
 
         Select Case SelNode.ForeColor
             Case Color.DarkRed      'Disk node
@@ -263,14 +254,14 @@ Err:
                 If MsgBox("Are you sure you want to delete Part " + CurrentPart.ToString + " and all its content?" + vbNewLine + vbNewLine + N.Text, vbQuestion + vbYesNo + vbDefaultButton2) = vbYes Then
                     P = N.Parent.Nodes(N.Index + 1)
                     N.Remove()
-                    tv.Refresh()
+                    TV.Refresh()
                     CalcPartSize(P)
                 End If
             Case 3  'File
                 If MsgBox("Are you sure you want to delete the following file entry?" + vbNewLine + vbNewLine + N.Text, vbQuestion + vbYesNo + vbDefaultButton2) = vbYes Then
                     P = N.Parent
                     N.Remove()
-                    tv.Refresh()
+                    TV.Refresh()
                     CalcPartSize(P)
                 End If
             Case 4  'DirArt
@@ -289,11 +280,11 @@ Err:
 
     End Sub
 
-    Private Sub Tv_KeyDown(sender As Object, e As KeyEventArgs) Handles tv.KeyDown
+    Private Sub Tv_KeyDown(sender As Object, e As KeyEventArgs) Handles TV.KeyDown
         On Error GoTo Err
 
         Dim S As String
-        Dim N As TreeNode = tv.SelectedNode
+        Dim N As TreeNode = TV.SelectedNode
 
         If e.KeyCode = Keys.Delete Then
             KeyEnter = True
@@ -343,8 +334,8 @@ FileData:
                 .Tag = S
                 .Text = Strings.Right(N.Text, Len(N.Text) - Len(S))
                 N.Text = S
-                .Top = tv.Top + N.Bounds.Top + 3
-                .Left = tv.Left + N.Bounds.Left + N.Bounds.Width
+                .Top = TV.Top + N.Bounds.Top + 3
+                .Left = TV.Left + N.Bounds.Left + N.Bounds.Width
                 .Width = TextRenderer.MeasureText(.Text, N.NodeFont).Width
                 .ForeColor = N.ForeColor
                 .MaxLength = 4
@@ -377,24 +368,24 @@ FileData:
                         .Tag = S
                         .Text = Strings.Right(N.Text, Len(N.Text) - Len(S))
                         N.Text = S
-                        .Left = tv.Left + N.Bounds.Left + N.Bounds.Width
-                        .Width = tv.Left + tv.Width - .Left - 2 - 17    'Subtract border and scrollbar widths
+                        .Left = TV.Left + N.Bounds.Left + N.Bounds.Width
+                        .Width = TV.Left + TV.Width - .Left - 2 - 17    'Subtract border and scrollbar widths
                         .MaxLength = 16
                         .Visible = True
                     Case sDiskID
                         .Tag = S
                         .Text = Strings.Right(N.Text, Len(N.Text) - Len(S))
                         N.Text = S
-                        .Left = tv.Left + N.Bounds.Left + N.Bounds.Width
-                        .Width = tv.Left + tv.Width - .Left - 2 - 17    'Subtract border and scrollbar widths
+                        .Left = TV.Left + N.Bounds.Left + N.Bounds.Width
+                        .Width = TV.Left + TV.Width - .Left - 2 - 17    'Subtract border and scrollbar widths
                         .MaxLength = 5
                         .Visible = True
                     Case sDemoName
                         .Tag = S
                         .Text = Strings.Right(N.Text, Len(N.Text) - Len(S))
                         N.Text = S
-                        .Left = tv.Left + N.Bounds.Left + N.Bounds.Width
-                        .Width = tv.Left + tv.Width - .Left - 2 - 17    'Subtract border and scrollbar widths
+                        .Left = TV.Left + N.Bounds.Left + N.Bounds.Width
+                        .Width = TV.Left + TV.Width - .Left - 2 - 17    'Subtract border and scrollbar widths
                         .MaxLength = 16
                         .Visible = True
                     Case sDemoStart
@@ -402,7 +393,7 @@ FileData:
                         .Width = TextRenderer.MeasureText("0000", N.NodeFont).Width
                         .Tag = S + "$"
                         N.Text = .Tag
-                        .Left = tv.Left + N.Bounds.Left + N.Bounds.Width
+                        .Left = TV.Left + N.Bounds.Left + N.Bounds.Width
                         .MaxLength = 4
                         .Visible = True
                     Case sDirArt
@@ -416,11 +407,11 @@ FileData:
                         .Width = TextRenderer.MeasureText("00", N.NodeFont).Width
                         .Tag = S + "$"
                         N.Text = .Tag
-                        .Left = tv.Left + N.Bounds.Left + N.Bounds.Width
+                        .Left = TV.Left + N.Bounds.Left + N.Bounds.Width
                         .MaxLength = 2
-						.Visible = True
-					Case sPacker
-						.Visible = False
+                        .Visible = True
+                    Case sPacker
+                        .Visible = False
                         Select Case LCase(Strings.Right(N.Text, 6))
                             Case "faster"
                                 N.Text = sPacker + "better"
@@ -431,9 +422,9 @@ FileData:
                         End Select
                         CalcPartSize(SelNode.Parent.Nodes(SelNode.Index + 1))
                     Case Else
-						.Visible = False
+                        .Visible = False
                 End Select
-                .Top = tv.Top + N.Bounds.Top + 3
+                .Top = TV.Top + N.Bounds.Top + 3
                 .ForeColor = N.ForeColor
             End With
         End If
@@ -450,7 +441,7 @@ Err:
 
     End Sub
 
-    Private Sub Tv_KeyPress(sender As Object, e As KeyPressEventArgs) Handles tv.KeyPress
+    Private Sub Tv_KeyPress(sender As Object, e As KeyPressEventArgs) Handles TV.KeyPress
         On Error GoTo Err
 
         If KeyEnter = True Then e.Handled = True
@@ -461,7 +452,7 @@ Err:
 
     End Sub
 
-    Private Sub Tv_NodeMouseDoubleClick(sender As Object, e As TreeNodeMouseClickEventArgs) Handles tv.NodeMouseDoubleClick
+    Private Sub Tv_NodeMouseDoubleClick(sender As Object, e As TreeNodeMouseClickEventArgs) Handles TV.NodeMouseDoubleClick
         On Error GoTo Err
 
         Dim k As New KeyEventArgs(Keys.Enter)
@@ -481,12 +472,12 @@ Err:
             Case Keys.Enter
                 e.SuppressKeyPress = True
                 e.Handled = True
-                tv.Focus()
+                TV.Focus()
             Case Keys.Escape
                 txtEdit.Text = txtBuffer
                 e.SuppressKeyPress = True
                 e.Handled = True
-                tv.Focus()
+                TV.Focus()
             Case Else
                 If txtEdit.MaxLength = 4 Or txtEdit.MaxLength = 2 Then
                     Select Case e.KeyCode
@@ -508,7 +499,7 @@ Err:
     Private Sub TxtEdit_GotFocus(sender As Object, e As EventArgs) Handles txtEdit.GotFocus
         On Error GoTo Err
 
-        SCC = New SubClassCtrl.SubClassing(tv.Handle) With {
+        SCC = New SubClassCtrl.SubClassing(TV.Handle) With {
         .SubClass = True
         }
 
@@ -525,13 +516,13 @@ Err:
 
         SCC.ReleaseHandle()
 
-        tv.Focus()
+        TV.Focus()
 
         CorrectTextLength()
 
         SelNode.Text = txtEdit.Tag + txtEdit.Text
 
-        tv.Invalidate(SelNode.Bounds)   'This is to repaint selnode
+        TV.Invalidate(SelNode.Bounds)   'This is to repaint selnode
 
         txtEdit.Visible = False
 
@@ -584,7 +575,7 @@ Err:
     Private Sub ChangeFileParameters(FileNode As TreeNode, NodeIndex As Integer)
         On Error GoTo Err
 
-        If Loading = False Then tv.BeginUpdate()
+        If Loading = False Then TV.BeginUpdate()
 
         'If node is edited, then A/O/L=txtEdit, otherwise A/O/L = 4 rightmost chars of node text
         Dim A As String = IIf(NodeIndex = 0, txtEdit.Text, Strings.Right(FileNode.Nodes(0).Text, FileNode.Nodes(0).Text.Length - sFileAddr.Length))
@@ -640,14 +631,14 @@ Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
 Done:
-        If Loading = False Then tv.EndUpdate()
+        If Loading = False Then TV.EndUpdate()
 
     End Sub
 
     Private Sub CheckFileParameterColors(FileNode As TreeNode)
         On Error GoTo Err
 
-        If Loading = False Then tv.BeginUpdate()
+        If Loading = False Then TV.BeginUpdate()
 
         If Strings.Right(FileNode.Nodes(0).Text, 4) = DFAS Then
             DFA = True
@@ -683,14 +674,14 @@ Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
 Done:
-        If Loading = False Then tv.EndUpdate()
+        If Loading = False Then TV.EndUpdate()
 
     End Sub
 
     Private Sub ResetFileParameters(FileNode As TreeNode, NodeIndex As Integer)
         On Error GoTo Err
 
-        If Loading = False Then tv.BeginUpdate()
+        If Loading = False Then TV.BeginUpdate()
 
         Select Case NodeIndex
             Case 0
@@ -733,14 +724,14 @@ Done:
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 Done:
-        If Loading = False Then tv.EndUpdate()
+        If Loading = False Then TV.EndUpdate()
 
     End Sub
 
     Private Sub GetDefaultFileParameters(FileNode As TreeNode, Optional FA As String = "", Optional FO As String = "", Optional FL As String = "")
         On Error GoTo Err
 
-        If Loading = False Then tv.BeginUpdate()
+        If Loading = False Then TV.BeginUpdate()
 
         Dim P() As Byte = IO.File.ReadAllBytes(Replace(FileNode.Text, "*", ""))
         Dim Ext As String = LCase(Strings.Right(Replace(FileNode.Text, "*", ""), 4))
@@ -786,7 +777,7 @@ Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
 Done:
-        If Loading = False Then tv.EndUpdate()
+        If Loading = False Then TV.EndUpdate()
 
     End Sub
 
@@ -799,7 +790,7 @@ Done:
         FOffs = Convert.ToInt32(Strings.Right(FileNode.Nodes(1).Text, 4), 16)
         FLen = Convert.ToInt32(Strings.Right(FileNode.Nodes(2).Text, 4), 16)
 
-        If Loading = False Then tv.BeginUpdate()
+        If Loading = False Then TV.BeginUpdate()
 
         'Make sure Offset is within program length
         If FOffs > PLen - 1 Then
@@ -851,16 +842,16 @@ Done:
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 Done:
-        If Loading = False Then tv.EndUpdate()
+        If Loading = False Then TV.EndUpdate()
 
     End Sub
 
     Private Sub BlankDiskStructure()
         On Error GoTo Err
 
-        tv.Enabled = False
+        TV.Enabled = False
 
-        Dim N As TreeNode = tv.SelectedNode
+        Dim N As TreeNode = TV.SelectedNode
 
         DC += 1
 
@@ -870,7 +861,7 @@ Done:
 
         CurrentDisk = DC
 
-        tv.BeginUpdate()
+        TV.BeginUpdate()
         With N
             .Text = "[Disk " + DC.ToString + "]"
             .Name = "D" + DC.ToString
@@ -897,11 +888,11 @@ Done:
 
         AddNewDiskNode()        '[Add new disk...]
 
-        tv.Enabled = True
-        tv.SelectedNode = N
-        tv.EndUpdate()
-        tv.ExpandAll()
-        tv.Focus()
+        TV.Enabled = True
+        TV.SelectedNode = N
+        TV.EndUpdate()
+        TV.ExpandAll()
+        TV.Focus()
 
         CalcDiskNodeSize(N)
 
@@ -948,9 +939,9 @@ Err:
     Private Sub AddNewDiskNode()
         On Error GoTo Err
 
-        tv.Nodes.Add(sAddDisk, "[Add new disk]")
-        tv.Nodes(sAddDisk).Tag = 0                     'There is only ONE AddDisk node, its tag=0
-        tv.Nodes(sAddDisk).ForeColor = Color.DarkBlue
+        TV.Nodes.Add(sAddDisk, "[Add new disk]")
+        TV.Nodes(sAddDisk).Tag = 0                     'There is only ONE AddDisk node, its tag=0
+        TV.Nodes(sAddDisk).ForeColor = Color.DarkBlue
 
         Exit Sub
 Err:
@@ -967,7 +958,7 @@ Err:
         DiskNode.Nodes.Add(NPID, "[Add new part to this disk]")
         DiskNode.Nodes(NPID).Tag = DiskNode.Tag
         DiskNode.Nodes(NPID).ForeColor = Color.DarkBlue
-        tv.SelectedNode = DiskNode.Nodes(NPID)
+        TV.SelectedNode = DiskNode.Nodes(NPID)
 
         Exit Sub
 Err:
@@ -994,23 +985,23 @@ Err:
     Private Sub UpdateNewPartNode()
         On Error GoTo Err
 
-        tv.Enabled = False
-        If Loading = False Then tv.BeginUpdate()
+        TV.Enabled = False
+        If Loading = False Then TV.BeginUpdate()
         PC += 1
         CurrentPart = PC
-        With tv.SelectedNode
+        With TV.SelectedNode
             .Text = "[Part " + PC.ToString + "]"
             .Name = .Parent.Name + ":P" + PC.ToString
             .Tag = .Parent.Tag + PC * &H1000
             .ForeColor = Color.DarkMagenta
-            AddNewFileNode(tv.SelectedNode)
-            AddNewPartNode(tv.SelectedNode.Parent)          'SelNode=[New part} node
+            AddNewFileNode(TV.SelectedNode)
+            AddNewPartNode(TV.SelectedNode.Parent)          'SelNode=[New part} node
             .Expand()
         End With
-        If Loading = False Then tv.EndUpdate()
-        tv.Enabled = True
-        tv.Focus()
-        tv.SelectedNode = tv.SelectedNode.Parent.Nodes(tv.SelectedNode.Parent.Name + ":P" + PC.ToString) 'Selnode=CurrentPart Node
+        If Loading = False Then TV.EndUpdate()
+        TV.Enabled = True
+        TV.Focus()
+        TV.SelectedNode = TV.SelectedNode.Parent.Nodes(TV.SelectedNode.Parent.Name + ":P" + PC.ToString) 'Selnode=CurrentPart Node
 
         BtnPartUp.Enabled = True
 
@@ -1023,7 +1014,7 @@ Err:
     Private Sub UpdateFileNode()
         On Error GoTo Err
 
-        Dim N As TreeNode = tv.SelectedNode
+        Dim N As TreeNode = TV.SelectedNode
 
         FileType = 2  'Prg file
 
@@ -1031,7 +1022,7 @@ Err:
 
         If NewFile = "" Then Exit Sub
 
-        If Loading = False Then tv.BeginUpdate()
+        If Loading = False Then TV.BeginUpdate()
 
         FAddr = -1
         FOffs = -1
@@ -1063,9 +1054,9 @@ Err:
 
         CalcPartSize(N.Parent)
 
-        If Loading = False Then tv.EndUpdate()
+        If Loading = False Then TV.EndUpdate()
 
-        tv.Focus()
+        TV.Focus()
 
         Exit Sub
 Err:
@@ -1076,7 +1067,7 @@ Err:
     Private Sub AddNewFile()
         On Error GoTo Err
 
-        Dim N As TreeNode = tv.SelectedNode
+        Dim N As TreeNode = TV.SelectedNode
 
         FileType = 2  'Prg file
         OpenDemoFile()
@@ -1087,7 +1078,7 @@ Err:
         FOffs = -1
         FLen = 0
 
-        If Loading = False Then tv.BeginUpdate()
+        If Loading = False Then TV.BeginUpdate()
 
         FC += 1
         'ReDim Preserve FileNameA(FC - 1), FileAddrA(FC - 1), FileOffsA(FC - 1), FileLenA(FC - 1)
@@ -1142,8 +1133,8 @@ Err:
 
         CalcPartSize(N.Parent)
 
-        If Loading = False Then tv.EndUpdate()
-        tv.Focus()
+        If Loading = False Then TV.EndUpdate()
+        TV.Focus()
 
         BtnFileUp.Enabled = True
 
@@ -1160,7 +1151,7 @@ Err:
     Private Sub UpdateDirArtPath()
         On Error GoTo Err
 
-        Dim N As TreeNode = tv.SelectedNode
+        Dim N As TreeNode = TV.SelectedNode
 
         FileType = 1  'Text file
 
@@ -1179,7 +1170,7 @@ Err:
     Private Sub UpdateDiskPath()
         On Error GoTo Err
 
-        Dim N As TreeNode = tv.SelectedNode
+        Dim N As TreeNode = TV.SelectedNode
 
         FileType = 3  'D64 file
 
@@ -1200,7 +1191,7 @@ Err:
 
         Dim P, F As String
 
-        Dim N As TreeNode = tv.SelectedNode
+        Dim N As TreeNode = TV.SelectedNode
 
         P = Application.ExecutablePath
         F = ""
@@ -1264,7 +1255,7 @@ Err:
 
     End Sub
 
-    Private Sub BtnNew_Click(sender As Object, e As EventArgs) Handles btnNew.Click
+    Private Sub BtnNew_Click(sender As Object, e As EventArgs) Handles BtnNew.Click
         On Error GoTo Err
 
         If MsgBox("Do you really want to start a new script?", vbQuestion + vbYesNo + vbDefaultButton2, "New script?") = vbNo Then Exit Sub
@@ -1292,16 +1283,16 @@ Err:
         DiskCnt = DC
         ReDim DiskSizeA(DiskCnt)
 
-        If Loading = False Then tv.BeginUpdate()
+        If Loading = False Then TV.BeginUpdate()
 
-        tv.Nodes.Clear()
+        TV.Nodes.Clear()
         AddNewDiskNode()
-        tv.SelectedNode = tv.Nodes(sAddDisk)
+        TV.SelectedNode = TV.Nodes(sAddDisk)
         BlankDiskStructure()
 
-        If Loading = False Then tv.EndUpdate()
-        tv.ExpandAll()
-        tv.Focus()
+        If Loading = False Then TV.EndUpdate()
+        TV.ExpandAll()
+        TV.Focus()
 
         Exit Sub
 Err:
@@ -1309,7 +1300,7 @@ Err:
 
     End Sub
 
-    Private Sub BtnLoad_Click(sender As Object, e As EventArgs) Handles btnLoad.Click
+    Private Sub BtnLoad_Click(sender As Object, e As EventArgs) Handles BtnLoad.Click
         On Error GoTo Err
 
         OpenFile("Sparkle Loader Script files", "Sparkle Loader Script files (*.sls)|*.sls")
@@ -1341,7 +1332,7 @@ Err:
 
     End Sub
 
-    Private Sub BtnSave_Click(sender As Object, e As EventArgs) Handles btnSave.Click
+    Private Sub BtnSave_Click(sender As Object, e As EventArgs) Handles BtnSave.Click
         On Error GoTo Err
 
         ConvertNodesToScript()
@@ -1367,7 +1358,7 @@ Err:
 
     End Sub
 
-    Private Sub BtnOK_Click(sender As Object, e As EventArgs) Handles btnOK.Click
+    Private Sub BtnOK_Click(sender As Object, e As EventArgs) Handles BtnOK.Click
         On Error GoTo Err
 
         bBuildDisk = True
@@ -1380,7 +1371,7 @@ Err:
 
     End Sub
 
-    Private Sub BtnCancel_Click(sender As Object, e As EventArgs) Handles btnCancel.Click
+    Private Sub BtnCancel_Click(sender As Object, e As EventArgs) Handles BtnCancel.Click
         On Error GoTo Err
 
         bBuildDisk = False
@@ -1471,7 +1462,7 @@ Err:
             PartNode.Text = "[Part " + CurrentPart.ToString + "]"
             PartNode.Tag = PartNode.Parent.Tag + CurrentPart * &H1000
             PartSizeA(CurrentPart - 1) = 0
-            tv.Refresh()
+            TV.Refresh()
             GoTo Done
         End If
 
@@ -1600,14 +1591,14 @@ Err:
             End If
         Next
 
-        If Loading = False Then tv.BeginUpdate()
+        If Loading = False Then TV.BeginUpdate()
         For I As Integer = NI To PartNode.Parent.Nodes.Count - 2
             If PartNode.Parent.Nodes(I).Text <> PNT(I) Then
                 PartNode.Parent.Nodes(I).Text = PNT(I)
             End If
         Next
 
-        If Loading = False Then tv.EndUpdate()
+        If Loading = False Then TV.EndUpdate()
 
 Done:
         CalcDiskNodeSize(PartNode.Parent)
@@ -1780,19 +1771,19 @@ Err:
     Private Sub BtnFileDown_Click(sender As Object, e As EventArgs) Handles BtnFileDown.Click
         On Error GoTo Err
 
-        If tv.SelectedNode Is Nothing Then Exit Sub
+        If TV.SelectedNode Is Nothing Then Exit Sub
 
-        Dim N As TreeNode = tv.SelectedNode
+        Dim N As TreeNode = TV.SelectedNode
         Dim P As TreeNode = N.Parent
         Dim I As Integer = N.Index
 
         If I < P.Nodes.Count - 2 Then
-            If Loading = False Then tv.BeginUpdate()
+            If Loading = False Then TV.BeginUpdate()
             P.Nodes.RemoveAt(I)
             P.Nodes.Insert(I + 1, N)
-            If Loading = False Then tv.EndUpdate()
-            tv.SelectedNode = N
-            tv.Focus()
+            If Loading = False Then TV.EndUpdate()
+            TV.SelectedNode = N
+            TV.Focus()
         End If
 
         Exit Sub
@@ -1804,19 +1795,19 @@ Err:
     Private Sub BtnFileUp_Click(sender As Object, e As EventArgs) Handles BtnFileUp.Click
         On Error GoTo Err
 
-        If tv.SelectedNode Is Nothing Then Exit Sub
+        If TV.SelectedNode Is Nothing Then Exit Sub
 
-        Dim N As TreeNode = tv.SelectedNode
+        Dim N As TreeNode = TV.SelectedNode
         Dim P As TreeNode = N.Parent
         Dim I As Integer = N.Index
 
         If I > 0 Then
-            If Loading = False Then tv.BeginUpdate()
+            If Loading = False Then TV.BeginUpdate()
             P.Nodes.RemoveAt(I)
             P.Nodes.Insert(I - 1, N)
-            If Loading = False Then tv.EndUpdate()
-            tv.SelectedNode = N
-            tv.Focus()
+            If Loading = False Then TV.EndUpdate()
+            TV.SelectedNode = N
+            TV.Focus()
         End If
 
         CalcPartSize(P)
@@ -1830,9 +1821,9 @@ Err:
     Private Sub BtnPartDown_Click(sender As Object, e As EventArgs) Handles BtnPartDown.Click
         On Error GoTo Err
 
-        If tv.SelectedNode Is Nothing Then Exit Sub
+        If TV.SelectedNode Is Nothing Then Exit Sub
 
-        Dim N As TreeNode = tv.SelectedNode
+        Dim N As TreeNode = TV.SelectedNode
         Dim P As TreeNode = N.Parent
         Dim I As Integer = N.Index
         Dim Name1 As String = N.Name
@@ -1845,12 +1836,12 @@ Err:
             N.Tag = Tag2
             P.Nodes(I + 1).Name = Name1
             P.Nodes(I + 1).Tag = Tag1
-            If Loading = False Then tv.BeginUpdate()
+            If Loading = False Then TV.BeginUpdate()
             P.Nodes.RemoveAt(I)
             P.Nodes.Insert(I + 1, N)
-            If Loading = False Then tv.EndUpdate()
-            tv.SelectedNode = N
-            tv.Focus()
+            If Loading = False Then TV.EndUpdate()
+            TV.SelectedNode = N
+            TV.Focus()
         End If
 
         CalcPartSize(P.Nodes(I))
@@ -1864,9 +1855,9 @@ Err:
     Private Sub BtnPartUp_Click(sender As Object, e As EventArgs) Handles BtnPartUp.Click
         On Error GoTo Err
 
-        If tv.SelectedNode Is Nothing Then Exit Sub
+        If TV.SelectedNode Is Nothing Then Exit Sub
 
-        Dim N As TreeNode = tv.SelectedNode
+        Dim N As TreeNode = TV.SelectedNode
         Dim P As TreeNode = N.Parent
         Dim I As Integer = N.Index
         Dim Name1 As String = N.Name
@@ -1879,12 +1870,12 @@ Err:
             N.Tag = Tag2
             P.Nodes(I - 1).Name = Name1
             P.Nodes(I - 1).Tag = Tag1
-            If Loading = False Then tv.BeginUpdate()
+            If Loading = False Then TV.BeginUpdate()
             P.Nodes.RemoveAt(I)
             P.Nodes.Insert(I - 1, N)
-            If Loading = False Then tv.EndUpdate()
-            tv.SelectedNode = N
-            tv.Focus()
+            If Loading = False Then TV.EndUpdate()
+            TV.SelectedNode = N
+            TV.Focus()
         End If
 
         CalcPartSize(N)
@@ -1898,16 +1889,16 @@ Err:
     Private Sub ToggleFileNodes()
         On Error GoTo Err
 
-        If Loading = False Then tv.BeginUpdate()
+        If Loading = False Then TV.BeginUpdate()
 
-        If chkExpand.Checked = False Then
-            If tv.Nodes.Count > 1 Then
-                For D As Integer = 0 To tv.Nodes.Count - 2
-                    If tv.Nodes(D).Nodes.Count > 1 Then
-                        For P As Integer = 0 To tv.Nodes(D).Nodes.Count - 2
-                            If tv.Nodes(D).Nodes(P).Nodes.Count > 1 Then
-                                For F As Integer = 0 To tv.Nodes(D).Nodes(P).Nodes.Count - 2
-                                    tv.Nodes(D).Nodes(P).Nodes(F).Collapse()
+        If ChkExpand.Checked = False Then
+            If TV.Nodes.Count > 1 Then
+                For D As Integer = 0 To TV.Nodes.Count - 2
+                    If TV.Nodes(D).Nodes.Count > 1 Then
+                        For P As Integer = 0 To TV.Nodes(D).Nodes.Count - 2
+                            If TV.Nodes(D).Nodes(P).Nodes.Count > 1 Then
+                                For F As Integer = 0 To TV.Nodes(D).Nodes(P).Nodes.Count - 2
+                                    TV.Nodes(D).Nodes(P).Nodes(F).Collapse()
                                 Next
                             End If
                         Next
@@ -1915,13 +1906,13 @@ Err:
                 Next
             End If
         Else
-            If tv.Nodes.Count > 1 Then
-                For D As Integer = 0 To tv.Nodes.Count - 2
-                    If tv.Nodes(D).Nodes.Count > 1 Then
-                        For P As Integer = 0 To tv.Nodes(D).Nodes.Count - 2
-                            If tv.Nodes(D).Nodes(P).Nodes.Count > 1 Then
-                                For F As Integer = 0 To tv.Nodes(D).Nodes(P).Nodes.Count - 2
-                                    tv.Nodes(D).Nodes(P).Nodes(F).Expand()
+            If TV.Nodes.Count > 1 Then
+                For D As Integer = 0 To TV.Nodes.Count - 2
+                    If TV.Nodes(D).Nodes.Count > 1 Then
+                        For P As Integer = 0 To TV.Nodes(D).Nodes.Count - 2
+                            If TV.Nodes(D).Nodes(P).Nodes.Count > 1 Then
+                                For F As Integer = 0 To TV.Nodes(D).Nodes(P).Nodes.Count - 2
+                                    TV.Nodes(D).Nodes(P).Nodes(F).Expand()
                                 Next
                             End If
                         Next
@@ -1930,10 +1921,10 @@ Err:
             End If
         End If
 
-        If Loading = False Then tv.EndUpdate()
-        tv.Focus()
-        If tv.SelectedNode IsNot Nothing Then
-            tv.SelectedNode.EnsureVisible()
+        If Loading = False Then TV.EndUpdate()
+        TV.Focus()
+        If TV.SelectedNode IsNot Nothing Then
+            TV.SelectedNode.EnsureVisible()
         End If
 
         Exit Sub
@@ -1970,7 +1961,7 @@ Err:
 
         If FileNode Is Nothing Then Exit Sub
 
-        If Loading = False Then tv.BeginUpdate()
+        If Loading = False Then TV.BeginUpdate()
 
         If FileNode.Nodes(FileNode.Name + ":FA") Is Nothing Then
             FileNode.Nodes.Add(FileNode.Name + ":FA", sFileAddr + ConvertNumberToHexString(FAddr Mod 256, Int(FAddr / 256)))
@@ -2030,7 +2021,7 @@ Err:
             FileNode.Nodes(FileNode.Name + ":FS").Text = sFileSize + FileSize.ToString + " block" + IIf(FileSize <> 1, "s", "")
         End If
 
-        If Loading = False Then tv.EndUpdate()
+        If Loading = False Then TV.EndUpdate()
 
         FileNode.Expand()
 
@@ -2061,9 +2052,9 @@ Err:
 
         Loading = True
 
-        tv.Enabled = False
+        TV.Enabled = False
         'tv.ShowNodeToolTips = False
-        tv.BeginUpdate()
+        TV.BeginUpdate()
 
         DC = 0
         PC = 0
@@ -2082,20 +2073,20 @@ Err:
         DiskCnt = DC
         ReDim DiskSizeA(DiskCnt)
 
-        tv.Nodes.Clear()
+        TV.Nodes.Clear()
         AddNewDiskNode()
 
-		Packer = My.Settings.DefaultPacker
+        Packer = My.Settings.DefaultPacker
 
 NewDisk:
-        tv.SelectedNode = tv.Nodes(sAddDisk)
+        TV.SelectedNode = TV.Nodes(sAddDisk)
 
         'Reset buffer and other disk variables here
         ResetDiskVariables()
 
         BlankDiskStructure()
 
-        Dim DiskNode As TreeNode = tv.SelectedNode
+        Dim DiskNode As TreeNode = TV.SelectedNode
 
 FindNext:
         FindNextScriptEntry()
@@ -2135,7 +2126,7 @@ FindNext:
                         ScriptEntryArray(0) = ScriptPath + ScriptEntryArray(0)
                     End If
                 End If
-				UpdateNode(DiskNode.Nodes(sDirArt + DC.ToString), sDirArt + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt)
+                UpdateNode(DiskNode.Nodes(sDirArt + DC.ToString), sDirArt + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt)
             Case "packer:"
                 'If CurrentDisk = 1 Then 'Packer can only be set from the first disk
                 Dim Fnt As New Font("Consolas", 10)
@@ -2180,12 +2171,12 @@ Err:
 NoDisk:
         ConvertScriptToNodes = False
 Done:
-        With tv
+        With TV
             .EndUpdate()
             .Enabled = True
             ToggleFileNodes()
             .Focus()
-            .SelectedNode = tv.Nodes(0)
+            .SelectedNode = TV.Nodes(0)
             .SelectedNode.EnsureVisible()
         End With
 
@@ -2205,31 +2196,31 @@ Done:
         FC += 1
         CurrentFile = FC
 
-        tv.SelectedNode = DiskNode.Nodes(DiskNode.Name + ":P" + PC.ToString)
+        TV.SelectedNode = DiskNode.Nodes(DiskNode.Name + ":P" + PC.ToString)
 
         If (NewPart = True) And (Prgs.Count > 0) Then
             UpdatePartSize(DiskNode)
 
             NewPart = False
-            tv.SelectedNode = DiskNode.Nodes(sAddPart + DC.ToString)
+            TV.SelectedNode = DiskNode.Nodes(sAddPart + DC.ToString)
             PC += 1
             CurrentPart = PC
-            With tv.SelectedNode
+            With TV.SelectedNode
                 .Name = .Parent.Name + ":P" + PC.ToString
                 .Tag = .Parent.Tag + PC * &H1000
                 .ForeColor = Color.DarkMagenta
-                AddNewFileNode(tv.SelectedNode)
-                AddNewPartNode(tv.SelectedNode.Parent)          'SelNode=[New part} node
+                AddNewFileNode(TV.SelectedNode)
+                AddNewPartNode(TV.SelectedNode.Parent)          'SelNode=[New part} node
                 .Expand()
             End With
-            tv.SelectedNode = tv.SelectedNode.Parent.Nodes(tv.SelectedNode.Parent.Name + ":P" + PC.ToString) 'SelNode=CurrentPart Node
+            TV.SelectedNode = TV.SelectedNode.Parent.Nodes(TV.SelectedNode.Parent.Name + ":P" + PC.ToString) 'SelNode=CurrentPart Node
         Else
-            tv.SelectedNode = DiskNode.Nodes(DiskNode.Name + ":P" + PC.ToString)
+            TV.SelectedNode = DiskNode.Nodes(DiskNode.Name + ":P" + PC.ToString)
         End If
 
         AddFileToPart()     'This will check and correct file parameters to "0000" format
 
-        Dim N As TreeNode = tv.SelectedNode.Nodes(sAddFile + PC.ToString)
+        Dim N As TreeNode = TV.SelectedNode.Nodes(sAddFile + PC.ToString)
 
         Dim FilePath As String = ScriptEntryArray(0)
 
@@ -2437,18 +2428,18 @@ NoDisk:
 
         UncomPartSize = Int(10000 * BufferCnt / UncomPartSize) / 100
 
-        tv.SelectedNode = DiskNode.Nodes(DiskNode.Name + ":P" + PC.ToString)
+        TV.SelectedNode = DiskNode.Nodes(DiskNode.Name + ":P" + PC.ToString)
 
-        If Loading = False Then tv.BeginUpdate()
+        If Loading = False Then TV.BeginUpdate()
 
         If Prgs.Count = 0 Then
-            tv.SelectedNode.Text = "[Part " + PC.ToString + "]"
+            TV.SelectedNode.Text = "[Part " + PC.ToString + "]"
         Else
-            tv.SelectedNode.Text = "[Part " + PC.ToString + ": " + BufferCnt.ToString + " block" + IIf(BufferCnt <> 1, "s", "") + " compressed, " _
+            TV.SelectedNode.Text = "[Part " + PC.ToString + ": " + BufferCnt.ToString + " block" + IIf(BufferCnt <> 1, "s", "") + " compressed, " _
                + UncomPartSize.ToString + "% of uncompressed size]"
         End If
 
-        If Loading = False Then tv.EndUpdate()
+        If Loading = False Then TV.EndUpdate()
 
         DiskSizeA(DiskCnt - 1) += BufferCnt
 
@@ -2473,8 +2464,8 @@ Err:
         Dim SA, DI, DH As String
         Dim DP As Integer = 7   'Default first part node index (7 for the first disk, 6 for the rest)
 
-        For D As Integer = 0 To tv.Nodes.Count - 2
-            Dim N As TreeNode = tv.Nodes(D)
+        For D As Integer = 0 To TV.Nodes.Count - 2
+            Dim N As TreeNode = TV.Nodes(D)
 
             SA = "" 'Determine demo start address
             If N.Nodes(4).Text.Length > (sDemoStart.Length + 1) Then
@@ -2533,7 +2524,7 @@ Err:
                     Next
                 End If
             Next
-            If D < tv.Nodes.Count - 2 Then
+            If D < TV.Nodes.Count - 2 Then
                 S += vbNewLine + vbNewLine + "New Disk" + vbNewLine + vbNewLine
             End If
 
@@ -2586,20 +2577,20 @@ Err:
     Private Sub FrmSE_Closing(sender As Object, e As CancelEventArgs) Handles Me.Closing
         On Error GoTo Err
 
-        If txtEdit.Visible Then tv.Focus()
+        If txtEdit.Visible Then TV.Focus()
 
-		With My.Settings
-			.DefaultPacker = IIf(OptFaster.Checked, 1, 2)
-			.ShowFileDetails = chkExpand.Checked
-			.ShowToolTips = chkToolTips.Checked
-			.EditorWindowMax = Me.WindowState = FormWindowState.Maximized
-			If WindowState = FormWindowState.Normal Then
-				.EditorHeight = Height
-				.EditorWidth = Width
-			End If
-		End With
+        With My.Settings
+            .DefaultPacker = IIf(OptFaster.Checked, 1, 2)
+            .ShowFileDetails = ChkExpand.Checked
+            .ShowToolTips = ChkToolTips.Checked
+            .EditorWindowMax = Me.WindowState = FormWindowState.Maximized
+            If WindowState = FormWindowState.Normal Then
+                .EditorHeight = Height
+                .EditorWidth = Width
+            End If
+        End With
 
-		ConvertNodesToScript()
+        ConvertNodesToScript()
 
         Exit Sub
 Err:
@@ -2640,28 +2631,28 @@ Err:
 
     End Sub
 
-	Private Sub OptFaster_CheckedChanged(sender As Object, e As EventArgs) Handles OptFaster.CheckedChanged
+    Private Sub OptFaster_CheckedChanged(sender As Object, e As EventArgs) Handles OptFaster.CheckedChanged
 
-		If OptFaster.Checked = True Then
-			My.Settings.DefaultPacker = 1
-		Else
-			My.Settings.DefaultPacker = 2
-		End If
+        If OptFaster.Checked = True Then
+            My.Settings.DefaultPacker = 1
+        Else
+            My.Settings.DefaultPacker = 2
+        End If
 
-	End Sub
+    End Sub
 
-	Private Sub Tv_DragDrop(sender As Object, e As DragEventArgs) Handles tv.DragDrop
-		On Error GoTo Err
+    Private Sub Tv_DragDrop(sender As Object, e As DragEventArgs) Handles TV.DragDrop
+        On Error GoTo Err
 
-		FrmSE_DragDrop(sender, e)
+        FrmSE_DragDrop(sender, e)
 
-		Exit Sub
+        Exit Sub
 Err:
-		MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
-	End Sub
+    End Sub
 
-	Private Sub Tv_DragEnter(sender As Object, e As DragEventArgs) Handles tv.DragEnter
+    Private Sub Tv_DragEnter(sender As Object, e As DragEventArgs) Handles TV.DragEnter
         On Error GoTo Err
 
         FrmSE_DragEnter(sender, e)
@@ -2672,11 +2663,11 @@ Err:
 
     End Sub
 
-    Private Sub Tv_BeforeExpand(sender As Object, e As TreeViewCancelEventArgs) Handles tv.BeforeExpand
+    Private Sub Tv_BeforeExpand(sender As Object, e As TreeViewCancelEventArgs) Handles TV.BeforeExpand
         On Error GoTo Err
 
-        If (tv.SelectedNode.Tag And &HFFF) <> 0 Then
-            If chkExpand.Checked = False Then
+        If (TV.SelectedNode.Tag And &HFFF) <> 0 Then
+            If ChkExpand.Checked = False Then
                 If Dbl = True Then e.Cancel = True
             End If
         End If
@@ -2689,11 +2680,11 @@ Err:
 
     End Sub
 
-    Private Sub Tv_BeforeCollapse(sender As Object, e As TreeViewCancelEventArgs) Handles tv.BeforeCollapse
+    Private Sub Tv_BeforeCollapse(sender As Object, e As TreeViewCancelEventArgs) Handles TV.BeforeCollapse
         On Error GoTo Err
 
-        If (tv.SelectedNode.Tag And &HFFF) <> 0 Then
-            If chkExpand.Checked = True Then
+        If (TV.SelectedNode.Tag And &HFFF) <> 0 Then
+            If ChkExpand.Checked = True Then
                 If Dbl = True Then
                     e.Cancel = True
                 End If
@@ -2708,12 +2699,12 @@ Err:
 
     End Sub
 
-    Private Sub ChkToolTips_CheckedChanged(sender As Object, e As EventArgs) Handles chkToolTips.CheckedChanged
+    Private Sub ChkToolTips_CheckedChanged(sender As Object, e As EventArgs) Handles ChkToolTips.CheckedChanged
         On Error GoTo Err
 
-        If chkToolTips.Checked = False Then
+        If ChkToolTips.Checked = False Then
             TT.Hide(txtEdit)
-            TT.Hide(tv)
+            TT.Hide(TV)
         End If
 
         Exit Sub
@@ -2722,7 +2713,7 @@ Err:
 
     End Sub
 
-    Private Sub ChkExpand_CheckedChanged(sender As Object, e As EventArgs) Handles chkExpand.CheckedChanged
+    Private Sub ChkExpand_CheckedChanged(sender As Object, e As EventArgs) Handles ChkExpand.CheckedChanged
         On Error GoTo Err
 
         ToggleFileNodes()
@@ -2733,7 +2724,7 @@ Err:
 
     End Sub
 
-    Private Sub Tv_MouseDown(sender As Object, e As MouseEventArgs) Handles tv.MouseDown
+    Private Sub Tv_MouseDown(sender As Object, e As MouseEventArgs) Handles TV.MouseDown
         On Error GoTo Err
 
         'Handle double clicks before a node is expanded or collapsed to prevent unwanted expansion or collapse
@@ -2757,30 +2748,30 @@ Err:
     Private Sub FrmSE_Resize(sender As Object, e As EventArgs) Handles Me.Resize
         On Error GoTo Err
 
-        With tv
-            .Width = Width - btnNew.Width - 56
+        With TV
+            .Width = Width - BtnNew.Width - 56
             .Height = Height - .Top - strip.Height - 56
         End With
 
-        With btnNew
+        With BtnNew
             .Left = Width - .Width - 32
-            btnLoad.Left = .Left
-            btnSave.Left = .Left
+            BtnLoad.Left = .Left
+            BtnSave.Left = .Left
             BtnPartUp.Left = .Left
             BtnPartDown.Left = .Left
-            chkExpand.Left = .Left
-            chkToolTips.Left = .Left
-			PnlPacker.Left = .Left - 11
-		End With
-
-        With btnCancel
-            .Top = tv.Top + tv.Height - .Height
-            .Left = btnNew.Left
+            ChkExpand.Left = .Left
+            ChkToolTips.Left = .Left
+            PnlPacker.Left = .Left - 11
         End With
 
-        With btnOK
-            .Top = btnCancel.Top - .Height - 6
-            .Left = btnNew.Left
+        With BtnCancel
+            .Top = TV.Top + TV.Height - .Height
+            .Left = BtnNew.Left
+        End With
+
+        With BtnOK
+            .Top = BtnCancel.Top - .Height - 6
+            .Left = BtnNew.Left
         End With
 
         Exit Sub
@@ -2820,13 +2811,19 @@ Err:
 
         TT.Hide(txtEdit)
 
-        If chkToolTips.Checked = False Then Exit Sub
+        If ChkToolTips.Checked = False Then Exit Sub
 
         If Loading = True Then Exit Sub
 
         Dim TTT As String = ""
 
         With TT
+            .ToolTipIcon = ToolTipIcon.Info
+            .UseFading = True
+            .InitialDelay = 2000
+            .AutomaticDelay = 2000
+            .AutoPopDelay = 5000
+            .ReshowDelay = 1000
             Select Case txtEdit.Tag
                 Case sDiskHeader
                     .ToolTipTitle = "Editing the Disk's Header"
@@ -2879,12 +2876,12 @@ Err:
 
     End Sub
 
-    Private Sub Tv_NodeMouseHover(sender As Object, e As TreeNodeMouseHoverEventArgs) Handles tv.NodeMouseHover
+    Private Sub Tv_NodeMouseHover(sender As Object, e As TreeNodeMouseHoverEventArgs) Handles TV.NodeMouseHover
         On Error GoTo Err
 
-        TT.Hide(tv)
+        TT.Hide(TV)
 
-        If chkToolTips.Checked = False Then Exit Sub
+        If ChkToolTips.Checked = False Then Exit Sub
 
         If Loading = True Then Exit Sub
 
@@ -2947,16 +2944,16 @@ Err:
                         TTT = tDirArt
                     Case sZP
                         .ToolTipTitle = "Zeropage Usage"
-						TTT = tZP
-					Case sPacker
-						.ToolTipTitle = "Packer to be used"
-						TTT = tPacker
-					Case Else
-				End Select
+                        TTT = tZP
+                    Case sPacker
+                        .ToolTipTitle = "Packer to be used"
+                        TTT = tPacker
+                    Case Else
+                End Select
             End If
 
             If TTT <> "" Then
-                .Show(TTT, tv, 5000)
+                .Show(TTT, TV)
             End If
         End With
 
@@ -2972,7 +2969,7 @@ Err:
         'If txtEdit is visible while we are scrolling - set focus back to Tv and hide txtEdit
         Select Case m.Msg
             Case WM_VSCROLL, WM_HSCROLL, WM_MOUSEWHEEL
-                tv.Focus()
+                TV.Focus()
         End Select
 
         Exit Sub
@@ -2981,11 +2978,11 @@ Err:
 
     End Sub
 
-    Private Sub Tv_NodeMouseClick(sender As Object, e As TreeNodeMouseClickEventArgs) Handles tv.NodeMouseClick
+    Private Sub Tv_NodeMouseClick(sender As Object, e As TreeNodeMouseClickEventArgs) Handles TV.NodeMouseClick
         On Error GoTo Err
 
         If e.Button = MouseButtons.Right Then
-            tv.SelectedNode = e.Node
+            TV.SelectedNode = e.Node
         End If
 
         Exit Sub
@@ -2997,7 +2994,7 @@ Err:
     Private Sub TxtEdit_MouseWheel(sender As Object, e As MouseEventArgs) Handles txtEdit.MouseWheel
         On Error GoTo Err
 
-        tv.Focus()
+        TV.Focus()
 
         Exit Sub
 Err:
@@ -3022,8 +3019,462 @@ Err:
                     BtnPartUp_Click(sender, e)
                 Case Keys.PageDown
                     BtnPartDown_Click(sender, e)
+                Case Keys.B
+                    BtnOK_Click(sender, e)
+                Case Keys.C
+                    BtnCancel_Click(sender, e)
+                Case Keys.D
+                    ChkExpand.Checked = Not ChkExpand.Checked
+                Case Keys.T
+                    ChkToolTips.Checked = Not ChkToolTips.Checked
             End Select
         End If
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub BtnNew_MouseEnter(sender As Object, e As EventArgs) Handles BtnNew.MouseEnter
+        On Error GoTo Err
+
+        With TT
+            .InitialDelay = 0
+            .AutoPopDelay = 5000
+            .ToolTipTitle = "New Script"
+        End With
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub BtnNew_MouseHover(sender As Object, e As EventArgs) Handles BtnNew.MouseHover
+        On Error GoTo Err
+
+        TT.Show("Click button or press Ctrl+N to start a new script", BtnNew)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub BtnNew_MouseLeave(sender As Object, e As EventArgs) Handles BtnNew.MouseLeave
+        On Error GoTo Err
+
+        TT.Hide(BtnNew)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub BtnLoad_MouseEnter(sender As Object, e As EventArgs) Handles BtnLoad.MouseEnter
+        On Error GoTo Err
+
+        With TT
+            .InitialDelay = 0
+            .AutoPopDelay = 5000
+            .ToolTipTitle = "Load Script"
+        End With
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub BtnLoad_MouseHover(sender As Object, e As EventArgs) Handles BtnLoad.MouseHover
+        On Error GoTo Err
+
+        TT.Show("Click button or press Ctrl+L to load a script", BtnLoad)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub BtnLoad_MouseLeave(sender As Object, e As EventArgs) Handles BtnLoad.MouseLeave
+        On Error GoTo Err
+
+        TT.Hide(BtnLoad)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+    End Sub
+
+    Private Sub BtnSave_MouseEnter(sender As Object, e As EventArgs) Handles BtnSave.MouseEnter
+        On Error GoTo Err
+
+        With TT
+            .InitialDelay = 0
+            .AutoPopDelay = 5000
+            .ToolTipTitle = "Save Script"
+        End With
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub BtnSave_MouseHover(sender As Object, e As EventArgs) Handles BtnSave.MouseHover
+        On Error GoTo Err
+
+        TT.Show("Click button or press Ctrl+S to save a script", BtnSave)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub BtnSave_MouseLeave(sender As Object, e As EventArgs) Handles BtnSave.MouseLeave
+        On Error GoTo Err
+
+        TT.Hide(BtnSave)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub BtnPartUp_MouseEnter(sender As Object, e As EventArgs) Handles BtnPartUp.MouseEnter
+        On Error GoTo Err
+
+        With TT
+            .InitialDelay = 0
+            .AutoPopDelay = 5000
+            .ToolTipTitle = "Move Part Up"
+        End With
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub BtnPartUp_MouseHover(sender As Object, e As EventArgs) Handles BtnPartUp.MouseHover
+        On Error GoTo Err
+
+        TT.Show("Click button or press Ctrl+PgUp to move the selected part up within its disk", BtnPartUp)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub BtnPartUp_MouseLeave(sender As Object, e As EventArgs) Handles BtnPartUp.MouseLeave
+        On Error GoTo Err
+
+        TT.Hide(BtnPartUp)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub BtnPartDown_MouseEnter(sender As Object, e As EventArgs) Handles BtnPartDown.MouseEnter
+        On Error GoTo Err
+
+        With TT
+            .InitialDelay = 0
+            .AutoPopDelay = 5000
+            .ToolTipTitle = "Move Part Down"
+        End With
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub BtnPartDown_MouseHover(sender As Object, e As EventArgs) Handles BtnPartDown.MouseHover
+        On Error GoTo Err
+
+        TT.Show("Click button or press Ctrl+PgDn to move the selected part down within its disk", BtnPartDown)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub BtnPartDown_MouseLeave(sender As Object, e As EventArgs) Handles BtnPartDown.MouseLeave
+        On Error GoTo Err
+
+        TT.Hide(BtnPartDown)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub OptFaster_MouseEnter(sender As Object, e As EventArgs) Handles OptFaster.MouseEnter
+        On Error GoTo Err
+
+        With TT
+            .InitialDelay = 0
+            .AutoPopDelay = 5000
+            .ToolTipTitle = "Select Default Packer"
+        End With
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub OptFaster_MouseHover(sender As Object, e As EventArgs) Handles OptFaster.MouseHover
+        On Error GoTo Err
+
+        TT.Show("Click this radio button to make the faster packer your default compression method", OptFaster)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub OptFaster_MouseLeave(sender As Object, e As EventArgs) Handles OptFaster.MouseLeave
+        On Error GoTo Err
+
+        TT.Hide(OptFaster)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub OptBetter_MouseEnter(sender As Object, e As EventArgs) Handles OptBetter.MouseEnter
+        On Error GoTo Err
+
+        With TT
+            .InitialDelay = 0
+            .AutoPopDelay = 5000
+            .ToolTipTitle = "Select Default Packer"
+        End With
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub OptBetter_MouseHover(sender As Object, e As EventArgs) Handles OptBetter.MouseHover
+        On Error GoTo Err
+
+        TT.Show("Click this radio button to make the better packer your default compression method", OptBetter)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub OptBetter_MouseLeave(sender As Object, e As EventArgs) Handles OptBetter.MouseLeave
+        On Error GoTo Err
+
+        TT.Hide(OptBetter)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub BtnOK_MouseEnter(sender As Object, e As EventArgs) Handles BtnOK.MouseEnter
+        On Error GoTo Err
+
+        With TT
+            .InitialDelay = 0
+            .AutoPopDelay = 5000
+            .ToolTipTitle = "Close & Build"
+        End With
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub BtnOK_MouseHover(sender As Object, e As EventArgs) Handles BtnOK.MouseHover
+        On Error GoTo Err
+
+        TT.Show("Click this button or press Ctrl+B to close the editor and build demo", BtnOK)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub BtnOK_MouseLeave(sender As Object, e As EventArgs) Handles BtnOK.MouseLeave
+        On Error GoTo Err
+
+        TT.Hide(BtnOK)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub BtnCancel_MouseEnter(sender As Object, e As EventArgs) Handles BtnCancel.MouseEnter
+        On Error GoTo Err
+
+        With TT
+            .InitialDelay = 0
+            .AutoPopDelay = 5000
+            .ToolTipTitle = "Close"
+        End With
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub BtnCancel_MouseHover(sender As Object, e As EventArgs) Handles BtnCancel.MouseHover
+        On Error GoTo Err
+
+        TT.Show("Click this button or press Ctrl+C to close the editor without building the demo", BtnCancel)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub BtnCancel_MouseLeave(sender As Object, e As EventArgs) Handles BtnCancel.MouseLeave
+        On Error GoTo Err
+
+        TT.Hide(BtnCancel)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub ChkExpand_MouseEnter(sender As Object, e As EventArgs) Handles ChkExpand.MouseEnter
+        On Error GoTo Err
+
+        With TT
+            .InitialDelay = 0
+            .AutoPopDelay = 5000
+            .ToolTipTitle = "Show/Hide File Details"
+        End With
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub ChkExpand_MouseHover(sender As Object, e As EventArgs) Handles ChkExpand.MouseHover
+        On Error GoTo Err
+
+        TT.Show("Click this checkbox or press Ctrl+D to show or hide file details", ChkExpand)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub ChkExpand_MouseLeave(sender As Object, e As EventArgs) Handles ChkExpand.MouseLeave
+        On Error GoTo Err
+
+        TT.Hide(ChkExpand)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub ChkToolTips_MouseEnter(sender As Object, e As EventArgs) Handles ChkToolTips.MouseEnter
+        On Error GoTo Err
+
+        With TT
+            .InitialDelay = 0
+            .AutoPopDelay = 5000
+            .ToolTipTitle = "Show/Hide ToolTips"
+        End With
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub ChkToolTips_MouseHover(sender As Object, e As EventArgs) Handles ChkToolTips.MouseHover
+        On Error GoTo Err
+
+        TT.Show("Click this button or press Ctrl+T to show or hide tooltips in the editor", ChkToolTips)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub ChkToolTips_MouseLeave(sender As Object, e As EventArgs) Handles ChkToolTips.MouseLeave
+        On Error GoTo Err
+
+        TT.Hide(ChkToolTips)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub TV_MouseEnter(sender As Object, e As EventArgs) Handles TV.MouseEnter
+        On Error GoTo Err
+
+        With TT
+            .ToolTipIcon = ToolTipIcon.Info
+            .UseFading = True
+            .InitialDelay = 2000
+            .AutomaticDelay = 2000
+            .AutoPopDelay = 5000
+            .ReshowDelay = 1000
+        End With
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub TV_MouseLeave(sender As Object, e As EventArgs) Handles TV.MouseLeave
+        On Error GoTo Err
+
+        TT.Hide(TV)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub TV_MouseMove(sender As Object, e As MouseEventArgs) Handles TV.MouseMove
+        On Error GoTo Err
+
+        'TT.Hide(tv)
 
         Exit Sub
 Err:

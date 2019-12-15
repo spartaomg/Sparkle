@@ -28,18 +28,18 @@ Partial Class FrmSE
 		Me.strip = New System.Windows.Forms.StatusStrip()
 		Me.tssLabel = New System.Windows.Forms.ToolStripStatusLabel()
 		Me.TssDisk = New System.Windows.Forms.ToolStripStatusLabel()
-		Me.btnNew = New System.Windows.Forms.Button()
-		Me.btnCancel = New System.Windows.Forms.Button()
-		Me.btnOK = New System.Windows.Forms.Button()
-		Me.btnSave = New System.Windows.Forms.Button()
-		Me.btnLoad = New System.Windows.Forms.Button()
-		Me.tv = New System.Windows.Forms.TreeView()
+		Me.BtnNew = New System.Windows.Forms.Button()
+		Me.BtnCancel = New System.Windows.Forms.Button()
+		Me.BtnOK = New System.Windows.Forms.Button()
+		Me.BtnSave = New System.Windows.Forms.Button()
+		Me.BtnLoad = New System.Windows.Forms.Button()
+		Me.TV = New System.Windows.Forms.TreeView()
 		Me.BtnFileUp = New System.Windows.Forms.Button()
 		Me.BtnFileDown = New System.Windows.Forms.Button()
 		Me.BtnPartUp = New System.Windows.Forms.Button()
 		Me.BtnPartDown = New System.Windows.Forms.Button()
-		Me.chkExpand = New System.Windows.Forms.CheckBox()
-		Me.chkToolTips = New System.Windows.Forms.CheckBox()
+		Me.ChkExpand = New System.Windows.Forms.CheckBox()
+		Me.ChkToolTips = New System.Windows.Forms.CheckBox()
 		Me.PnlPacker = New System.Windows.Forms.Panel()
 		Me.OptBetter = New System.Windows.Forms.RadioButton()
 		Me.OptFaster = New System.Windows.Forms.RadioButton()
@@ -94,60 +94,60 @@ Partial Class FrmSE
 		Me.TssDisk.Size = New System.Drawing.Size(122, 17)
 		Me.TssDisk.Text = "Disk 1: 664 blocks free"
 		'
-		'btnNew
+		'BtnNew
 		'
-		Me.btnNew.Location = New System.Drawing.Point(677, 20)
-		Me.btnNew.Name = "btnNew"
-		Me.btnNew.Size = New System.Drawing.Size(96, 26)
-		Me.btnNew.TabIndex = 91
-		Me.btnNew.Text = "New Script"
-		Me.btnNew.UseVisualStyleBackColor = True
+		Me.BtnNew.Location = New System.Drawing.Point(677, 20)
+		Me.BtnNew.Name = "BtnNew"
+		Me.BtnNew.Size = New System.Drawing.Size(96, 26)
+		Me.BtnNew.TabIndex = 91
+		Me.BtnNew.Text = "New Script"
+		Me.BtnNew.UseVisualStyleBackColor = True
 		'
-		'btnCancel
+		'BtnCancel
 		'
-		Me.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel
-		Me.btnCancel.Location = New System.Drawing.Point(677, 535)
-		Me.btnCancel.Name = "btnCancel"
-		Me.btnCancel.Size = New System.Drawing.Size(96, 26)
-		Me.btnCancel.TabIndex = 96
-		Me.btnCancel.Text = "Close"
-		Me.btnCancel.UseVisualStyleBackColor = True
+		Me.BtnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel
+		Me.BtnCancel.Location = New System.Drawing.Point(677, 535)
+		Me.BtnCancel.Name = "BtnCancel"
+		Me.BtnCancel.Size = New System.Drawing.Size(96, 26)
+		Me.BtnCancel.TabIndex = 96
+		Me.BtnCancel.Text = "Close"
+		Me.BtnCancel.UseVisualStyleBackColor = True
 		'
-		'btnOK
+		'BtnOK
 		'
-		Me.btnOK.AccessibleRole = System.Windows.Forms.AccessibleRole.None
-		Me.btnOK.Location = New System.Drawing.Point(677, 503)
-		Me.btnOK.Name = "btnOK"
-		Me.btnOK.Size = New System.Drawing.Size(96, 26)
-		Me.btnOK.TabIndex = 95
-		Me.btnOK.Text = "Close && Build"
-		Me.btnOK.UseVisualStyleBackColor = True
+		Me.BtnOK.AccessibleRole = System.Windows.Forms.AccessibleRole.None
+		Me.BtnOK.Location = New System.Drawing.Point(677, 503)
+		Me.BtnOK.Name = "BtnOK"
+		Me.BtnOK.Size = New System.Drawing.Size(96, 26)
+		Me.BtnOK.TabIndex = 95
+		Me.BtnOK.Text = "Close && Build"
+		Me.BtnOK.UseVisualStyleBackColor = True
 		'
-		'btnSave
+		'BtnSave
 		'
-		Me.btnSave.Location = New System.Drawing.Point(677, 84)
-		Me.btnSave.Name = "btnSave"
-		Me.btnSave.Size = New System.Drawing.Size(96, 26)
-		Me.btnSave.TabIndex = 94
-		Me.btnSave.Text = "Save Script"
-		Me.btnSave.UseVisualStyleBackColor = True
+		Me.BtnSave.Location = New System.Drawing.Point(677, 84)
+		Me.BtnSave.Name = "BtnSave"
+		Me.BtnSave.Size = New System.Drawing.Size(96, 26)
+		Me.BtnSave.TabIndex = 94
+		Me.BtnSave.Text = "Save Script"
+		Me.BtnSave.UseVisualStyleBackColor = True
 		'
-		'btnLoad
+		'BtnLoad
 		'
-		Me.btnLoad.Location = New System.Drawing.Point(677, 52)
-		Me.btnLoad.Name = "btnLoad"
-		Me.btnLoad.Size = New System.Drawing.Size(96, 26)
-		Me.btnLoad.TabIndex = 93
-		Me.btnLoad.Text = "Load Script"
-		Me.btnLoad.UseVisualStyleBackColor = True
+		Me.BtnLoad.Location = New System.Drawing.Point(677, 52)
+		Me.BtnLoad.Name = "BtnLoad"
+		Me.BtnLoad.Size = New System.Drawing.Size(96, 26)
+		Me.BtnLoad.TabIndex = 93
+		Me.BtnLoad.Text = "Load Script"
+		Me.BtnLoad.UseVisualStyleBackColor = True
 		'
-		'tv
+		'TV
 		'
-		Me.tv.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.75!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-		Me.tv.Location = New System.Drawing.Point(12, 21)
-		Me.tv.Name = "tv"
-		Me.tv.Size = New System.Drawing.Size(646, 542)
-		Me.tv.TabIndex = 78
+		Me.TV.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.75!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+		Me.TV.Location = New System.Drawing.Point(12, 21)
+		Me.TV.Name = "TV"
+		Me.TV.Size = New System.Drawing.Size(646, 542)
+		Me.TV.TabIndex = 78
 		'
 		'BtnFileUp
 		'
@@ -187,25 +187,25 @@ Partial Class FrmSE
 		Me.BtnPartDown.Text = "Move Part Down"
 		Me.BtnPartDown.UseVisualStyleBackColor = True
 		'
-		'chkExpand
+		'ChkExpand
 		'
-		Me.chkExpand.AutoSize = True
-		Me.chkExpand.Location = New System.Drawing.Point(677, 232)
-		Me.chkExpand.Name = "chkExpand"
-		Me.chkExpand.Size = New System.Drawing.Size(88, 17)
-		Me.chkExpand.TabIndex = 108
-		Me.chkExpand.Text = "Show Details"
-		Me.chkExpand.UseVisualStyleBackColor = True
+		Me.ChkExpand.AutoSize = True
+		Me.ChkExpand.Location = New System.Drawing.Point(677, 232)
+		Me.ChkExpand.Name = "ChkExpand"
+		Me.ChkExpand.Size = New System.Drawing.Size(88, 17)
+		Me.ChkExpand.TabIndex = 108
+		Me.ChkExpand.Text = "Show Details"
+		Me.ChkExpand.UseVisualStyleBackColor = True
 		'
-		'chkToolTips
+		'ChkToolTips
 		'
-		Me.chkToolTips.AutoSize = True
-		Me.chkToolTips.Location = New System.Drawing.Point(677, 255)
-		Me.chkToolTips.Name = "chkToolTips"
-		Me.chkToolTips.Size = New System.Drawing.Size(97, 17)
-		Me.chkToolTips.TabIndex = 109
-		Me.chkToolTips.Text = "Show ToolTips"
-		Me.chkToolTips.UseVisualStyleBackColor = True
+		Me.ChkToolTips.AutoSize = True
+		Me.ChkToolTips.Location = New System.Drawing.Point(677, 255)
+		Me.ChkToolTips.Name = "ChkToolTips"
+		Me.ChkToolTips.Size = New System.Drawing.Size(97, 17)
+		Me.ChkToolTips.TabIndex = 109
+		Me.ChkToolTips.Text = "Show ToolTips"
+		Me.ChkToolTips.UseVisualStyleBackColor = True
 		'
 		'PnlPacker
 		'
@@ -253,11 +253,10 @@ Partial Class FrmSE
 		Me.AllowDrop = True
 		Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
 		Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-		Me.CancelButton = Me.btnCancel
 		Me.ClientSize = New System.Drawing.Size(784, 601)
 		Me.Controls.Add(Me.PnlPacker)
-		Me.Controls.Add(Me.chkToolTips)
-		Me.Controls.Add(Me.chkExpand)
+		Me.Controls.Add(Me.ChkToolTips)
+		Me.Controls.Add(Me.ChkExpand)
 		Me.Controls.Add(Me.BtnPartDown)
 		Me.Controls.Add(Me.BtnPartUp)
 		Me.Controls.Add(Me.BtnFileDown)
@@ -265,12 +264,12 @@ Partial Class FrmSE
 		Me.Controls.Add(Me.txtEdit)
 		Me.Controls.Add(Me.Label10)
 		Me.Controls.Add(Me.strip)
-		Me.Controls.Add(Me.btnNew)
-		Me.Controls.Add(Me.btnCancel)
-		Me.Controls.Add(Me.btnOK)
-		Me.Controls.Add(Me.btnSave)
-		Me.Controls.Add(Me.btnLoad)
-		Me.Controls.Add(Me.tv)
+		Me.Controls.Add(Me.BtnNew)
+		Me.Controls.Add(Me.BtnCancel)
+		Me.Controls.Add(Me.BtnOK)
+		Me.Controls.Add(Me.BtnSave)
+		Me.Controls.Add(Me.BtnLoad)
+		Me.Controls.Add(Me.TV)
 		Me.Icon = CType(resources.GetObject("$this.Icon"), System.Drawing.Icon)
 		Me.KeyPreview = True
 		Me.MinimizeBox = False
@@ -291,19 +290,19 @@ Partial Class FrmSE
     Friend WithEvents Label10 As Label
 	Friend WithEvents strip As StatusStrip
 	Friend WithEvents tssLabel As ToolStripStatusLabel
-	Friend WithEvents btnNew As Button
-	Friend WithEvents btnCancel As Button
-	Friend WithEvents btnOK As Button
-	Friend WithEvents btnSave As Button
-	Friend WithEvents btnLoad As Button
-	Friend WithEvents tv As TreeView
+	Friend WithEvents BtnNew As Button
+	Friend WithEvents BtnCancel As Button
+	Friend WithEvents BtnOK As Button
+	Friend WithEvents BtnSave As Button
+	Friend WithEvents BtnLoad As Button
+	Friend WithEvents TV As TreeView
     Friend WithEvents BtnFileUp As Button
     Friend WithEvents BtnFileDown As Button
     Friend WithEvents BtnPartUp As Button
     Friend WithEvents BtnPartDown As Button
     Friend WithEvents TssDisk As ToolStripStatusLabel
-    Friend WithEvents chkExpand As CheckBox
-    Friend WithEvents chkToolTips As CheckBox
+    Friend WithEvents ChkExpand As CheckBox
+    Friend WithEvents ChkToolTips As CheckBox
 	Friend WithEvents tmr As Timer
 	Friend WithEvents PnlPacker As Panel
 	Friend WithEvents OptBetter As RadioButton
