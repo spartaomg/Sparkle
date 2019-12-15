@@ -263,7 +263,7 @@ Partial Class FrmMain
 		Me.TsbFirstPart.Name = "TsbFirstPart"
 		Me.TsbFirstPart.Size = New System.Drawing.Size(24, 24)
 		Me.TsbFirstPart.Text = "First Part"
-		Me.TsbFirstPart.ToolTipText = "Load First Sector of First Part  (Home key)"
+		Me.TsbFirstPart.ToolTipText = "Load First Sector of First Part  (Home)"
 		'
 		'ToolStripSeparator17
 		'
@@ -278,7 +278,7 @@ Partial Class FrmMain
 		Me.TsbPrevPart.Name = "TsbPrevPart"
 		Me.TsbPrevPart.Size = New System.Drawing.Size(24, 24)
 		Me.TsbPrevPart.Text = "Previous Part"
-		Me.TsbPrevPart.ToolTipText = "Load First Sector of Previous Part (PgUp key)"
+		Me.TsbPrevPart.ToolTipText = "Load First Sector of Previous Part (PgUp)"
 		'
 		'ToolStripSeparator14
 		'
@@ -293,7 +293,7 @@ Partial Class FrmMain
 		Me.tsbPrevSector4.Name = "tsbPrevSector4"
 		Me.tsbPrevSector4.Size = New System.Drawing.Size(24, 24)
 		Me.tsbPrevSector4.Text = "Previous Sector"
-		Me.tsbPrevSector4.ToolTipText = "Load Previous Sector in Sequence using Default Interleave (- key)"
+		Me.tsbPrevSector4.ToolTipText = "Load Previous Sector in Sequence using Default Interleave (-)"
 		'
 		'ToolStripSeparator11
 		'
@@ -308,7 +308,7 @@ Partial Class FrmMain
 		Me.tsbNextSector4.Name = "tsbNextSector4"
 		Me.tsbNextSector4.Size = New System.Drawing.Size(24, 24)
 		Me.tsbNextSector4.Text = "Next Sector"
-		Me.tsbNextSector4.ToolTipText = "Load Next Sector in Sequence using Default Interleave (+ key)"
+		Me.tsbNextSector4.ToolTipText = "Load Next Sector in Sequence using Default Interleave (+)"
 		'
 		'ToolStripSeparator16
 		'
@@ -323,7 +323,7 @@ Partial Class FrmMain
 		Me.TsbNextPart.Name = "TsbNextPart"
 		Me.TsbNextPart.Size = New System.Drawing.Size(24, 24)
 		Me.TsbNextPart.Text = "Next Part"
-		Me.TsbNextPart.ToolTipText = "Load First Sector of Next Part (PgDn key)"
+		Me.TsbNextPart.ToolTipText = "Load First Sector of Next Part (PgDn)"
 		'
 		'ToolStripSeparator18
 		'
@@ -338,7 +338,7 @@ Partial Class FrmMain
 		Me.TsbLastPart.Name = "TsbLastPart"
 		Me.TsbLastPart.Size = New System.Drawing.Size(24, 24)
 		Me.TsbLastPart.Text = "Last Part"
-		Me.TsbLastPart.ToolTipText = "Load Last Sector of Last Part (End key)"
+		Me.TsbLastPart.ToolTipText = "Load Last Sector of Last Part (End)"
 		'
 		'ToolStripSeparator12
 		'
@@ -456,7 +456,7 @@ Partial Class FrmMain
 		Me.tsbSaveAs.Name = "tsbSaveAs"
 		Me.tsbSaveAs.Size = New System.Drawing.Size(24, 24)
 		Me.tsbSaveAs.Text = "Save D64 file as..."
-		Me.tsbSaveAs.ToolTipText = "Save D64 File As... (F12 key)"
+		Me.tsbSaveAs.ToolTipText = "Save D64 File As... (F12)"
 		'
 		'ToolStripSeparator1
 		'
@@ -487,7 +487,7 @@ Partial Class FrmMain
 		Me.tsbBuildDisk.Name = "tsbBuildDisk"
 		Me.tsbBuildDisk.Size = New System.Drawing.Size(137, 24)
 		Me.tsbBuildDisk.Text = "Build Disk from Script"
-		Me.tsbBuildDisk.ToolTipText = "Build Disk from Script (F5 key)"
+		Me.tsbBuildDisk.ToolTipText = "Build Disk from Script (F5)"
 		'
 		'tsmRebuildDisk
 		'
