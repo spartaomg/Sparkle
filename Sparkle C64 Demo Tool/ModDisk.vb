@@ -852,13 +852,13 @@ FindNext:
             Case "start:"
                 DemoStart = ScriptEntryArray(0)
 			Case "packer:"
-				If LCase(ScriptEntryArray(0)) = "faster" Then
-					Packer = 1
-				Else
-					Packer = 2
-				End If
-			Case "dirart:"
-				If InStr(ScriptEntryArray(0), ":") = 0 Then
+                If LCase(ScriptEntryArray(0)) = "faster" Then
+                    Packer = 1
+                Else
+                    Packer = 2
+                End If
+            Case "dirart:"
+                If InStr(ScriptEntryArray(0), ":") = 0 Then
                     ScriptEntryArray(0) = ScriptPath + ScriptEntryArray(0)
                 End If
                 If IO.File.Exists(ScriptEntryArray(0)) Then
@@ -1025,11 +1025,11 @@ Err:
         Else
             PrgAdd = Convert.ToInt32(FileAddrA(0), 16)
             PrgLen = Convert.ToInt32(FileLenA(0), 16)
-			If Packer = 1 Then
-				If FinishPart(CheckIO(PrgLen - 1), False) = False Then GoTo NoComp
-			Else
-				If ClosePart(CheckIO(PrgLen - 1), False) = False Then GoTo NoComp
-			End If
+            If Packer = 1 Then
+                If FinishPart(CheckIO(PrgLen - 1), False) = False Then GoTo NoComp
+            Else
+                If ClosePart(CheckIO(PrgLen - 1), False) = False Then GoTo NoComp
+            End If
 		End If
 
 		NewPart = True
@@ -1039,11 +1039,11 @@ Err:
 			If I = Prgs.Count - 1 Then LastFileOfPart = True
 			'The only two parameters that are needed are FA and FUIO... FileLenA(i) is not used
 			If Packer = 1 Then
-				NewLZ(Prgs(I).ToArray, FileAddrA(I), FileIOA(I))  'NewPart is TRUE FOR THE FIRST FILE ONLY
-				If I < Prgs.Count - 1 Then FinishFile()
+                NewLZ(Prgs(I).ToArray, FileAddrA(I), FileIOA(I))  'NewPart is TRUE FOR THE FIRST FILE ONLY
+                If I < Prgs.Count - 1 Then FinishFile()
 			Else
-				PackFile(Prgs(I).ToArray, FileAddrA(I), FileIOA(I))
-				If I < Prgs.Count - 1 Then CloseFile()
+                PackFile(Prgs(I).ToArray, FileAddrA(I), FileIOA(I))
+                If I < Prgs.Count - 1 Then CloseFile()
 			End If
 		Next
 
@@ -1052,7 +1052,7 @@ Err:
         If LastBlockCnt > 255 Then
             'Parts cannot be larger than 255 blocks compressed
             'There is some confusion here how PartCnt is used in the Editor and during Disk building...
-            MsgBox("Part " + IIf(CompressPartFromEditor = True, PartCnt + 1, PartCnt).ToString + " would need " + LastBlockCnt.ToString + " blocks on the disk." + vbNewLine + vbNewLine + "Parts cannot be larger than 255 blocks!", vbOKOnly + vbCritical, "Part exceeds 255-block limit!")
+            MsgBox("Part " + IIf(CompressPartFromEditor = True, PartCnt + 1, PartCnt).ToString + " would need " + LastBlockCnt.ToString + " blocks on the disk." + vbNewLine + vbNewLine + "Parts cannot be larger than 255 blocks compressed!", vbOKOnly + vbCritical, "Part exceeds 255-block limit!")
             If CompressPartFromEditor = False Then GoTo NoComp
         End If
 

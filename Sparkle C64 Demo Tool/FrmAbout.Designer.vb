@@ -96,6 +96,7 @@ Partial Class FrmAbout
 		Me.MinimizeBox = False
 		Me.Name = "FrmAbout"
 		Me.ShowIcon = False
+		Me.ShowInTaskbar = False
 		Me.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen
 		Me.Text = "FrmAbout"
 		CType(Me.PbxLogo, System.ComponentModel.ISupportInitialize).EndInit()

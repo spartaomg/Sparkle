@@ -41,9 +41,9 @@ Partial Class FrmSE
 		Me.chkExpand = New System.Windows.Forms.CheckBox()
 		Me.chkToolTips = New System.Windows.Forms.CheckBox()
 		Me.PnlPacker = New System.Windows.Forms.Panel()
-		Me.lblPacker = New System.Windows.Forms.Label()
-		Me.OptFaster = New System.Windows.Forms.RadioButton()
 		Me.OptBetter = New System.Windows.Forms.RadioButton()
+		Me.OptFaster = New System.Windows.Forms.RadioButton()
+		Me.lblPacker = New System.Windows.Forms.Label()
 		Me.strip.SuspendLayout()
 		Me.PnlPacker.SuspendLayout()
 		Me.SuspendLayout()
@@ -105,6 +105,7 @@ Partial Class FrmSE
 		'
 		'btnCancel
 		'
+		Me.btnCancel.DialogResult = System.Windows.Forms.DialogResult.Cancel
 		Me.btnCancel.Location = New System.Drawing.Point(677, 535)
 		Me.btnCancel.Name = "btnCancel"
 		Me.btnCancel.Size = New System.Drawing.Size(96, 26)
@@ -216,14 +217,16 @@ Partial Class FrmSE
 		Me.PnlPacker.Size = New System.Drawing.Size(108, 71)
 		Me.PnlPacker.TabIndex = 110
 		'
-		'lblPacker
+		'OptBetter
 		'
-		Me.lblPacker.AutoSize = True
-		Me.lblPacker.Location = New System.Drawing.Point(6, 5)
-		Me.lblPacker.Name = "lblPacker"
-		Me.lblPacker.Size = New System.Drawing.Size(81, 13)
-		Me.lblPacker.TabIndex = 0
-		Me.lblPacker.Text = "Default Packer:"
+		Me.OptBetter.AutoSize = True
+		Me.OptBetter.Location = New System.Drawing.Point(9, 44)
+		Me.OptBetter.Name = "OptBetter"
+		Me.OptBetter.Size = New System.Drawing.Size(53, 17)
+		Me.OptBetter.TabIndex = 2
+		Me.OptBetter.TabStop = True
+		Me.OptBetter.Text = "Better"
+		Me.OptBetter.UseVisualStyleBackColor = True
 		'
 		'OptFaster
 		'
@@ -236,22 +239,21 @@ Partial Class FrmSE
 		Me.OptFaster.Text = "Faster"
 		Me.OptFaster.UseVisualStyleBackColor = True
 		'
-		'OptBetter
+		'lblPacker
 		'
-		Me.OptBetter.AutoSize = True
-		Me.OptBetter.Location = New System.Drawing.Point(9, 44)
-		Me.OptBetter.Name = "OptBetter"
-		Me.OptBetter.Size = New System.Drawing.Size(53, 17)
-		Me.OptBetter.TabIndex = 2
-		Me.OptBetter.TabStop = True
-		Me.OptBetter.Text = "Better"
-		Me.OptBetter.UseVisualStyleBackColor = True
+		Me.lblPacker.AutoSize = True
+		Me.lblPacker.Location = New System.Drawing.Point(6, 5)
+		Me.lblPacker.Name = "lblPacker"
+		Me.lblPacker.Size = New System.Drawing.Size(81, 13)
+		Me.lblPacker.TabIndex = 0
+		Me.lblPacker.Text = "Default Packer:"
 		'
 		'FrmSE
 		'
 		Me.AllowDrop = True
 		Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
 		Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
+		Me.CancelButton = Me.btnCancel
 		Me.ClientSize = New System.Drawing.Size(784, 601)
 		Me.Controls.Add(Me.PnlPacker)
 		Me.Controls.Add(Me.chkToolTips)
@@ -270,9 +272,11 @@ Partial Class FrmSE
 		Me.Controls.Add(Me.btnLoad)
 		Me.Controls.Add(Me.tv)
 		Me.Icon = CType(resources.GetObject("$this.Icon"), System.Drawing.Icon)
+		Me.KeyPreview = True
 		Me.MinimizeBox = False
 		Me.MinimumSize = New System.Drawing.Size(800, 640)
 		Me.Name = "FrmSE"
+		Me.ShowInTaskbar = False
 		Me.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen
 		Me.Text = "Script Editor"
 		Me.strip.ResumeLayout(False)

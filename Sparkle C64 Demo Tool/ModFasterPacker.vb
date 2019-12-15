@@ -1,4 +1,5 @@
 ﻿Friend Module ModFasterPacker
+
     Private CMStart, CMEnd, POffset, MLen As Integer
     Private ReadOnly MaxLongLen As Integer = 254    'Cannot be 255, there is an INY in the decompression ASM code, and that would make YR=#$00
     Private ReadOnly MaxMidLen As Integer = 61      'Cannot be more than 61 because 62=LongMatchTag, 63=NextFileTage

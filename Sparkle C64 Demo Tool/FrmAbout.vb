@@ -37,7 +37,7 @@ Err:
 		lblDescription.Left = (Width - lblDescription.Width) / 2
 		lblMe.Left = (Width - lblMe.Width) / 2
 		With LblVersion
-			.Text = "Version: " + My.Application.Info.Version.Major.ToString + "." + My.Application.Info.Version.Minor.ToString + "." + My.Application.Info.Version.Build.ToString
+			.Text = "Version: " + My.Application.Info.Version.Major.ToString + "." + My.Application.Info.Version.Minor.ToString '+ "." + My.Application.Info.Version.Build.ToString
 			'.Text = "Version: " + My.Application.Info.Version.ToString
 			.Refresh()
 			.Left = (Width - .Width) / 2

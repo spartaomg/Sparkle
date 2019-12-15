@@ -13,9 +13,9 @@
     Private ReadOnly BM As New Bitmap(256, 256)
 
 	Private Sub FrmMain_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-		On Error GoTo Err
+        'On Error GoTo Err
 
-		If DotNetVersion() = False Then
+        If DotNetVersion() = False Then
 			MsgBox("Sparkle requires .NET Framework version 4.5 or later!", vbOKOnly, "Please install .NET Framework")
 			End
 		End If
@@ -639,32 +639,98 @@ Err:
 
         Select Case e.KeyCode
             Case 48 To 57, 65 To 70
-
-                If e.KeyCode < 65 Then
-                    UpdateByte(e.KeyCode - 48)
+                'Case Keys.D0 To Keys.D9, Keys.A To Keys.F
+                If e.Control Then
+                    If e.KeyCode = Keys.B Then          'BAM (Ctrl+B)
+                        TsbBAM_Click(sender, e)
+                    ElseIf e.KeyCode = Keys.D Then      'Directory (Ctrl+D)
+                        TsbDir_Click(sender, e)
+                    ElseIf e.KeyCode = Keys.E Then      'Script Editor (Ctrl+E)
+                        TsbScriptEditor_Click(sender, e)
+                    ElseIf e.KeyCode = Keys.A Then      'About (Ctrl+A)
+                        TsbAbout_Click(sender, e)
+                    End If
+                ElseIf e.Shift Then
+                ElseIf e.Alt Then
                 Else
-                    UpdateByte(e.KeyCode - 55)
+                    If e.KeyCode < 65 Then
+                        UpdateByte(e.KeyCode - 48)
+                    Else
+                        UpdateByte(e.KeyCode - 55)
+                    End If
+
+                    CursorPos(1)
+                    AddToUndo()
+
+                    txtSector.SelectionColor = Color.Red
+                    txtSector.SelectedText = Chr(e.KeyCode)
+                    MoveCursorRight()
+                    FileChanged = True
+                    tsbUndo.Enabled = True
+
+                    StatusFileName(D64Name + "*")
                 End If
-
-                CursorPos(1)
-                AddToUndo()
-
-                txtSector.SelectionColor = Color.Red
-                txtSector.SelectedText = Chr(e.KeyCode)
-                MoveCursorRight()
-                FileChanged = True
-                tsbUndo.Enabled = True
-
-                StatusFileName(D64Name + "*")
-
-            Case Keys.Left  'Left
+            Case Keys.N         'New D64 File (Ctrl+N)
+                If e.Control Then TsbNew_Click(sender, e)
+            Case Keys.O         'Open D64 File (Ctrl+O)
+                If e.Control Then TsbOpen_Click(sender, e)
+            Case Keys.S         'Save D64 File (Ctrl+S)
+                If e.Control Then TsbSave_Click(sender, e)
+            Case Keys.F12       'Save D64 File As... (F12)
+                TsbSaveAs_Click(sender, e)
+            Case Keys.Left      'Cursor Left
                 MoveCursorLeft()
-            Case Keys.Up    'Up
+            Case Keys.Up        'Cursor Up
                 MoveCursorUp()
-            Case Keys.Right 'Right
+            Case Keys.Right     'Cursor Right
                 MoveCursorRight()
-            Case Keys.Down  'Down
+            Case Keys.Down      'Cursor Down
                 MoveCursorDown()
+            Case Keys.Oemplus   'Next Sector in Sequence (+ key)
+                TsbNextSector4_Click(sender, e)
+            Case Keys.OemMinus  'Prevous Sector in Sequence (- key)
+                TsbPrevSector4_Click(sender, e)
+            Case Keys.Home      'First Sector of First Part (Home key)
+                If e.Control Then
+                    TsbFirstTrack_Click(sender, e)
+                ElseIf e.Shift Then
+                    TsbSector0_Click(sender, e)
+                Else
+                    TsbFirstPart_Click(sender, e)
+                End If
+            Case Keys.End       'Last Sector of Last Part (End key)
+                If e.Control Then
+                    TsbLastTrack_Click(sender, e)
+                ElseIf e.Shift Then
+                    TsbLastSector_Click(sender, e)
+                Else
+                    TsbLastPart_Click(sender, e)
+                End If
+            Case Keys.PageUp    'First Sector of Previous Part (PgUp key)
+                If e.Control Then
+                    TsbPrevTrack_Click(sender, e)
+                ElseIf e.Shift Then
+                    TsbPrevSector_Click(sender, e)
+                Else
+                    TsbPrevPart_Click(sender, e)
+                End If
+            Case Keys.PageDown  'First Sector of Next PArt (PgDn key)
+                If e.Control Then
+                    TsbNextTrack_Click(sender, e)
+                ElseIf e.Shift Then
+                    TsbNextSector_Click(sender, e)
+                Else
+                    TsbNextPart_Click(sender, e)
+                End If
+            Case Keys.Z
+                If e.Control Then TsbUndo_Click(sender, e)  'Undo (Ctrl+Z)
+            Case Keys.F5
+                If e.Shift Then
+                    TsmRebuildDisk_Click(sender, e)     'Rebuild Disk (Shift+F5)
+                Else
+                    TsbBuildDisk_ButtonClick(sender, e) 'Build Disk (F5)
+                End If
+            Case Else
         End Select
 
         CursorPos(0)
@@ -1027,7 +1093,7 @@ Err:
     End Sub
 
     Private Sub TsbScriptEditor_Click(sender As Object, e As EventArgs) Handles TsbScriptEditor.Click
-        On Error GoTo Err
+        'On Error GoTo Err
 
         Using A As New FrmSE
             A.ShowDialog(Me)

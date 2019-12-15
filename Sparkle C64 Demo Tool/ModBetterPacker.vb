@@ -24,7 +24,6 @@
 	Private MOff As Integer = 0
 
 	Structure Sequence
-		'Public Nxt As Integer           'Next Sequence element's index - may not be needed
 		Public Len As Integer           'Length of the sequence in bytes (0 based)
 		Public Off As Integer           'Offset of Match sequence in bytes (1 based), 0 if Literal Sequence
 		Public Bit As Integer           'Total Bits in Buffer
@@ -34,17 +33,12 @@
 	Private SL(), SO(), LL(), LO() As Integer
 	Private SI As Integer               'Sequence array index
 	Private StartPos As Integer
-	Private TmpSI1, TmpSI2 As Integer
-	Private LastBlockDone As Boolean = False
-	Private ReadOnly LastBlockCheck As Boolean = True
 
 	Public Sub PackFile(PN As Byte(), Optional FA As String = "", Optional FUIO As Boolean = False)
 
 		'----------------------------------------------------------------------------------------------------------
 		'PROCESS FILE
 		'----------------------------------------------------------------------------------------------------------
-		TmpSI1 = 0
-		TmpSI2 = 0
 
 		Prg = PN
 		FileUnderIO = FUIO
@@ -167,7 +161,6 @@ Match:                          If O <= ShortOffset Then
 		With Seq(1)             'Initialize first element of sequence
 			.Len = LitCnt      '1 Literal byte, Len is 0 based
 			.Off = 0            'Offset=0 -> literal sequence, Off is 1 based
-			'.Nxt = 0            'Last element in sequence
 			.Bit = 10           'LitLen bit + 8 bits + type (Lit vs Match) selector bit 
 		End With
 
@@ -220,7 +213,6 @@ Literals:
 				With Seq(Pos + 1)
 					.Len = LitCnt + 1       'LitCnt is 0 based, LitLen is 0 based
 					.Off = 0            'An offset of 0 marks a literal sequence, match offset is 1 based
-					'.Nxt = Pos - LitCnt '= Pos + 1 - (LitCnt + 1) simplified
 					.Bit = LeastBits
 				End With
 			End If
@@ -237,8 +229,6 @@ Literals:
 
 	Private Sub Pack()
 		Dim BufferFull As Boolean
-
-		LastBlockDone = False
 
 		SI = PrgLen - 1
 		StartPos = SI
@@ -325,15 +315,17 @@ CheckShort:         If SequenceFits(1, CalcLitBits(LitCnt), CheckIO(SI - MLen + 
 						'Match does not fit, check if 1 literal byte fits
 						'--------------------------------------------------------------------
 						BufferFull = True
-CheckLit:               MLen = 1    'This is needed here for accurate Bit count calculation in SequenceFits (indicates Literal, not Match)
-						If SequenceFits(1, CalcLitBits(LitCnt + 1), CheckIO(SI - LitCnt)) Then
+CheckLit:               MLen = 0    'This is needed here for accurate Bit count calculation in SequenceFits (indicates Literal, not Match)
+CheckNextLit:           If SequenceFits(1, CalcLitBits(LitCnt + 1), CheckIO(SI - LitCnt)) Then
 							'MLen = 1        '1 based
 							LitCnt += 1     '0 based
-							AddLitBits()
+							'AddLitBits()
 							AddLitBytes(0)   'Add 1 literal byte (the rest has been added previously)
-						Else
+							MLen += 1
+							'GoTo CheckNextLit   'Check if one more Lit would fit - this is likely unneccessary
+							'Else
 							'Nothing fits
-							MLen = 0
+							'MLen -= 1
 						End If  'Literal vs nothing
 					End If      'Short match vs literal
 				End If          'Long, mid, or short match
@@ -574,21 +566,18 @@ Err:
 		'FIND UNCOMPRESSIBLE BLOCKS (only used if there is ONE file in the BLOCK)
 		'THE COMPRESSION BITs ADD 80.5 BYTES TO THE DISK, BUT THIS MAKES DEPACKING OF UNCOMPRESSIBLE BLOCKS MUCH FASTER
 		If (StartPos - SI <= LastByte) And (StartPos > LastByte - 1) And (NextFileInBuffer = False) Then
-			'If (StartPos - SI <= 100) And (StartPos > LastByte - 1) And (NextFileInBuffer = False) Then
-			'MsgBox(Hex(LastByte - (StartPos - SI)))
+			'if (StartPos - SI <= 100) And (StartPos > LastByte - 1) And (NextFileInBuffer = False) Then
+
 			'Less than 252/253 bytes   AND  Not the end of File      AND  No other files in this buffer
 			LastByte = AdLoPos - 2
 
 			'Check uncompressed Block IO Status
-			'If (CheckIO(MatchStart) Or CheckIO(MatchStart - (LastByte - 1)) = 1) And (FileUnderIO = True) Then
 			If CheckIO(StartPos - 1) Or CheckIO(StartPos - 1 - (LastByte - 1)) = 1 Then
 				'If the block will be UIO than only (Lastbyte-1) bytes will fit,
 				'So we only need to check that many bytes
 				Buffer(AdLoPos - 1) = 0 'Set IO Flag
 				AdHiPos = AdLoPos - 2   'Updae AdHiPos
 				LastByte = AdHiPos - 1  'Update LastByte
-				'POffset += 1
-				'ElseIf (CheckIO(MatchStart - LastByte) = 1) And (FileUnderIO = True) Then
 			ElseIf CheckIO(StartPos - 1 - LastByte) = 1 Then
 				'If only the last byte is UIO then this byte will be ignored
 				'And one less bytes will be stored uncompressed
