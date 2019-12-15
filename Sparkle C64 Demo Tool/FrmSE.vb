@@ -3019,14 +3019,21 @@ Err:
                     BtnPartUp_Click(sender, e)
                 Case Keys.PageDown
                     BtnPartDown_Click(sender, e)
-                Case Keys.B
-                    BtnOK_Click(sender, e)
                 Case Keys.C
                     BtnCancel_Click(sender, e)
                 Case Keys.D
                     ChkExpand.Checked = Not ChkExpand.Checked
                 Case Keys.T
                     ChkToolTips.Checked = Not ChkToolTips.Checked
+            End Select
+        ElseIf e.Shift Then
+        ElseIf e.Alt Then
+        Else
+            Select Case e.KeyCode
+                Case Keys.F5
+                    BtnOK_Click(sender, e)
+                Case Else
+                    Exit Select
             End Select
         End If
 
@@ -3238,7 +3245,7 @@ Err:
     Private Sub OptFaster_MouseHover(sender As Object, e As EventArgs) Handles OptFaster.MouseHover
         On Error GoTo Err
 
-        TT.Show("Click this radio button to make the faster packer your default compression method", OptFaster)
+        TT.Show("Click this radio button or press Ctrl+F to make the faster packer your default compression method", OptFaster)
 
         Exit Sub
 Err:
@@ -3275,7 +3282,7 @@ Err:
     Private Sub OptBetter_MouseHover(sender As Object, e As EventArgs) Handles OptBetter.MouseHover
         On Error GoTo Err
 
-        TT.Show("Click this radio button to make the better packer your default compression method", OptBetter)
+        TT.Show("Click this radio button or press Ctrl+B to make the better packer your default compression method", OptBetter)
 
         Exit Sub
 Err:
@@ -3312,7 +3319,7 @@ Err:
     Private Sub BtnOK_MouseHover(sender As Object, e As EventArgs) Handles BtnOK.MouseHover
         On Error GoTo Err
 
-        TT.Show("Click this button or press Ctrl+B to close the editor and build demo", BtnOK)
+        TT.Show("Click this button or press F5 to close the editor and build demo", BtnOK)
 
         Exit Sub
 Err:
