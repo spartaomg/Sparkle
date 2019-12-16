@@ -3006,6 +3006,7 @@ Err:
         On Error GoTo Err
 
         If e.Control Then
+            e.SuppressKeyPress = True
             Select Case e.KeyCode
                 Case Keys.N
                     BtnNew_Click(sender, e)
@@ -3033,6 +3034,7 @@ Err:
         Else
             Select Case e.KeyCode
                 Case Keys.F5
+                    e.SuppressKeyPress = True
                     BtnOK_Click(sender, e)
                 Case Else
                     Exit Select
