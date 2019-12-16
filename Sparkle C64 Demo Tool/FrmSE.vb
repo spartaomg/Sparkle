@@ -3014,7 +3014,9 @@ Err:
                 Case Keys.S
                     BtnSave_Click(sender, e)
                 Case Keys.B
-                    BtnOK_Click(sender, e)
+                    OptBetter.Checked = True
+                Case Keys.F
+                    OptFaster.Checked = True
                 Case Keys.PageUp
                     BtnPartUp_Click(sender, e)
                 Case Keys.PageDown

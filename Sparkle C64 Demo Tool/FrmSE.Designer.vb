@@ -237,6 +237,7 @@ Partial Class FrmSE
 		Me.OptFaster.TabIndex = 1
 		Me.OptFaster.TabStop = True
 		Me.OptFaster.Text = "Faster"
+		Me.OptFaster.TextAlign = System.Drawing.ContentAlignment.MiddleCenter
 		Me.OptFaster.UseVisualStyleBackColor = True
 		'
 		'lblPacker
