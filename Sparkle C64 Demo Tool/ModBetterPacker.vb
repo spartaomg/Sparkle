@@ -399,7 +399,7 @@ Err:
 				If MOff > ShortOffset Then
 					AddMidMatch()
 				Else
-					AddShortMatch()
+					AddShortMatch()     'This should not happen...
 				End If
 				SI -= 2
 				FindShortMidMatch = True

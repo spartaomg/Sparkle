@@ -361,12 +361,9 @@ Err:
             If InStr(Script, "File:") = 0 Then
                 MsgBox("This script does not contain any files", vbOKOnly, "Unable to build disk")
             Else
-                'Dim F As New FrmDisk
-                'F.Show(Me)
-                'Cursor = Cursors.WaitCursor
+
                 MakeDisk(sender, e)
-                'Cursor = Cursors.Default
-                'F.Close()
+
             End If
         End If
 
@@ -381,8 +378,8 @@ Err:
 
         Dim DiskOK As Boolean
 
-        Dim frm As New FrmDisk
-        frm.Show(Me)
+        Dim Frm As New FrmDisk
+        Frm.Show(Me)
 
         Cursor = Cursors.WaitCursor
 
@@ -410,7 +407,7 @@ Err:
 Done:
         Cursor = Cursors.Default
 
-        frm.Close()
+        Frm.Close()
 
     End Sub
 
@@ -1087,12 +1084,9 @@ Err:
             If InStr(Script, "File:") = 0 Then
                 MsgBox("This script does not contain any files", vbOKOnly, "Unable to build disk")
             Else
-                'Cursor = Cursors.WaitCursor
-                'Dim F As New FrmDisk
-                'F.Show(Me)
+
                 MakeDisk(sender, e)
-                'Cursor = Cursors.Default
-                'F.Close()
+
             End If
         End If
 
