@@ -56,8 +56,8 @@ Module ModRegistry
             FrmMain.TsbAdmin.Visible = False
         End If
 
-        If InIDE() = False Then
-            FrmMain.TsmTestDisk.Visible = False
+        If Debugger.IsAttached = False Then         'Check if prg is run from IDE
+            FrmMain.TsmTestDisk.Visible = False     'No, hide test disk option
             FrmMain.TssSep.Visible = False
         End If
 
@@ -145,21 +145,6 @@ Err:
 
     End Sub
 
-    Private Function InIDE() As Boolean
-        On Error GoTo Err
-
-        If Debugger.IsAttached Then
-            Return True
-        Else
-            Return False
-        End If
-
-        Exit Function
-Err:
-        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
-    End Function
-
     Public Function DotNetVersion() As Boolean
         On Error GoTo Err
 
@@ -179,7 +164,7 @@ Err:
 
     End Function
 
-    ' Checking the version using >= will enable forward compatibility.
+    'Checking the version using >= will enable forward compatibility.
     Private Function CheckFor45PlusVersion(releaseKey As Integer) As Boolean
         On Error GoTo Err
 

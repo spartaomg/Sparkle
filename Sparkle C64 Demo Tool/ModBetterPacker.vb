@@ -23,6 +23,8 @@
 	Private MLen As Integer = 0
 	Private MOff As Integer = 0
 
+	Private MaxBits As Integer = 2048
+
 	Structure Sequence
 		Public Len As Integer           'Length of the sequence in bytes (0 based)
 		Public Off As Integer           'Offset of Match sequence in bytes (1 based), 0 if Literal Sequence
@@ -35,6 +37,7 @@
 	Private StartPos As Integer
 
 	Public Sub PackFile(PN As Byte(), Optional FA As String = "", Optional FUIO As Boolean = False)
+		On Error GoTo Err
 
 		'----------------------------------------------------------------------------------------------------------
 		'PROCESS FILE
@@ -43,15 +46,24 @@
 		Prg = PN
 		FileUnderIO = FUIO
 		PrgAdd = Convert.ToInt32(FA, 16)
-		PrgLen = Prg.Length     'Convert.ToInt32(FL,16)
+		PrgLen = Prg.Length
 
 		ReDim SL(PrgLen - 1), SO(PrgLen - 1), LL(PrgLen - 1), LO(PrgLen - 1)
-		ReDim Seq(PrgLen)           'This is actually one element more in the array, to have starter element with 0 values
+		ReDim Seq(PrgLen)       'This is actually one element more in the array, to have starter element with 0 values
+
+		'LitCnt = 0              'Reset LitCnt: we start with 1 literal (LitCnt is 0 based)
+
+		With Seq(1)             'Initialize first element of sequence
+			'.Len = 0            '1 Literal byte, Len is 0 based
+			'.Off = 0            'Offset=0 -> literal sequence, Off is 1 based
+			.Bit = 10           'LitLen bit + 8 bits + type (Lit vs Match) selector bit 
+		End With
 
 		'----------------------------------------------------------------------------------------------------------
 		'CALCULATE BEST SEQUENCE
 		'----------------------------------------------------------------------------------------------------------
-		CalcSequence(PrgLen - 1, 1)
+
+		CalcBestSequence(PrgLen - 1, 1)
 
 		'----------------------------------------------------------------------------------------------------------
 		'DETECT BUFFER STATUS AND INITIALIZE COMPRESSION
@@ -84,8 +96,7 @@
 		AdHiPos = ByteCnt - 1
 
 		ByteCnt -= 2
-		'LitCnt = -1                                                 'Reset LitCnt here
-		LastByte = ByteCnt                       'The first byte of the ByteStream after (BlockCnt and IO Flag and) Address Bytes (251..253)
+		LastByte = ByteCnt          'The first byte of the ByteStream after (BlockCnt and IO Flag and) Address Bytes (251..253)
 
 		'----------------------------------------------------------------------------------------------------------
 		'COMPRESS FILE
@@ -93,13 +104,22 @@
 
 		Pack()
 
+		Exit Sub
+Err:
+		MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
 	End Sub
 
-	Private Sub CalcSequence(SeqStart As Integer, SeqEnd As Integer)
+	Private Sub CalcBestSequence(SeqStart As Integer, SeqEnd As Integer)
+		On Error GoTo Err
 
 		Dim MaxO, MaxL As Integer
 		Dim SeqLen, SeqOff As Integer
 		Dim LeastBits As Integer
+
+		'----------------------------------------------------------------------------------------------------------
+		'CALCULATE MAX MATCH LENGTHS AND OFFSETS FOR EACH POSITION
+		'----------------------------------------------------------------------------------------------------------
 
 		'Pos = Max to Min>0 value
 		For Pos As Integer = SeqStart To SeqEnd Step -1  'Pos cannot be 0, Prg(0) is always literal as it is always 1 byte left
@@ -116,7 +136,6 @@
 				If Prg(Pos) = Prg(Pos + O) Then
 					For L As Integer = 1 To MaxL                            'L=1 to 254 or less
 						If L = MaxL Then
-							'L += 1
 							GoTo Match
 						ElseIf Prg(Pos - L) <> Prg(Pos + O - L) Then
 							'L=MatchLength + 1 here
@@ -126,12 +145,12 @@ Match:                          If O <= ShortOffset Then
 										SL(Pos) = IIf(L > MaxShortLen, MaxShortLen, L)
 										SO(Pos) = O       'Keep O 1-based
 									End If
-									If L > LL(Pos) Then
+									If LL(Pos) < L Then
 										LL(Pos) = L
 										LO(Pos) = O
 									End If
 								Else
-									If (L > LL(Pos)) And (L > 2) Then 'Skip short (2-byte) MidMatches
+									If (LL(Pos) < L) And (L > 2) Then 'Skip short (2-byte) Mid Matches
 										LL(Pos) = L
 										LO(Pos) = O
 									End If
@@ -149,31 +168,20 @@ Match:                          If O <= ShortOffset Then
 			Next
 		Next
 
-		'Dim S As String = ""
-		'For I As Integer = SeqStart To 0 Step -1
-		'S += I.ToString + vbTab + LO(I).ToString + vbTab + LL(I).ToString + vbTab + SO(I).ToString + vbTab + SL(I).ToString + vbNewLine
-		'Next
-		'
-		'IO.File.WriteAllText(UserFolder + "\Onedrive\c64\Coding\Seq\OffLen " + Hex(Prg.Length) + "-" + Hex(SeqStart) + ".txt", S)
+		'----------------------------------------------------------------------------------------------------------
+		'FIND BEST SEQUENCE FOR EACH POSITION
+		'----------------------------------------------------------------------------------------------------------
 
-		LitCnt = 0             'Reset LitCnt: we start with 1 literal (LitCnt is 0 based)
-
-		With Seq(1)             'Initialize first element of sequence
-			.Len = LitCnt      '1 Literal byte, Len is 0 based
-			.Off = 0            'Offset=0 -> literal sequence, Off is 1 based
-			.Bit = 10           'LitLen bit + 8 bits + type (Lit vs Match) selector bit 
-		End With
-
-		For Pos As Integer = SeqEnd To SeqStart    'Start with second element, first has been initialized  above
-			LeastBits = &HFFFFFF                     'Max block size=100 = $10000 bytes = $80000 bits, make default larger than this
+		For Pos As Integer = SeqEnd To SeqStart     'Start with second element, first has been initialized  above
+			LeastBits = &HFFFFFF                    'Max block size=100 = $10000 bytes = $80000 bits, make default larger than this
 
 			If LL(Pos) <> 0 Then
 				SeqLen = LL(Pos)
 			ElseIf SL(Pos) <> 0 Then
 				SeqLen = SL(Pos)
 			Else
-				'Increase literal cnt
-				GoTo Literals                   'Both LL(Pos) and SL(Pos) are 0, this is a literal byte
+				'Both LL(Pos) and SL(Pos) are 0, so this is a literal byte
+				GoTo Literals
 			End If
 
 			'Check all possible lengths
@@ -181,8 +189,17 @@ Match:                          If O <= ShortOffset Then
 				'For L As Integer = SeqLen To IIf(SeqLen - 2 > 2, SeqLen - 2, 2) Step -1
 				'Get offset, use short match if possible
 				SeqOff = IIf(L <= SL(Pos), SO(Pos), LO(Pos))
+
+				''THIS DOES NOT SEEM TO MAKE ANY DIFFERENCE. RATHER, WE ARE SIMPLY EXLUDING ANY 2-BYTE MID MATCHES
+				'If (L = 2) And (SeqOff > ShortOffset) Then
+				'If LO(Pos - 2) = 0 And LO(Pos + 1) = 0 And SO(Pos - 2) = 0 And SO(Pos + 1) = 0 Then
+				''Filter out short mid matches surrounded by literals
+				'GoTo Literals
+				'End If
+				'End If
+
 				'Calculate MatchBits
-				CalcMatchBits(SeqLen, SeqOff)
+				CalcMatchBits(L, SeqOff)
 
 				'See if total bit count is better than best version
 				If Seq(Pos + 1 - L).Bit + MatchBits < LeastBits Then
@@ -192,7 +209,6 @@ Match:                          If O <= ShortOffset Then
 					With Seq(Pos + 1)
 						.Len = L            'MatchLen is 1 based
 						.Off = SeqOff       'Off is 1 based
-						'.Nxt = Pos + 1 - L
 						.Bit = LeastBits
 					End With
 				End If
@@ -206,28 +222,40 @@ Literals:
 			CalcLitBits(LitCnt + 1)             'This updates LitBits
 			LitBits += (LitCnt + 2) * 8         'Lit Bits + Lit Bytes
 			'See if total bit count is less than best version
-			If Seq(Pos - LitCnt - 1).Bit + LitBits < LeastBits Then  '=Seq(Pos + 1 - (LitCnt + 1)) simplified
+			If Seq(Pos - LitCnt - 1).Bit + LitBits < LeastBits Then  '=Seq(Pos - (LitCnt + 1)) simplified
 				'If better, update best version
-				LeastBits = Seq(Pos - LitCnt - 1).Bit + LitBits  '=Seq(Pos + 1 - (LitCnt + 1)) simplified
+				LeastBits = Seq(Pos - LitCnt - 1).Bit + LitBits  '=Seq(Pos - (LitCnt + 1)) simplified
 				'and save it to sequence at Pos+1 (position is 1 based)
 				With Seq(Pos + 1)
 					.Len = LitCnt + 1       'LitCnt is 0 based, LitLen is 0 based
-					.Off = 0            'An offset of 0 marks a literal sequence, match offset is 1 based
+					.Off = 0                'An offset of 0 marks a literal sequence, match offset is 1 based
 					.Bit = LeastBits
 				End With
 			End If
 
 		Next
 
-		'S = ""
-		'For I As Integer = SeqStart To 0 Step -1
-		'S += I.ToString + vbTab + Seq(I + 1).Off.ToString + vbTab + Seq(I + 1).Len.ToString + vbTab + Seq(I + 1).Bit.ToString + vbNewLine
+		'Dim S As String = ""
+
+		'If IO.File.Exists(UserDeskTop + "\Seq.txt") = False Then
+
+		'For I As Integer = SeqEnd To SeqStart
+		'S += I.ToString + vbTab + SL(I).ToString + vbTab + SO(I).ToString + vbTab + LL(I).ToString + vbTab + LO(I).ToString + vbTab +
+		'						(I + 1).ToString + vbTab + Seq(I + 1).Len.ToString + vbTab + Seq(I + 1).Off.ToString + vbTab + Seq(I + 1).Bit.ToString + vbNewLine
 		'Next
-		'IO.File.WriteAllText(UserFolder + "\Onedrive\c64\Coding\Seq\Seq " + Hex(Prg.Length) + "-" + Hex(SeqStart) + ".txt", S)
+
+		'IO.File.WriteAllText(UserDeskTop + "\Seq.txt", S)
+		'End If
+
+		Exit Sub
+Err:
+		MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
 	End Sub
 
 	Private Sub Pack()
+		On Error GoTo Err
+
 		Dim BufferFull As Boolean
 
 		SI = PrgLen - 1
@@ -246,8 +274,20 @@ Restart:
 				BufferFull = False
 				Do While LitCnt > -1
 					If SequenceFits(LitCnt + 1, CalcLitBits(LitCnt), CheckIO(SI - LitCnt)) = True Then
+						'IDENTIFY 2-BYTE MIDMATCHES THAT MAY SAVE A FEW BITS
+						'Select Case LitCnt Mod (MaxLitLen + 1)
+						'Case 1, 2, 5, 13
+						'If LitCnt > 0 Then
+						'If FindShortMidMatch() = True Then
+						'Exit Do
+						'End If
+						'End If
+						'End Select
 						AddLitBytes(LitCnt)
 						Exit Do
+					End If
+					If LitCnt > Int(MaxBits / 8) Then   'Bypass too large numbers to improve speed
+						LitCnt = Int(MaxBits / 8)
 					End If
 					LitCnt -= 1
 					BufferFull = True
@@ -265,15 +305,16 @@ Restart:
 				'--------------------------------------------------------------------
 				'Match sequence
 				'--------------------------------------------------------------------
+
 				BufferFull = False
 
 				MLen = Seq(SI + 1).Len      '1 based
 				MOff = Seq(SI + 1).Off      '1 based
-
+Match:
 				CalcMatchBits(MLen, MOff)
 				If MatchBytes = 3 Then
 					'--------------------------------------------------------------------
-					'Long Match
+					'Long Match - 3 match bytes
 					'--------------------------------------------------------------------
 					If SequenceFits(3, CalcLitBits(LitCnt), CheckIO(SI - MLen + 1)) Then
 						AddLitBits()
@@ -286,7 +327,7 @@ Restart:
 					End If
 				ElseIf MatchBytes = 2 Then
 					'--------------------------------------------------------------------
-					'Mid Match
+					'Mid Match - 2 match bytes
 					'--------------------------------------------------------------------
 CheckMid:           If SequenceFits(2, CalcLitBits(LitCnt), CheckIO(SI - MLen + 1)) Then
 						AddLitBits()
@@ -304,7 +345,7 @@ CheckMid:           If SequenceFits(2, CalcLitBits(LitCnt), CheckIO(SI - MLen + 
 					End If      'Mid vs Short
 				Else
 					'--------------------------------------------------------------------
-					'Short Match
+					'Short Match - 1 match byte
 					'--------------------------------------------------------------------
 CheckShort:         If SequenceFits(1, CalcLitBits(LitCnt), CheckIO(SI - MLen + 1)) Then
 						AddLitBits()
@@ -317,15 +358,9 @@ CheckShort:         If SequenceFits(1, CalcLitBits(LitCnt), CheckIO(SI - MLen + 
 						BufferFull = True
 CheckLit:               MLen = 0    'This is needed here for accurate Bit count calculation in SequenceFits (indicates Literal, not Match)
 CheckNextLit:           If SequenceFits(1, CalcLitBits(LitCnt + 1), CheckIO(SI - LitCnt)) Then
-							'MLen = 1        '1 based
 							LitCnt += 1     '0 based
-							'AddLitBits()
 							AddLitBytes(0)   'Add 1 literal byte (the rest has been added previously)
-							MLen += 1
-							'GoTo CheckNextLit   'Check if one more Lit would fit - this is likely unneccessary
-							'Else
-							'Nothing fits
-							'MLen -= 1
+							MLen += 1       '1 based
 						End If  'Literal vs nothing
 					End If      'Short match vs literal
 				End If          'Long, mid, or short match
@@ -342,26 +377,68 @@ Done:
 
 		AddLitBits()            'See if any literal bits need to be added, space has been previously reserved for them
 
+		Exit Sub
+Err:
+		MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
 	End Sub
 
+	Private Function FindShortMidMatch() As Boolean
+		On Error GoTo Err
+
+		FindShortMidMatch = False
+
+		Dim StopP As Integer = If(StartPos - SI > MaxOffset, MaxOffset, StartPos - SI) - 1
+
+		For I As Integer = 1 To StopP
+			If (Prg(SI) = Prg(SI + I)) And (Prg(SI - 1) = Prg(SI + I - 1)) Then
+
+				MLen = 2
+				MOff = I
+				LitCnt = -1
+				If MOff > ShortOffset Then
+					AddMidMatch()
+				Else
+					AddShortMatch()
+				End If
+				SI -= 2
+				FindShortMidMatch = True
+				Exit For
+			End If
+		Next
+
+		Exit Function
+Err:
+		MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+	End Function
+
 	Private Function CalcMatchBits(Length As Integer, Offset As Integer) As Integer 'Match Length is 1 based
+		On Error GoTo Err
 
 		If (Length <= MaxShortLen) And (Offset <= ShortOffset) Then
 			MatchBytes = 1
-			MatchBits = 8 + 1       '1 match byte + 1 type selector bit AFTER match sequence
+			'MatchBits = 8 + 1       '1 match byte + 1 type selector bit AFTER match sequence
 		ElseIf Length <= MaxMidLen Then
 			MatchBytes = 2
-			MatchBits = 16 + 1      '2 match bytes + 1 type selector bit AFTER match sequence
+			'MatchBits = 16 + 1      '2 match bytes + 1 type selector bit AFTER match sequence
 		Else
 			MatchBytes = 3
-			MatchBits = 24 + 1      '3 match bytes + 1 type selector bit AFTER match sequence
+			'MatchBits = 24 + 1      '3 match bytes + 1 type selector bit AFTER match sequence
 		End If
 
+		MatchBits = (MatchBytes * 8) + 1
+
 		CalcMatchBits = MatchBits
+
+		Exit Function
+Err:
+		MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
 	End Function
 
 	Private Function CalcLitBits(Lits As Integer) As Integer     'LitCnt is 0 based
+		On Error GoTo Err
 
 		If Lits = -1 Then
 			CalcLitBits = 0 + 1                     '0	1 type selector bit for match
@@ -384,6 +461,10 @@ Done:
 
 		LitBits = CalcLitBits
 
+		Exit Function
+Err:
+		MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
 	End Function
 
 	Private Function SequenceFits(BytesToAdd As Integer, BitsToAdd As Integer, Optional SequenceUnderIO As Integer = 0) As Boolean
@@ -391,6 +472,7 @@ Done:
 
 		'Calculate total bit count in buffer from ByteCnt, BitCnt, and BitPos
 		Dim BitsInBuffer As Integer = ((255 - ByteCnt) * 8) + (BitCnt * 8) + 16 - BitPos
+		MaxBits = 2048 - BitsInBuffer
 
 		'Add Close Byte + IO Byte ONLY if this is the first sequence in the block that goes under IO
 		BytesToAdd += 1 + If((BlockUnderIO = 0) And (SequenceUnderIO = 1), 1, 0)
@@ -426,6 +508,7 @@ Err:
 	End Function
 
 	Private Sub AddLongMatch()
+		On Error GoTo Err
 
 		If (LitCnt = -1) Or (LitCnt Mod (MaxLitLen + 1) = MaxLitLen) Then AddRBits(0, 1)   '0		Last Literal Length was -1 or Max, we need the Match Tag
 
@@ -476,7 +559,7 @@ Err:
 	End Sub
 
 	Private Sub AddLitBytes(Lits As Integer)
-		'On Error GoTo Err
+		On Error GoTo Err
 
 		For I As Integer = 0 To Lits
 			Buffer(ByteCnt) = Prg(SI - I)   'Add byte to Byte Stream
@@ -526,7 +609,7 @@ Err:
 			Case MaxLitLen
 				AddRBits(7, 3)              'Add Literal Length Selector 111 - read 5 more bits
 				AddRBits(Lits - 13, 5)      'Add Literal Length: 00-1f, 5 bits	-> 101x xxxx when read
-				'AddRBits(0, 1)              'Add Match Selector Bit
+				'AddRBits(0, 1)              'Add Match Selector Bit - not here, this is done at adding matches
 		End Select
 
 		'DO NOT RESET LitCnt HERE!!!
@@ -557,7 +640,7 @@ Err:
 
 	End Sub
 
-	Public Sub CloseBuffer()  'CHANGE TO PUBLIC
+	Public Sub CloseBuffer()
 		On Error GoTo Err
 
 		Buffer(ByteCnt) = EndTag
@@ -609,11 +692,11 @@ Err:
 		BufferCnt += 1
 		UpdateByteStream()
 
-		ResetBuffer()               'Resets buffer variables
+		ResetBuffer()                       'Resets buffer variables
 
 		NextFileInBuffer = False            'Reset Next File flag
 
-		If SI < 0 Then Exit Sub 'We have reached the end of the file -> exit
+		If SI < 0 Then Exit Sub             'We have reached the end of the file -> exit
 
 		'If we have not reached the end of the file, then update buffer
 
@@ -633,10 +716,10 @@ Err:
 
 		If (BlockCnt = 1) Or ((Seq(SI).Bit + 8 < LastByte * 8) And (LastFileOfPart = True)) Then
 			'For the 2nd and last block only recalculate the first byte's sequence
-			CalcSequence(IIf(SI > 1, SI, 1), IIf(SI > 1, SI, 1))
+			CalcBestSequence(IIf(SI > 1, SI, 1), IIf(SI > 1, SI, 1))
 		Else
-			'For all other blocks recalculate the first 256 bytes' sequence
-			CalcSequence(IIf(SI > 1, SI, 1), IIf(SI - 256 > 1, SI - 256, 1))
+			'For all other blocks recalculate the first 256 bytes' sequence (max offset=256)
+			CalcBestSequence(IIf(SI > 1, SI, 1), IIf(SI - MaxOffset > 1, SI - MaxOffset, 1))
 		End If
 
 		StartPos = SI

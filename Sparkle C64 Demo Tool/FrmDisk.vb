@@ -1,11 +1,13 @@
-﻿Public Class FrmDisk
+﻿
+Public Class FrmDisk
+
     Private Sub FrmDisk_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         On Error GoTo Err
 
-        pbx.Top = (Height - pbx.Height) / 2
+        Pbx1.Top = (Height - Pbx1.Height) / 2
 
-        lbl.Left = pbx.Left + pbx.Width + (Width - lbl.Width - pbx.Left - pbx.Width) / 2
-        lbl.Top = (Height - lbl.Height) / 2
+        Lbl.Left = Pbx1.Left + Pbx1.Width + ((Width - Lbl.Width - Pbx1.Left - Pbx1.Width) / 2)
+        Lbl.Top = (Height - Lbl.Height) / 2
 
         Cursor = Cursors.WaitCursor
 
@@ -25,4 +27,5 @@ Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
+
 End Class

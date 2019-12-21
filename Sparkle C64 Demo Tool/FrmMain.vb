@@ -13,7 +13,7 @@
     Private ReadOnly BM As New Bitmap(256, 256)
 
 	Private Sub FrmMain_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-        'On Error GoTo Err
+        On Error GoTo Err
 
         If DotNetVersion() = False Then
 			MsgBox("Sparkle requires .NET Framework version 4.5 or later!", vbOKOnly, "Please install .NET Framework")
@@ -27,55 +27,50 @@
 
 		ResetArrays()
 
-		ReDim PartT(-1), PartS(-1), PartDiskLoc(-1)
+        ReDim PartT(-1), PartS(-1), PartDiskLoc(-1)
 
-		TabT = My.Resources.TabT
-		TabS = My.Resources.TabS
+        TabT = My.Resources.TabT
+        TabS = My.Resources.TabS
 
-		Packer = My.Settings.DefaultPacker
+        Packer = My.Settings.DefaultPacker
 
-		Track(1) = 0
-		For T = 1 To 34
-			Select Case T
-				Case 1 To 17
-					Track(T + 1) = Track(T) + (21 * 256)
-				Case 18 To 24
-					Track(T + 1) = Track(T) + (19 * 256)
-				Case 25 To 30
-					Track(T + 1) = Track(T) + (18 * 256)
-				Case 31 To 35
-					Track(T + 1) = Track(T) + (17 * 256)
-			End Select
-		Next
+        Track(1) = 0
+        For T = 1 To 34
+            Select Case T
+                Case 1 To 17
+                    Track(T + 1) = Track(T) + (21 * 256)
+                Case 18 To 24
+                    Track(T + 1) = Track(T) + (19 * 256)
+                Case 25 To 30
+                    Track(T + 1) = Track(T) + (18 * 256)
+                Case 31 To 35
+                    Track(T + 1) = Track(T) + (17 * 256)
+            End Select
+        Next
 
-		'CalcILTab()
+        'CalcILTab()
 
-		CmdLine = False
-		For Each Path In CmdArg
-			Select Case Strings.Right(Path, 4)
-				Case ".sls"
-					CmdLine = True
-					Script = IO.File.ReadAllText(Path)     'open script...!!
-					SetScriptPath(Path)
-					If InStr(Script, "File:") = 0 Then
-						MsgBox("This script does not contain any files", vbOKOnly, "Unable to build disk")
-						End
-					Else
-                        'Cursor = Cursors.WaitCursor
-                        'Dim frm As New FrmDisk
-                        'frm.Show(Me)
+        CmdLine = False
+        For Each Path In CmdArg
+            Select Case Strings.Right(Path, 4)
+                Case ".sls"
+                    CmdLine = True
+                    Script = IO.File.ReadAllText(Path)          'open script...!!
+                    SetScriptPath(Path)
+                    If InStr(Script, "File:") = 0 Then
+                        MsgBox("This script does not contain any files", vbOKOnly, "Unable to build disk")
+                        End
+                    Else
                         MakeDisk(sender, e, True)
-                        'frm.Close()
-                        'Cursor = Cursors.Default
                         End                                    '...and exit app!!!
-					End If
-				Case ".d64"
-					D64Name = Path
-					OpenFile()
-			End Select
-		Next
+                    End If
+                Case ".d64"
+                    D64Name = Path
+                    OpenFile()
+            End Select
+        Next
 
-		txtSector.AllowDrop = True
+        txtSector.AllowDrop = True
 
 		If D64Name = "" Then TsbNew_Click(sender, e)
 
@@ -263,7 +258,6 @@ Err:
         FileChanged = False
 
         Exit Sub
-
 Err:
         MsgBox("Unable to open file" + vbNewLine + ErrorToString(), vbOKOnly + vbExclamation, "Error opening file")
 
@@ -271,14 +265,6 @@ Err:
 
     Private Sub TsbSaveAs_Click(sender As Object, e As EventArgs) Handles tsbSaveAs.Click
         On Error GoTo Err
-        'If CurrentDisk <> -1 Then
-        'If D64NameA.Count = CurrentDisk Then
-        'If D64NameA(CurrentDisk) <> "" Then
-        'D64Name = D64NameA(CurrentDisk - 1)
-        'Else
-        'D64Name = "Demo Disk" + IIf(DiskCnt > 0, " " + (CurrentDisk).ToString, "")
-        'End If
-        'End If
 
         Dim SaveDLG As New SaveFileDialog With {
             .Filter = "D64 Files (*.d64)|*.d64",
@@ -335,9 +321,9 @@ ErrSaveFile:
     End Sub
 
     Private Sub TsbBuildDisk_ButtonClick(sender As Object, e As EventArgs) Handles tsbBuildDisk.ButtonClick
-		'On Error GoTo Err
+        On Error GoTo Err
 
-		Dim OpenDLG As New OpenFileDialog
+        Dim OpenDLG As New OpenFileDialog
 
         With OpenDLG
             .Filter = "Sparkle Loader Script files (*.sls)|*.sls"
@@ -352,12 +338,9 @@ ErrSaveFile:
                 If InStr(Script, "File:") = 0 Then
                     MsgBox("This script does not contain any files", vbOKOnly, "Unable to build disk")
                 Else
-                    'Dim F As New FrmDisk
-                    'F.Show(Me)
-                    'Cursor = Cursors.WaitCursor
+
                     MakeDisk(sender, e)
-                    'Cursor = Cursors.Default
-                    'F.Close()
+
                 End If
             End If
         End With
@@ -394,9 +377,9 @@ Err:
     End Sub
 
     Private Sub MakeDisk(sender As Object, e As EventArgs, Optional OnTheFly As Boolean = False)  'Args needed for button Sub calls
-		'On Error GoTo Err
+        On Error GoTo Err
 
-		Dim DiskOK As Boolean
+        Dim DiskOK As Boolean
 
         Dim frm As New FrmDisk
         frm.Show(Me)
@@ -428,6 +411,7 @@ Done:
         Cursor = Cursors.Default
 
         frm.Close()
+
     End Sub
 
     Private Sub TsbBAM_Click(sender As Object, e As EventArgs) Handles tsbBAM.Click
@@ -1093,7 +1077,7 @@ Err:
     End Sub
 
     Private Sub TsbScriptEditor_Click(sender As Object, e As EventArgs) Handles TsbScriptEditor.Click
-        'On Error GoTo Err
+        On Error GoTo Err
 
         Using A As New FrmSE
             A.ShowDialog(Me)
@@ -1370,19 +1354,25 @@ Err:
 
     End Sub
 
-    Private Sub TsbAdmin_Click(sender As Object, e As EventArgs) Handles TsbAdmin.Click
-
-    End Sub
-
     Private Sub TsmAssociate_Click(sender As Object, e As EventArgs) Handles TsmAssociate.Click
+        On Error GoTo Err
 
         AssociateSLS()
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
 
     Private Sub TsmDeleteAssociation_Click(sender As Object, e As EventArgs) Handles TsmDeleteAssociation.Click
+        On Error GoTo Err
 
         DeleteAssociation()
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
 
@@ -1481,7 +1471,6 @@ NextPart:
         End If
 
         Exit Sub
-
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 

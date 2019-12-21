@@ -26,7 +26,9 @@
 	Public MatchOffset(), MatchCnt, RLECnt, MatchLen(), MaxSave, MaxOffset, MaxLen, LitCnt, Bits, BuffAdd, PrgAdd As Integer
 	Public MaxSLen, MaxSOff, MaxSSave As Integer
 	Public DistAd(), DistLen(), DistSave(), DistCnt, DistBase As Integer
-	Public DtPos, CmPos, CmLast, DtLen, MatchStart, BitCnt As Integer
+    Public DtPos, CmPos, CmLast, DtLen, MatchStart, BitCnt As Integer
+    Public LastPO, LastMS As Integer    'save previous POffset and MatchStart positions to recompress last block of part
+    Public LastBitP, LastBytC, LastBitC As Integer
     Public ByteCnt As Integer    'Points at the next empty byte in buffer
     Public MatchType(), MaxType As String
 
@@ -172,8 +174,6 @@ Err:
 
         TotalParts = 0
 
-        'MusicBlockSize = 0
-
         Exit Sub
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
@@ -185,13 +185,16 @@ Err:
 
         FindNextScriptEntry = True
 
+        NewPart = False
+
+NextLine:
         If Mid(Script, SS, 1) = Chr(13) Then                'Check if this is an empty line indicating a new section
             NewPart = True
             SS += 2                                         'Skip EOL bytes
             SE = SS + 1
-        Else
-            NewPart = False
+            GoTo NextLine
         End If
+
 NextChar:
         If Mid(Script, SE, 1) <> Chr(13) Then               'Look for EOL
             SE += 1                                         'Not EOL
@@ -249,10 +252,6 @@ Err:
         Dim B As Byte
 
         BlocksFree = 664
-
-        'D64Name = ""
-        'FileChanged = False
-        'StatusFileName(D64Name)
 
         Dim Cnt As Integer
 
@@ -704,7 +703,6 @@ Err:
 		Loader(497 + Offset) = ZP + 1
 
 		Exit Sub
-
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
@@ -816,9 +814,9 @@ Err:
     End Sub
 
     Public Function BuildDemoFromScript(Optional SaveIt As Boolean = True) As Boolean
-		'On Error GoTo Err
+        On Error GoTo Err
 
-		BuildDemoFromScript = True
+        BuildDemoFromScript = True
 
 		Packer = My.Settings.DefaultPacker     'Default packer (1 - faster, 2 - better)
 
@@ -933,9 +931,9 @@ Err:
     End Sub
 
     Private Function FinishDisk(LastDisk As Boolean, Optional SaveIt As Boolean = True) As Boolean
-		'On Error GoTo Err
+        On Error GoTo Err
 
-		FinishDisk = True
+        FinishDisk = True
         If SortPart() = False Then GoTo NoDisk
         If CompressPart() = False Then GoTo NoDisk
 		If Packer = 1 Then
@@ -1012,9 +1010,9 @@ Err:
     End Function
 
     Public Function CompressPart(Optional FromEditor = False) As Boolean
-		'On Error GoTo Err
+        On Error GoTo Err
 
-		CompressPartFromEditor = FromEditor
+        CompressPartFromEditor = FromEditor
 
         CompressPart = True
 
@@ -1073,9 +1071,9 @@ NoComp:
     End Function
 
     Private Function AddFile() As Boolean
-		'On Error GoTo Err
+        On Error GoTo Err
 
-		AddFile = True
+        AddFile = True
 
         If NewPart = True Then
             If PartDone() = False Then GoTo NoDisk
@@ -1092,7 +1090,7 @@ NoDisk:
 
     End Function
     Private Function PartDone() As Boolean
-        'On Error GoTo Err
+        On Error GoTo Err
 
         PartDone = True
 
@@ -1297,7 +1295,6 @@ NoSort:
 
         If Strings.Right(FN, 1) = "*" Then
             FN = Replace(FN, "*", "")
-            'FN = Strings.Left(FN, Len(FN) - 1)
             FUIO = True
         End If
 
@@ -1375,10 +1372,12 @@ NoSort:
             End If
 
             'Trim file to the specified chunk (FLN number of bytes starting at FON, to Address of FAN)
-            For I As Integer = 0 To FLN - 1
-                P(I) = P(FON + I)
-            Next
-            ReDim Preserve P(FLN - 1)
+            'For I As Integer = 0 To FLN - 1
+            'P(I) = P(FON + I)
+            'Next
+            'ReDim Preserve P(FLN - 1)
+            Dim PL As List(Of Byte) = P.ToList      'Copy array to list
+            P = PL.Skip(FON).Take(FLN).ToArray      'Trim file to specified segment (FLN number of bytes starting at FON)
 
         Else
 
@@ -1477,12 +1476,6 @@ Err:
 
         NextTrack = StartTrack
         NextSector = StartSector
-
-        'BlockCnt = 0   'DONE IN ResetPartVariables
-
-        'SM1 = 0
-        'SM2 = 0
-        'LM = 0
 
         BitsSaved = 0 : BytesSaved = 0
 

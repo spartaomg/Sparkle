@@ -33,16 +33,19 @@ Err:
 	End Sub
 
 	Private Sub FrmAbout_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+		On Error GoTo Err
 
 		lblDescription.Left = (Width - lblDescription.Width) / 2
 		lblMe.Left = (Width - lblMe.Width) / 2
 		With LblVersion
 			.Text = "Version: " + My.Application.Info.Version.Major.ToString + "." + My.Application.Info.Version.Minor.ToString '+ "." + My.Application.Info.Version.Build.ToString
-			'.Text = "Version: " + My.Application.Info.Version.ToString
 			.Refresh()
 			.Left = (Width - .Width) / 2
 		End With
-		'lblRights.Left = (Width - lblRights.Width) / 2
+
+		Exit Sub
+Err:
+		MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
 	End Sub
 

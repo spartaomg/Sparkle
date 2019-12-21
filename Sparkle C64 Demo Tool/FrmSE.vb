@@ -399,7 +399,7 @@ FileData:
                     Case sDirArt
                         FilePath = Strings.Right(N.Text, Len(N.Text) - Len(S))
                         .Tag = S
-                        .Visible = False    'True
+                        .Visible = False
                         UpdateDirArtPath()
                         Exit Sub
                     Case sZP
@@ -582,19 +582,6 @@ Err:
         Dim O As String = IIf(NodeIndex = 1, txtEdit.Text, Strings.Right(FileNode.Nodes(1).Text, FileNode.Nodes(1).Text.Length - sFileOffs.Length))
         Dim L As String = IIf(NodeIndex = 2, txtEdit.Text, Strings.Right(FileNode.Nodes(2).Text, FileNode.Nodes(2).Text.Length - sFileLen.Length))
 
-        'If txtEdit.Text = "" Then
-        'Select Case NodeIndex
-        'Case 0
-        'GetDefaultFileParameters(FileNode)
-        'Case 1
-        'GetDefaultFileParameters(FileNode, A)
-        'Case 2
-        'GetDefaultFileParameters(FileNode, A, O)
-        'End Select
-        'Else
-        'GetDefaultFileParameters(FileNode, A, O, L)
-        'End If
-
         If txtEdit.Text = "" Then
             Select Case NodeIndex
                 Case 0
@@ -672,7 +659,6 @@ Done:
         GoTo Done
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
 Done:
         If Loading = False Then TV.EndUpdate()
 
@@ -1049,9 +1035,6 @@ Err:
 
         UpdateFileParameters(N)
 
-        'FileNameA(CurrentFile - 1) = N.Text
-        'FileSizeA(CurrentFile - 1) = FileSize
-
         CalcPartSize(N.Parent)
 
         If Loading = False Then TV.EndUpdate()
@@ -1081,12 +1064,6 @@ Err:
         If Loading = False Then TV.BeginUpdate()
 
         FC += 1
-        'ReDim Preserve FileNameA(FC - 1), FileAddrA(FC - 1), FileOffsA(FC - 1), FileLenA(FC - 1)
-
-        'If FileSizeA.Count < FC Then
-        'ReDim Preserve FileSizeA(FC - 1)
-        'ReDim Preserve FBSDisk(FC - 1)
-        'End If
 
         CurrentFile = FC
 
@@ -1117,13 +1094,9 @@ Err:
             N.Text += "*"
         End If
 
-
         N.Text = CalcFileSize(N.Text, DFAN, DFLN)          'Also sets/clears IOBit
 
         UpdateFileParameters(N)
-
-        'FileSizeA(FC - 1) = FileSize
-        'FBSDisk(FC - 1) = CurrentDisk
 
         If PartSizeA.Count < CurrentPart Then
             ReDim Preserve PartSizeA(CurrentPart)
@@ -1467,15 +1440,6 @@ Err:
         End If
 
         Frm.Show(Me)
-        'MsgBox(LCase(Strings.Right(PartNode.Parent.Nodes(sPacker + CurrentDisk.ToString).Text, 6)))
-        'Select Case LCase(Strings.Right(PartNode.Parent.Nodes(sPacker + CurrentDisk.ToString).Text, 6))
-        'Case "faster"
-        'Packer = 1
-        'Case "better"
-        'Packer = 2
-        'Case Else
-        'Packer = My.Settings.DefaultPacker
-        'End Select
 
         For K = PartNode.Index To PartNode.Parent.Nodes.Count - 2
 
@@ -1605,14 +1569,11 @@ Done:
 
         GoTo NoDisk
 
-        'If Loading = False Then Cursor = Cursors.Default
-        'Frm.Close()
-        'Exit Sub
-
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 NoDisk:
         If Loading = False Then Cursor = Cursors.Default
+
         Frm.Close()
 
     End Sub
@@ -1651,18 +1612,14 @@ Err:
     End Function
 
     Private Sub SwapIOStatus()
+        On Error GoTo Err
 
         With SelNode
-            'If Strings.Right(.Text, 3) = "yes" Then
             If Strings.Right(.Text, 3) = "I/O" Then
                 .Text = sFileUIO + "RAM"
                 .ForeColor = Color.Purple
                 .Parent.Text = Replace(.Parent.Text, "*", "") + "*"
-                '.Text = sFileUIO + " no"
-                '.ForeColor = Color.MediumPurple
-                '.Parent.Text = Strings.Replace(.Parent.Text, "*", "")
                 CalcPartSize(.Parent.Parent)
-                'ElseIf Strings.Right(.Text, 3) = " no" Then
             Else    'Strings.Right(.Text, 3)="RAM"
                 FAddr = Convert.ToInt32(Strings.Right(.Parent.Nodes(0).Text, 4), 16)
                 FLen = Convert.ToInt32(Strings.Right(.Parent.Nodes(2).Text, 4), 16)
@@ -1670,14 +1627,14 @@ Err:
                     .Text = sFileUIO + "I/O"
                     .ForeColor = Color.MediumPurple
                     .Parent.Text = Replace(.Parent.Text, "*", "")
-                    '.Text = sFileUIO + "yes"
-                    '.ForeColor = Color.Purple
-                    '.Parent.Text = Strings.Replace(.Parent.Text, "*", "") + "*"
                     CalcPartSize(.Parent.Parent)
                 End If
-                'Else
             End If
         End With
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
 
@@ -1997,7 +1954,6 @@ Err:
         End If
 
         If FileNode.Nodes(FileNode.Name + ":FUIO") Is Nothing Then
-            'FileNode.Nodes.Add(FileNode.Name + ":FUIO", sFileUIO + IIf(FileUnderIO = True, "yes", IIf(UnderIO() = True, " no", "n/a")))
             '                                                           Overlaps I/O      AND DOES NOT GO UNDER I/O
             FileNode.Nodes.Add(FileNode.Name + ":FUIO", sFileUIO + IIf((OverlapsIO() = True) And (FileUnderIO = False), "I/O", "RAM"))
             With FileNode.Nodes(FileNode.Name + ":FUIO")
@@ -2006,7 +1962,6 @@ Err:
                 .NodeFont = New Font("Consolas", 10)
             End With
         Else
-            'FileNode.Nodes(FileNode.Name + ":FUIO").Text = sFileUIO + IIf(FileUnderIO = True, "yes", IIf(UnderIO() = True, " no", "n/a"))
             FileNode.Nodes(FileNode.Name + ":FUIO").Text = sFileUIO + IIf((OverlapsIO() = True) And (FileUnderIO = False), "I/O", "RAM")
         End If
 
@@ -2128,16 +2083,14 @@ FindNext:
                 End If
                 UpdateNode(DiskNode.Nodes(sDirArt + DC.ToString), sDirArt + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt)
             Case "packer:"
-                'If CurrentDisk = 1 Then 'Packer can only be set from the first disk
                 Dim Fnt As New Font("Consolas", 10)
                 UpdateNode(DiskNode.Nodes(sPacker + DC.ToString), sPacker + LCase(ScriptEntryArray(0)), DiskNode.Tag, Color.DarkGreen, Fnt)
                 Select Case LCase(ScriptEntryArray(0))
                     Case "faster"
                         Packer = 1
-                    Case "better"
+                    Case Else   '"better"
                         Packer = 2
                 End Select
-                'End If
             Case "zp:"
                 If CurrentDisk = 1 Then 'ZP can only be set from the first disk
                     Dim Fnt As New Font("Consolas", 10)
@@ -2534,8 +2487,6 @@ Err:
 
         Script = S
 
-        'MsgBox(S)
-
         Exit Sub
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
@@ -2632,12 +2583,17 @@ Err:
     End Sub
 
     Private Sub OptFaster_CheckedChanged(sender As Object, e As EventArgs) Handles OptFaster.CheckedChanged
+        On Error GoTo Err
 
         If OptFaster.Checked = True Then
             My.Settings.DefaultPacker = 1
         Else
             My.Settings.DefaultPacker = 2
         End If
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
 
@@ -2865,8 +2821,7 @@ Err:
             End Select
 
             If TTT <> "" Then
-                'TT.Show(TTT, txtEdit, 5000)
-                TT.Show(TTT, txtEdit)
+                .Show(TTT, txtEdit)
             End If
         End With
 
@@ -3482,14 +3437,4 @@ Err:
 
     End Sub
 
-    Private Sub TV_MouseMove(sender As Object, e As MouseEventArgs) Handles TV.MouseMove
-        On Error GoTo Err
-
-        'TT.Hide(tv)
-
-        Exit Sub
-Err:
-        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
-    End Sub
 End Class
