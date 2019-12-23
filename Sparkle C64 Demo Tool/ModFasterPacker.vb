@@ -99,7 +99,7 @@ Restart:
             If FindMatch() = True Then
 
                 'MATCH
-                'Longest Match found, now check if it is a Longmatch, a Farmatch or a ShortMatch
+                'Longest Match found, now check if it is a Longmatch, a Midmatch or a ShortMatch
                 If MaxLen > MaxMidLen Then
                     'MaxLen=63-255
                     If LongMatch() = False Then GoTo Restart        'FALSE means nothing fit in buffer, new buffer was started
@@ -1073,7 +1073,7 @@ Err:
 
         CalcNeededBits(True)
 
-        'Check if Far Match fits
+        'Check if Mid Match fits
         If SequenceFits(2, LitCnt, CheckIO(POffset - MaxLen + 1)) = True Then
             AddLitBits()        'First close last literal sequence, will not do anything if LitCnt=-1
 
