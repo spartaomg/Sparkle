@@ -6,6 +6,8 @@
 
 	Public Drive() As Byte
 
+    Public TotLit, TotMatch As Integer
+
     Public BlocksFree As Integer = 664
 
     Public Disk(174847), NextTrack, NextSector As Byte   'Next Empty Track and Sector
@@ -820,7 +822,9 @@ Err:
 
 		Packer = My.Settings.DefaultPacker     'Default packer (1 - faster, 2 - better)
 
-		SS = 1 : SE = 1
+        TotLit = 0 : TotMatch = 0
+
+        SS = 1 : SE = 1
 
         'Check if this is a valid script
         If FindNextScriptEntry() = False Then GoTo NoDisk
@@ -884,6 +888,9 @@ FindNext:
 
         'Last disk: sort, compress and add last part, then update part count, add loader & drive code, save disk, and we are done :)
         If FinishDisk(True, SaveIt) = False Then GoTo NoDisk
+
+        'MsgBox("Lit:" + vbTab + TotLit.ToString + vbNewLine + "Match:" + vbTab + TotMatch.ToString + vbNewLine +
+        '     "Total:" + vbTab + (TotLit + TotMatch).ToString)
 
         Exit Function
 Err:

@@ -1336,6 +1336,8 @@ Err:
 
         If DoDebug Then Debug.Print("AddLongM")
 
+        TotMatch += 1
+
         If (LitCnt = -1) Or (LitCnt Mod (MaxLit + 1) = MaxLit) Then AddRBits(0, 1)   '0		Last Literal Length was -1 or Max, we need the Match Tag
 
         SaveLastMatch()
@@ -1362,6 +1364,8 @@ Err:
 
         If DoDebug Then Debug.Print("AddMidM")
 
+        TotMatch += 1
+
         If (LitCnt = -1) Or (LitCnt Mod (MaxLit + 1) = MaxLit) Then AddRBits(0, 1)   '0		Last Literal Length was -1 or Max, we need the Match Tag
 
         SaveLastMatch()
@@ -1384,6 +1388,8 @@ Err:
         On Error GoTo Err
 
         If DoDebug Then Debug.Print("AddShortM")
+
+        TotMatch += 1
 
         If (LitCnt = -1) Or (LitCnt Mod (MaxLit + 1) = MaxLit) Then AddRBits(0, 1)   '0		Last Literal Length was -1 or Max, we need the Match Tag
 
@@ -1424,6 +1430,8 @@ Err:
         If DoDebug Then Debug.Print("AddLitBits")
 
         If LitCnt = -1 Then Exit Sub
+
+        TotLit += Int(LitCnt / (MaxLit + 1)) + 1
 
         For I As Integer = 1 To Fix(LitCnt / (MaxLit + 1))
             If FirstBlockOfNextFile = True Then

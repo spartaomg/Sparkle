@@ -2093,6 +2093,12 @@ FindNext:
                 End Select
             Case "zp:"
                 If CurrentDisk = 1 Then 'ZP can only be set from the first disk
+                    'Correct length
+                    If ScriptEntryArray(0).Length < 2 Then
+                        ScriptEntryArray(0) = Strings.Left("02", 2 - ScriptEntryArray(0).Length) + ScriptEntryArray(0)
+                    ElseIf ScriptEntryArray(0).Length > 2 Then
+                        ScriptEntryArray(0) = Strings.Right(ScriptEntryArray(0), 2)
+                    End If
                     Dim Fnt As New Font("Consolas", 10)
                     UpdateNode(DiskNode.Nodes(sZP + DC.ToString), sZP + "$" + LCase(ScriptEntryArray(0)), DiskNode.Tag, Color.DarkGreen, Fnt)
                 End If
@@ -2452,7 +2458,7 @@ Err:
             "Packer:" + vbTab + Strings.Right(N.Nodes(6).Text, N.Nodes(6).Text.Length - Len(sPacker))
             If D = 0 Then
                 'ZP only for first disk
-                S += vbNewLine + "ZP:" + vbTab + Strings.Right(N.Nodes(7).Text, N.Nodes(6).Text.Length - Len(sZP + "$"))
+                S += vbNewLine + "ZP:" + vbTab + Strings.Right(N.Nodes(7).Text, N.Nodes(7).Text.Length - Len(sZP + "$"))
             End If
 
             For P As Integer = DP To N.Nodes.Count - 2

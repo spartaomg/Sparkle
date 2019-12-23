@@ -510,6 +510,8 @@ Err:
 	Private Sub AddLongMatch()
 		On Error GoTo Err
 
+		TotMatch += 1
+
 		If (LitCnt = -1) Or (LitCnt Mod (MaxLitLen + 1) = MaxLitLen) Then AddRBits(0, 1)   '0		Last Literal Length was -1 or Max, we need the Match Tag
 
 		Buffer(ByteCnt) = LongMatchTag                   'Long Match Flag = &HF8
@@ -528,6 +530,8 @@ Err:
 	Private Sub AddMidMatch()
 		On Error GoTo Err
 
+		TotMatch += 1
+
 		If (LitCnt = -1) Or (LitCnt Mod (MaxLitLen + 1) = MaxLitLen) Then AddRBits(0, 1)   '0		Last Literal Length was -1 or Max, we need the Match Tag
 
 		Buffer(ByteCnt) = (MLen - 1) * 4                         'Length of match (#$02-#$3f, cannot be #$00 (end byte), and #$01 - distant selector??)
@@ -544,6 +548,8 @@ Err:
 
 	Private Sub AddShortMatch()
 		On Error GoTo Err
+
+		TotMatch += 1
 
 		If (LitCnt = -1) Or (LitCnt Mod (MaxLitLen + 1) = MaxLitLen) Then AddRBits(0, 1)   '0		Last Literal Length was -1 or Max, we need the Match Tag
 
@@ -576,6 +582,8 @@ Err:
 		On Error GoTo Err
 
 		If LitCnt = -1 Then Exit Sub    'We only call this routine with LitCnt>-1
+
+		TotLit += Int(LitCnt / (MaxLitLen + 1)) + 1
 
 		For I As Integer = 1 To Fix(LitCnt / (MaxLitLen + 1))
 			If FirstBlockOfNextFile = True Then
