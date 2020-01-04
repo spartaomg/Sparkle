@@ -43,11 +43,11 @@ Partial Class FrmAbout
 		'lblMe
 		'
 		Me.lblMe.AutoSize = True
-		Me.lblMe.Location = New System.Drawing.Point(87, 97)
+		Me.lblMe.Location = New System.Drawing.Point(76, 97)
 		Me.lblMe.Name = "lblMe"
-		Me.lblMe.Size = New System.Drawing.Size(112, 13)
+		Me.lblMe.Size = New System.Drawing.Size(139, 13)
 		Me.lblMe.TabIndex = 2
-		Me.lblMe.Text = "by Sparta/OMG, 2019"
+		Me.lblMe.Text = "by Sparta/OMG, 2019-2020"
 		'
 		'PbxLogo
 		'
