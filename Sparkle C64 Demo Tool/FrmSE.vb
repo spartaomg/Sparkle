@@ -2044,6 +2044,8 @@ NewDisk:
         Dim DiskNode As TreeNode = TV.SelectedNode
 
 FindNext:
+        LastSS = SS
+        LastSE = SE
         FindNextScriptEntry()
 
         If InStr(ScriptEntry, vbTab) = 0 Then
@@ -2102,6 +2104,8 @@ FindNext:
                     Dim Fnt As New Font("Consolas", 10)
                     UpdateNode(DiskNode.Nodes(sZP + DC.ToString), sZP + "$" + LCase(ScriptEntryArray(0)), DiskNode.Tag, Color.DarkGreen, Fnt)
                 End If
+            Case "list:"
+                InsertList(ScriptEntryArray(0))
             Case "file:"
                 AddFileFromScript(DiskNode)
             Case "new disk"

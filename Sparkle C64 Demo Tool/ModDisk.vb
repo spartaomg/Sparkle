@@ -97,7 +97,7 @@
 
     Public bBuildDisk As Boolean = False
 
-    Public SS, SE As Integer
+    Public SS, SE, LastSS, LastSE As Integer
     Public NewPart As Boolean = False
     Public ScriptEntryType As String = ""
     Public ScriptEntry As String = ""
@@ -841,6 +841,8 @@ NewDisk:
         If ResetDiskVariables() = False Then GoTo NoDisk
 
 FindNext:
+        LastSS = SS
+        LastSE = SE
         If FindNextScriptEntry() = False Then GoTo NoDisk
         'Split String
         If SplitScriptEntry() = False Then GoTo NoDisk
@@ -868,9 +870,13 @@ FindNext:
                 End If
                 If IO.File.Exists(ScriptEntryArray(0)) Then
                     DirArt = IO.File.ReadAllText(ScriptEntryArray(0))
+                Else
+                    MsgBox("The following DirArt file was not found:" + vbNewLine + vbNewLine + ScriptEntryArray(0), vbOKOnly + vbExclamation, "DirArt file not found")
                 End If
             Case "zp:"
                 If DiskCnt = 0 Then LoaderZP = ScriptEntryArray(0)  'ZP usage can only be set from first disk
+            Case "list:"
+                InsertList(ScriptEntryArray(0))
             Case "file:"
                 'Add files to part array, if new part, it will first sort files in last part then add previous part to disk
                 If AddFile() = False Then GoTo NoDisk
@@ -899,6 +905,31 @@ NoDisk:
         BuildDemoFromScript = False
 
     End Function
+
+    Public Sub InsertList(ListPath As String)
+        On Error GoTo Err
+
+        If InStr(ListPath, ":") = 0 Then
+            ListPath = ScriptPath + ListPath
+        End If
+
+        If IO.File.Exists(ListPath) = False Then
+            MsgBox("The following Sparkle File List was not found and could not be included:" + vbNewLine + vbNewLine + ListPath, vbOKOnly + vbExclamation + "Sparkle file List not found")
+            Exit Sub
+        End If
+
+        Dim ScriptList As String = IO.File.ReadAllText(ListPath)
+
+        Script = Left(Script, LastSS + 1) + ScriptList + Right(Script, Script.Length - SS + 3)
+
+        SS = LastSS
+        SE = LastSE
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
 
     Private Sub AddHeaderAndID()
         On Error GoTo Err
