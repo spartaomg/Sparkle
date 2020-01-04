@@ -12,7 +12,7 @@ Imports System.Runtime.InteropServices
 <Assembly: AssemblyDescription("Sparkle C64 Demo Tool")>
 <Assembly: AssemblyCompany("OMG")>
 <Assembly: AssemblyProduct("Sparkle C64 Demo Tool")>
-<Assembly: AssemblyCopyright("Copyright © Sparta/OMG 2019")>
+<Assembly: AssemblyCopyright("Copyright © Sparta/OMG 2019-2020")>
 <Assembly: AssemblyTrademark("")>
 
 <Assembly: ComVisible(False)>
@@ -31,5 +31,5 @@ Imports System.Runtime.InteropServices
 ' by using the '*' as shown below:
 ' <Assembly: AssemblyVersion("1.0.*")>
 
-<Assembly: AssemblyVersion("1.2.0.0")>
-<Assembly: AssemblyFileVersion("1.2.0.0")>
+<Assembly: AssemblyVersion("1.3.0.0")>
+<Assembly: AssemblyFileVersion("1.3.0.0")>
