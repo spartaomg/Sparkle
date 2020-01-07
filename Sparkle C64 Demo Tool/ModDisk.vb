@@ -710,24 +710,24 @@ Err:
 
     End Sub
 
-    Public Function ConvertNumberToHexString(HLo As Byte, Optional HHi As Byte = 0) As String
-        On Error GoTo Err
+    'Public Function ConvertNumberToHexString(HLo As Byte, Optional HHi As Byte = 0) As String
+    'On Error GoTo Err
 
-        ConvertNumberToHexString = LCase(Hex(HLo + (HHi * 256)))
+    'ConvertNumberToHexString = LCase(Hex(HLo + (HHi * 256)))
 
-        If Len(ConvertNumberToHexString) < 4 Then
-            ConvertNumberToHexString = Left("0000", 4 - Len(ConvertNumberToHexString)) + ConvertNumberToHexString
-        End If
+    'If Len(ConvertNumberToHexString) < 4 Then
+    'ConvertNumberToHexString = Left("0000", 4 - Len(ConvertNumberToHexString)) + ConvertNumberToHexString
+    'End If
 
-        ConvertIntToHex(HLo + (HHi * 256), 4)
+    'ConvertIntToHex(HLo + (HHi * 256), 4)
 
-        Exit Function
-Err:
-        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+    'Exit Function
+    'Err:
+    'MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
-        ConvertNumberToHexString = ""
+    'ConvertNumberToHexString = ""
 
-    End Function
+    'End Function
 
     Public Function ConvertIntToHex(HInt As Integer, SLen As Integer) As String
         On Error GoTo Err
@@ -1450,7 +1450,7 @@ NoSort:
                     If FON > P.Length - 1 Then
                         FON = P.Length - 1                                  'If offset>prg length-1 then correct it
                         'FO = ConvertNumberToHexString(FON Mod 256, Int(FON / 256))
-                        FO = ConvertNumberToHexString(FON, 8)
+                        FO = ConvertIntToHex(FON, 8)
                     End If                                                  'Length=prg length- offset
                     FL = ScriptEntryArray(3)
             End Select

@@ -622,7 +622,14 @@ Node2:              If FileNode.Nodes(2).ForeColor = DefaultCol Then FileNode.No
                     'Nothing here...
             End Select
         Else
-            GetDefaultFileParameters(FileNode, A)
+            Select Case NodeIndex
+                Case 0
+                    GetDefaultFileParameters(FileNode, A)
+                Case 1
+                    GetDefaultFileParameters(FileNode, A, O)
+                Case 2
+                    GetDefaultFileParameters(FileNode, A, O, L)
+            End Select
         End If
 
         ValidateFileParameters(FileNode)    'This will make sure parameters are within limits
@@ -770,9 +777,17 @@ Done:
             DFLN = PLen - Convert.ToInt32(FO, 16)
         End If
 
-        'File Address+ File Length must be <= $10000
-        If DFAN + DFLN > &H10000 Then
-            DFLN = &H10000 - DFAN
+        'File Address+ File Length cannot be > $10000
+        If FA <> "" Then    'We have a file address
+            'Calculate DFLN using current file address
+            If Convert.ToInt32(FA, 16) + DFLN > &H10000 Then
+                DFLN = &H10000 - Convert.ToInt32(FA, 16)
+            End If
+        Else
+            'Calculate DFLN using default file address
+            If DFAN + DFLN > &H10000 Then
+                DFLN = &H10000 - DFAN
+            End If
         End If
 
         'Calculate default parameter strings
@@ -1765,7 +1780,7 @@ Err:
                 If FLen = 0 Then
                     FLen = Prg.Length - FOffs
                 Else
-                    If FLen <> Prg.Length - FOffs Then
+                    If (FLen <> Prg.Length - FOffs) And (FLen <> &H10000 - FAddr) Then
                         DFL = False
                         DFO = False
                         DFA = False
