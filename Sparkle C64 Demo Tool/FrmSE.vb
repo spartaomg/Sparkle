@@ -62,7 +62,7 @@ Public Class FrmSE
     Private ReadOnly sAddPart As String = "AddPart"
     Private ReadOnly sAddFile As String = "AddFile"
     Private ReadOnly sFileSize As String = "Original File Size: "
-    Private ReadOnly sFileUIO As String = "Load to:        "     '"Load under I/O: "
+    Private ReadOnly sFileUIO As String = "Load to:      "     '"Load under I/O: "
     Private ReadOnly sFileAddr As String = "Load Address: $"
     Private ReadOnly sFileOffs As String = "File Offset:  $"
     Private ReadOnly sFileLen As String = "File Length:  $"
@@ -789,6 +789,9 @@ Done:
                 DFLN = &H10000 - DFAN
             End If
         End If
+
+        'If Load Address=$0000 then, limit DFLN to $ffff to make sure it fits in word format
+        If DFLN = &H10000 Then DFLN -= 1
 
         'Calculate default parameter strings
         'DFAS = ConvertNumberToHexString(DFAN Mod 256, Int(DFAN / 256))
