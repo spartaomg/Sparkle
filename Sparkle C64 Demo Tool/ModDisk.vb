@@ -719,11 +719,32 @@ Err:
             ConvertNumberToHexString = Left("0000", 4 - Len(ConvertNumberToHexString)) + ConvertNumberToHexString
         End If
 
+        ConvertIntToHex(HLo + (HHi * 256), 4)
+
         Exit Function
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
         ConvertNumberToHexString = ""
+
+    End Function
+
+    Public Function ConvertIntToHex(HInt As Integer, SLen As Integer) As String
+        On Error GoTo Err
+
+        ConvertIntToHex = LCase(Hex(HInt))
+
+        If ConvertIntToHex.Length < SLen Then
+            ConvertIntToHex = Left(StrDup(SLen, "0"), SLen - ConvertIntToHex.Length) + ConvertIntToHex
+        End If
+
+        'MsgBox(ConvertIntToHex)
+
+        Exit Function
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+        ConvertIntToHex = ""
 
     End Function
 
@@ -865,13 +886,15 @@ FindNext:
                     Packer = 2
                 End If
             Case "dirart:"
-                If InStr(ScriptEntryArray(0), ":") = 0 Then
-                    ScriptEntryArray(0) = ScriptPath + ScriptEntryArray(0)
-                End If
-                If IO.File.Exists(ScriptEntryArray(0)) Then
-                    DirArt = IO.File.ReadAllText(ScriptEntryArray(0))
-                Else
-                    MsgBox("The following DirArt file was not found:" + vbNewLine + vbNewLine + ScriptEntryArray(0), vbOKOnly + vbExclamation, "DirArt file not found")
+                If ScriptEntryArray(0) <> "" Then
+                    If InStr(ScriptEntryArray(0), ":") = 0 Then
+                        ScriptEntryArray(0) = ScriptPath + ScriptEntryArray(0)
+                    End If
+                    If IO.File.Exists(ScriptEntryArray(0)) Then
+                        DirArt = IO.File.ReadAllText(ScriptEntryArray(0))
+                    Else
+                        MsgBox("The following DirArt file was not found:" + vbNewLine + vbNewLine + ScriptEntryArray(0), vbOKOnly + vbExclamation, "DirArt file not found")
+                    End If
                 End If
             Case "zp:"
                 If DiskCnt = 0 Then LoaderZP = ScriptEntryArray(0)  'ZP usage can only be set from first disk
@@ -1253,7 +1276,8 @@ Prepend:                PO = Prgs(O)
 					FileIOA(O) = FileIOA(O) Or FileIOA(I)   'BUG FIX - REPORTED BY RAISTLIN/G*P
 					'New file's length is the length of the two merged files
 					FEO += FEI
-					FileLenA(O) = ConvertNumberToHexString(FEO Mod 256, Int(FEO / 256))
+                    'FileLenA(O) = ConvertNumberToHexString(FEO Mod 256, Int(FEO / 256))
+                    FileLenA(O) = ConvertIntToHex(FEO, 4)
                     'Remove File(I) and all its parameters
                     For J As Integer = I To Prgs.Count - 2
                         FileNameA(J) = FileNameA(J + 1)
@@ -1342,11 +1366,40 @@ NoSort:
 
         'Correct file parameter length to 4 characters
         For I As Integer = 1 To ScriptEntryArray.Count - 1
-            If ScriptEntryArray(I).Length < 4 Then
-                ScriptEntryArray(I) = Left("0000", 4 - Strings.Len(ScriptEntryArray(I))) + ScriptEntryArray(I)
-            ElseIf ScriptEntryArray(I).Length > 4 Then
-                ScriptEntryArray(I) = Right(ScriptEntryArray(I), 4)
+
+            'Remove HEX prefix
+            If InStr(ScriptEntryArray(I), "$") <> 0 Then        'C64
+                Replace(ScriptEntryArray(I), "$", "")
+            ElseIf InStr(ScriptEntryArray(I), "&H") <> 0 Then   'VB
+                Replace(ScriptEntryArray(I), "&H", "")
+            ElseIf InStr(ScriptEntryArray(I), "0x") <> 0 Then   'C, C++, C#, Java, Python, etc.
+                Replace(ScriptEntryArray(I), "0x", "")
             End If
+
+            Select Case I
+                Case 2      'File Offset max. $ffff ffff (dword)
+                    If ScriptEntryArray(I).Length < 8 Then
+                        ScriptEntryArray(I) = Left("00000000", 8 - Strings.Len(ScriptEntryArray(I))) + ScriptEntryArray(I)
+                    ElseIf (I = 2) And (ScriptEntryArray(I).Length > 8) Then
+                        ScriptEntryArray(I) = Right(ScriptEntryArray(I), 8)
+                    End If
+                Case Else   'File Address, File Length max. $ffff
+                    If ScriptEntryArray(I).Length < 4 Then
+                        ScriptEntryArray(I) = Left("0000", 4 - Strings.Len(ScriptEntryArray(I))) + ScriptEntryArray(I)
+                    ElseIf ScriptEntryArray(I).Length > 4 Then
+                        ScriptEntryArray(I) = Right(ScriptEntryArray(I), 4)
+                    End If
+            End Select
+
+            'If ScriptEntryArray(I).Length < 4 Then
+            'ScriptEntryArray(I) = Left("0000", 4 - Strings.Len(ScriptEntryArray(I))) + ScriptEntryArray(I)
+            'ElseIf (I = 2) And (ScriptEntryArray(I).Length > 8) Then
+            ''Offset can be up to $ffff ffff (dword)
+            'ScriptEntryArray(I) = Right(ScriptEntryArray(I), 8)
+            'ElseIf ScriptEntryArray(I).Length > 4 Then
+            ''File Address and File Length max $ffff (word)
+            'ScriptEntryArray(I) = Right(ScriptEntryArray(I), 4)
+            'End If
         Next
 
         'Get file variables from script, or get default values if there were none in the script entry
@@ -1356,14 +1409,19 @@ NoSort:
             Select Case ScriptEntryArray.Count
                 Case 1  'No parameters in script
                     If Strings.InStr(Strings.LCase(FN), ".sid") <> 0 Then   'SID file - read parameters from file
-                        FA = ConvertNumberToHexString(P(P(7)), (P(P(7) + 1)))
-                        FO = ConvertNumberToHexString(P(7) + 2)
-                        FL = ConvertNumberToHexString((P.Length - P(7) - 2) Mod 256, Int((P.Length - P(7) - 2) / 256))
+                        'FA = ConvertNumberToHexString(P(P(7)), (P(P(7) + 1)))
+                        'FO = ConvertNumberToHexString(P(7) + 2)
+                        'FL = ConvertNumberToHexString((P.Length - P(7) - 2) Mod 256, Int((P.Length - P(7) - 2) / 256))
+                        FA = ConvertIntToHex(P(P(7)) + (P(P(7) + 1) * 256), 4)
+                        FO = ConvertIntToHex(P(7) + 2, 8)
+                        FL = ConvertIntToHex((P.Length - P(7) - 2), 4)
                     Else                                                    'Any other files
                         If P.Length > 2 Then                                'We have at least 3 bytes in the file
-                            FA = ConvertNumberToHexString(P(0), P(1))       'First 2 bytes define load address
-                            FO = "0002"                                     'Offset=2, Length=prg length-2
-                            FL = ConvertNumberToHexString((P.Length - 2) Mod 256, Int((P.Length - 2) / 256))
+                            'FA = ConvertNumberToHexString(P(0), P(1))       'First 2 bytes define load address
+                            FA = ConvertIntToHex(P(0) + (P(1) * 256), 4)       'First 2 bytes define load address
+                            FO = "00000002"                                    'Offset=2, Length=prg length-2
+                            'FL = ConvertNumberToHexString((P.Length - 2) Mod 256, Int((P.Length - 2) / 256))
+                            FL = ConvertIntToHex(P.Length - 2, 4)
                         Else                                                'Short file without paramters -> STOP
                             MsgBox("File parameters are needed for the following file:" + vbNewLine + vbNewLine + FN, vbCritical + vbOKOnly, "Missing file parameters")
                             GoTo NoDisk
@@ -1371,24 +1429,28 @@ NoSort:
                     End If
                 Case 2  'One parameter in script
                     FA = ScriptEntryArray(1)                                'Load address from script
-                    FO = "0000"                                             'Offset will be 0, length=prg length
-                    FL = ConvertNumberToHexString(P.Length Mod 256, Int(P.Length / 256))
+                    FO = "00000000"                                             'Offset will be 0, length=prg length
+                    'FL = ConvertNumberToHexString(P.Length Mod 256, Int(P.Length / 256))
+                    FL = ConvertIntToHex(P.Length, 4)
                 Case 3  'Two parameters in script
                     FA = ScriptEntryArray(1)                                'Load address from script
                     FO = ScriptEntryArray(2)                                'Offset from script
                     FON = Convert.ToInt32(FO, 16)                           'Make sure offset is valid
                     If FON > P.Length - 1 Then
                         FON = P.Length - 1                                  'If offset>prg length-1 then correct it
-                        FO = ConvertNumberToHexString(FON Mod 256, Int(FON / 256))
+                        'FO = ConvertNumberToHexString(FON Mod 256, Int(FON / 256))
+                        FO = ConvertIntToHex(FON, 8)
                     End If                                                  'Length=prg length- offset
-                    FL = ConvertNumberToHexString((P.Length - FON) Mod 256, Int((P.Length - FON) / 256))
+                    'FL = ConvertNumberToHexString((P.Length - FON) Mod 256, Int((P.Length - FON) / 256))
+                    FL = ConvertIntToHex(P.Length - FON, 4)
                 Case 4  'Three parameters in script
                     FA = ScriptEntryArray(1)
                     FO = ScriptEntryArray(2)
                     FON = Convert.ToInt32(FO, 16)                           'Make sure offset is valid
                     If FON > P.Length - 1 Then
                         FON = P.Length - 1                                  'If offset>prg length-1 then correct it
-                        FO = ConvertNumberToHexString(FON Mod 256, Int(FON / 256))
+                        'FO = ConvertNumberToHexString(FON Mod 256, Int(FON / 256))
+                        FO = ConvertNumberToHexString(FON, 8)
                     End If                                                  'Length=prg length- offset
                     FL = ScriptEntryArray(3)
             End Select
@@ -1400,13 +1462,15 @@ NoSort:
             'Make sure file length is not longer than actual file (should not happen)
             If FON + FLN > P.Length Then
                 FLN = P.Length - FON
-                FL = ConvertNumberToHexString(FLN Mod 256, Int(FLN / 256))
+                'FL = ConvertNumberToHexString(FLN Mod 256, Int(FLN / 256))
+                FL = ConvertIntToHex(FLN, 4)
             End If
 
-            'Make sure file address+length<&H10000
+            'Make sure file address+length<=&H10000
             If FAN + FLN > &H10000 Then
                 FLN = &H10000 - FAN
-                FL = ConvertNumberToHexString(FLN Mod 256, Int(FLN / 256))
+                'FL = ConvertNumberToHexString(FLN Mod 256, Int(FLN / 256))
+                FL = ConvertIntToHex(FLN, 4)
             End If
 
             'Trim file to the specified chunk (FLN number of bytes starting at FON, to Address of FAN)

@@ -43,6 +43,12 @@
 		'PROCESS FILE
 		'----------------------------------------------------------------------------------------------------------
 
+		'Dim PS As String = ""
+		'For I As Integer = 0 To 255
+		'PS += Hex(PN(I)) + vbTab
+		'Next
+		'MsgBox(PS)
+
 		Prg = PN
 		FileUnderIO = FUIO
 		PrgAdd = Convert.ToInt32(FA, 16)
@@ -58,7 +64,6 @@
 			'.Off = 0            'Offset=0 -> literal sequence, Off is 1 based
 			.Bit = 10           'LitLen bit + 8 bits + type (Lit vs Match) selector bit 
 		End With
-
 		'----------------------------------------------------------------------------------------------------------
 		'CALCULATE BEST SEQUENCE
 		'----------------------------------------------------------------------------------------------------------
