@@ -84,7 +84,7 @@ Partial Class FrmSE
 		Me.tssLabel.Name = "tssLabel"
 		Me.tssLabel.Size = New System.Drawing.Size(647, 17)
 		Me.tssLabel.Spring = True
-		Me.tssLabel.Text = "Disk Size: 0 blocks"
+		Me.tssLabel.Text = "Script:"
 		Me.tssLabel.TextAlign = System.Drawing.ContentAlignment.MiddleLeft
 		'
 		'TssDisk
@@ -144,6 +144,7 @@ Partial Class FrmSE
 		'TV
 		'
 		Me.TV.Font = New System.Drawing.Font("Microsoft Sans Serif", 9.75!, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+		Me.TV.Indent = 19
 		Me.TV.Location = New System.Drawing.Point(12, 21)
 		Me.TV.Name = "TV"
 		Me.TV.Size = New System.Drawing.Size(646, 542)
@@ -288,7 +289,7 @@ Partial Class FrmSE
 
 	End Sub
 	Friend WithEvents txtEdit As TextBox
-    Friend WithEvents Label10 As Label
+	Friend WithEvents Label10 As Label
 	Friend WithEvents strip As StatusStrip
 	Friend WithEvents tssLabel As ToolStripStatusLabel
 	Friend WithEvents BtnNew As Button
@@ -297,13 +298,13 @@ Partial Class FrmSE
 	Friend WithEvents BtnSave As Button
 	Friend WithEvents BtnLoad As Button
 	Friend WithEvents TV As TreeView
-    Friend WithEvents BtnFileUp As Button
-    Friend WithEvents BtnFileDown As Button
-    Friend WithEvents BtnPartUp As Button
-    Friend WithEvents BtnPartDown As Button
-    Friend WithEvents TssDisk As ToolStripStatusLabel
-    Friend WithEvents ChkExpand As CheckBox
-    Friend WithEvents ChkToolTips As CheckBox
+	Friend WithEvents BtnFileUp As Button
+	Friend WithEvents BtnFileDown As Button
+	Friend WithEvents BtnPartUp As Button
+	Friend WithEvents BtnPartDown As Button
+	Friend WithEvents TssDisk As ToolStripStatusLabel
+	Friend WithEvents ChkExpand As CheckBox
+	Friend WithEvents ChkToolTips As CheckBox
 	Friend WithEvents tmr As Timer
 	Friend WithEvents PnlPacker As Panel
 	Friend WithEvents OptBetter As RadioButton

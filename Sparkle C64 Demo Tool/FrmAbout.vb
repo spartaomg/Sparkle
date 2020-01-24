@@ -35,8 +35,14 @@ Err:
 	Private Sub FrmAbout_Load(sender As Object, e As EventArgs) Handles MyBase.Load
 		On Error GoTo Err
 
+		With lblMe
+			.Text = "by Sparta/OMG, 2019-" + Year(Now).ToString
+			.Refresh()
+			.Left = (Width - .Width) / 2
+		End With
+
 		lblDescription.Left = (Width - lblDescription.Width) / 2
-		lblMe.Left = (Width - lblMe.Width) / 2
+
 		With LblVersion
 			.Text = "Version: " + My.Application.Info.Version.Major.ToString + "." + My.Application.Info.Version.Minor.ToString '+ "." + My.Application.Info.Version.Build.ToString
 			.Refresh()

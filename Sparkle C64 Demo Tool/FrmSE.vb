@@ -106,6 +106,12 @@ Public Class FrmSE
             WindowState = FormWindowState.Normal
             Width = My.Settings.EditorWidth
             Height = My.Settings.EditorHeight
+
+            Dim R As Rectangle = Screen.FromPoint(Location).WorkingArea
+
+            Dim X = R.Left + (R.Width - Width) \ 2
+            Dim Y = R.Top + (R.Height - Height) \ 2
+            Location = New Point(X, Y)
         End If
 
         If My.Settings.DefaultPacker = 1 Then
@@ -2113,8 +2119,8 @@ Err:
         AddNewDiskNode()
 
         Packer = My.Settings.DefaultPacker
-
-NewDisk:
+        Dim NewD As Boolean = True
+        'NewDisk:
         TV.SelectedNode = TV.Nodes(sAddDisk)
 
         'Reset buffer and other disk variables here
@@ -2123,6 +2129,7 @@ NewDisk:
         BlankDiskStructure()
 
         Dim DiskNode As TreeNode = TV.SelectedNode
+        NewPart = True
 
 FindNext:
         LastSS = SS
@@ -2140,24 +2147,53 @@ FindNext:
 
         Select Case LCase(ScriptEntryType)
             Case "path:"
+                If NewD = False Then
+                    NewD = True
+                    DiskNode = NewDiskToTree(DiskNode)
+                End If
                 If InStr(ScriptEntryArray(0), ":") = 0 Then
                     ScriptEntryArray(0) = ScriptPath + ScriptEntryArray(0)
                 End If
                 Dim Fnt As New Font("Consolas", 10)
-                UpdateNode(DiskNode.Nodes(sDiskPath + DC.ToString), sDiskPath + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt)', tDiskPath)
+                UpdateNode(DiskNode.Nodes(sDiskPath + DC.ToString), sDiskPath + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt) ', tDiskPath)
+                NewPart = True
             Case "header:"
+                If NewD = False Then
+                    NewD = True
+                    DiskNode = NewDiskToTree(DiskNode)
+                End If
                 Dim Fnt As New Font("Consolas", 10)
-                UpdateNode(DiskNode.Nodes(sDiskHeader + DC.ToString), sDiskHeader + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt)', tDiskHeader)
+                UpdateNode(DiskNode.Nodes(sDiskHeader + DC.ToString), sDiskHeader + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt) ', tDiskHeader)
+                NewPart = True
             Case "id:"
+                If NewD = False Then
+                    NewD = True
+                    DiskNode = NewDiskToTree(DiskNode)
+                End If
                 Dim Fnt As New Font("Consolas", 10)
-                UpdateNode(DiskNode.Nodes(sDiskID + DC.ToString), sDiskID + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt)', tDiskID)
+                UpdateNode(DiskNode.Nodes(sDiskID + DC.ToString), sDiskID + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt) ', tDiskID)
+                NewPart = True
             Case "name:"
+                If NewD = False Then
+                    NewD = True
+                    DiskNode = NewDiskToTree(DiskNode)
+                End If
                 Dim Fnt As New Font("Consolas", 10)
-                UpdateNode(DiskNode.Nodes(sDemoName + DC.ToString), sDemoName + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt)', tDemoName)
+                UpdateNode(DiskNode.Nodes(sDemoName + DC.ToString), sDemoName + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt) ', tDemoName)
+                NewPart = True
             Case "start:"
+                If NewD = False Then
+                    NewD = True
+                    DiskNode = NewDiskToTree(DiskNode)
+                End If
                 Dim Fnt As New Font("Consolas", 10)
-                UpdateNode(DiskNode.Nodes(sDemoStart + DC.ToString), sDemoStart + "$" + LCase(ScriptEntryArray(0)), DiskNode.Tag, Color.DarkGreen, Fnt)', tDemoStart)
+                UpdateNode(DiskNode.Nodes(sDemoStart + DC.ToString), sDemoStart + "$" + LCase(ScriptEntryArray(0)), DiskNode.Tag, Color.DarkGreen, Fnt) ', tDemoStart)
+                NewPart = True
             Case "dirart:"
+                If NewD = False Then
+                    NewD = True
+                    DiskNode = NewDiskToTree(DiskNode)
+                End If
                 Dim Fnt As New Font("Consolas", 10)
                 If ScriptEntryArray(0) <> "" Then
                     If InStr(ScriptEntryArray(0), ":") = 0 Then
@@ -2165,7 +2201,12 @@ FindNext:
                     End If
                 End If
                 UpdateNode(DiskNode.Nodes(sDirArt + DC.ToString), sDirArt + ScriptEntryArray(0), DiskNode.Tag, Color.DarkGreen, Fnt)
+                NewPart = True
             Case "packer:"
+                If NewD = False Then
+                    NewD = True
+                    DiskNode = NewDiskToTree(DiskNode)
+                End If
                 Dim Fnt As New Font("Consolas", 10)
                 UpdateNode(DiskNode.Nodes(sPacker + DC.ToString), sPacker + LCase(ScriptEntryArray(0)), DiskNode.Tag, Color.DarkGreen, Fnt)
                 Select Case LCase(ScriptEntryArray(0))
@@ -2174,7 +2215,12 @@ FindNext:
                     Case Else   '"better"
                         Packer = 2
                 End Select
+                NewPart = True
             Case "zp:"
+                If NewD = False Then
+                    NewD = True
+                    DiskNode = NewDiskToTree(DiskNode)
+                End If
                 If CurrentDisk = 1 Then 'ZP can only be set from the first disk
                     'Correct length
                     If ScriptEntryArray(0).Length < 2 Then
@@ -2185,19 +2231,22 @@ FindNext:
                     Dim Fnt As New Font("Consolas", 10)
                     UpdateNode(DiskNode.Nodes(sZP + DC.ToString), sZP + "$" + LCase(ScriptEntryArray(0)), DiskNode.Tag, Color.DarkGreen, Fnt)
                 End If
-            Case "list:"
+                NewPart = True
+            Case "list:", "script:"
                 InsertList(ScriptEntryArray(0))
             Case "file:"
+                NewD = False
                 AddFileFromScript(DiskNode)
+                NewPart = False
             Case "new disk"
+                'DiskNode = NewDiskToTree(DiskNode)
+                ''Update last part size and disk size before starting new disk node
+                ''If DiskNode.Nodes.Count > 7 Then UpdatePartSize(DiskNode)   'First 6 nodes are disk info, last one is AddPart node
+                'UpdatePartSize(DiskNode)
+                'CurrentDisk = DiskCnt
+                'DiskNode.Text = "[Disk " + CurrentDisk.ToString + ": " + DiskSizeA(CurrentDisk - 1).ToString + " block" + IIf(DiskSizeA(CurrentDisk - 1) <> 1, "s", "") + " used, " + (664 - DiskSizeA(CurrentDisk - 1)).ToString + " block" + IIf(664 - DiskSizeA(CurrentDisk - 1) <> 1, "s", "") + " free]"
 
-                'Update last part size and disk size before starting new disk node
-                'If DiskNode.Nodes.Count > 7 Then UpdatePartSize(DiskNode)   'First 6 nodes are disk info, last one is AddPart node
-                UpdatePartSize(DiskNode)
-                CurrentDisk = DiskCnt
-                DiskNode.Text = "[Disk " + CurrentDisk.ToString + ": " + DiskSizeA(CurrentDisk - 1).ToString + " block" + IIf(DiskSizeA(CurrentDisk - 1) <> 1, "s", "") + " used, " + (664 - DiskSizeA(CurrentDisk - 1)).ToString + " block" + IIf(664 - DiskSizeA(CurrentDisk - 1) <> 1, "s", "") + " free]"
-
-                GoTo NewDisk
+                'GoTo NewDisk
             Case Else
                 'Figure out what to do with comments here...
         End Select
@@ -2229,6 +2278,24 @@ Done:
         Cursor = Cursors.Default
 
         Frm.Close()
+
+    End Function
+    Private Function NewDiskToTree(DiskNode As TreeNode) As TreeNode
+
+        'Update last part size and disk size before starting new disk node
+        'If DiskNode.Nodes.Count > 7 Then UpdatePartSize(DiskNode)   'First 6 nodes are disk info, last one is AddPart node
+        UpdatePartSize(DiskNode)
+        CurrentDisk = DiskCnt
+        DiskNode.Text = "[Disk " + CurrentDisk.ToString + ": " + DiskSizeA(CurrentDisk - 1).ToString + " block" + IIf(DiskSizeA(CurrentDisk - 1) <> 1, "s", "") + " used, " + (664 - DiskSizeA(CurrentDisk - 1)).ToString + " block" + IIf(664 - DiskSizeA(CurrentDisk - 1) <> 1, "s", "") + " free]"
+
+        TV.SelectedNode = TV.Nodes(sAddDisk)
+
+        'Reset buffer and other disk variables here
+        ResetDiskVariables()
+
+        BlankDiskStructure()
+
+        NewDiskToTree = TV.SelectedNode
 
     End Function
 
@@ -2569,7 +2636,7 @@ Err:
                 End If
             Next
             If D < TV.Nodes.Count - 2 Then
-                S += vbNewLine + vbNewLine + "New Disk" + vbNewLine + vbNewLine
+                S += vbNewLine + vbNewLine '+ "New Disk" + vbNewLine + vbNewLine
             End If
 
             DP = 6
@@ -2827,20 +2894,20 @@ Err:
 
     End Sub
 
-    Private Sub FrmSE_ResizeEnd(sender As Object, e As EventArgs) Handles Me.ResizeEnd
-        On Error GoTo Err
+    'Private Sub FrmSE_ResizeEnd(sender As Object, e As EventArgs) Handles Me.ResizeEnd
+    'On Error GoTo Err
 
-        Dim R As Rectangle = Screen.FromPoint(Me.Location).WorkingArea
+    'Dim R As Rectangle = Screen.FromPoint(Location).WorkingArea
 
-        Dim X = R.Left + (R.Width - Width) \ 2
-        Dim Y = R.Top + (R.Height - Height) \ 2
-        Location = New Point(X, Y)
+    'Dim X = R.Left + (R.Width - Width) \ 2
+    'Dim Y = R.Top + (R.Height - Height) \ 2
+    'Location = New Point(X, Y)
 
-        Exit Sub
-Err:
-        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+    'Exit Sub
+    'Err:
+    'MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
-    End Sub
+    'End Sub
 
     Private Sub TxtEdit_MouseHover(sender As Object, e As EventArgs) Handles txtEdit.MouseHover
         On Error GoTo Err
@@ -3521,6 +3588,25 @@ Err:
         On Error GoTo Err
 
         TT.Hide(TV)
+
+        Exit Sub
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub SimplifyScript()
+        On Error GoTo Err
+
+        If InStr(Script, ScriptPath) <> 0 Then
+            Dim S As String = "Do you want to save your script with relative file paths using the script's folder as base folder?" ' + vbNewLine + vbNewLine
+            'Dim S As String = "This script could be simplified using the script's folder as a relative path." + vbNewLine
+            'S += vbNewLine + "Do you want to simplify the script before saving it?" + vbNewLine + vbNewLine
+            'S += "(Note: the simplified script will only work if it remains in its current folder!)"
+            If MsgBox(S, vbYesNo + vbQuestion, "Simplify script?") = vbYes Then
+                Script = Replace(Script, ScriptPath, "")
+            End If
+        End If
 
         Exit Sub
 Err:

@@ -55,13 +55,13 @@
     Public DiskNo As Integer
 
     '-----THESE WILL BE REMOVED-----
-    Public D64Name As String '= My.Computer.FileSystem.SpecialDirectories.MyDocuments
+    Public D64Name As String = "" '= My.Computer.FileSystem.SpecialDirectories.MyDocuments
     '-------------------------------
 
     Public DiskHeader As String = "demo disk " + Year(Now).ToString
     Public DiskID As String = "sprkl"
     Public DemoName As String = "demo"
-    Public DemoStart As String
+    Public DemoStart As String = ""
     Public LoaderZP As String = "02"
 
     Public SystemFile As Boolean = False
@@ -101,6 +101,7 @@
     Public NewPart As Boolean = False
     Public ScriptEntryType As String = ""
     Public ScriptEntry As String = ""
+    Public ScriptLine As String = ""
     Public ScriptEntryArray() As String
     Public LastNonEmpty As Integer = -1
 
@@ -187,7 +188,7 @@ Err:
 
         FindNextScriptEntry = True
 
-        NewPart = False
+        'NewPart = False
 
 NextLine:
         If Mid(Script, SS, 1) = Chr(13) Then                'Check if this is an empty line indicating a new section
@@ -203,10 +204,14 @@ NextChar:
             If SE <= Script.Length Then                     'Go to next char if we haven't reached the end of the script
                 GoTo NextChar
             Else
-                ScriptEntry = Strings.Mid(Script, SS, SE - SS)    'Reached end of script, finish this entry
+                'ScriptEntry = Strings.Mid(Script, SS, SE - SS)    'Reached end of script, finish this entry
+                'SS = SE + 2                                     'Skip EOL bytes
+                'SE = SS + 1
+                GoTo Done
             End If
         Else                                                'Found EOL
-            ScriptEntry = Strings.Mid(Script, SS, SE - SS)  'Finish this entry
+Done:       ScriptEntry = Strings.Mid(Script, SS, SE - SS)  'Finish this entry
+            ScriptLine = ScriptEntry
             SS = SE + 2                                     'Skip EOL bytes
             SE = SS + 1
         End If
@@ -856,11 +861,13 @@ Err:
         End If
 
         DiskCnt = -1
-
-NewDisk:
+        'Dim NewD As Boolean = False
+        'NewDisk:
         'Reset Disk Variables
         If ResetDiskVariables() = False Then GoTo NoDisk
-
+        Dim NewD As Boolean = True
+        NewPart = False
+        'NewPart = True
 FindNext:
         LastSS = SS
         LastSE = SE
@@ -870,22 +877,63 @@ FindNext:
         'Set disk variables and add files
         Select Case LCase(ScriptEntryType)
             Case "path:"
+                If NewD = False Then
+                    NewD = True
+                    If FinishDisk(False, SaveIt) = False Then GoTo NoDisk
+                    If ResetDiskVariables() = False Then GoTo NoDisk
+                End If
                 D64Name = ScriptEntryArray(0)
+                NewPart = True
             Case "header:"
+                If NewD = False Then
+                    NewD = True
+                    If FinishDisk(False, SaveIt) = False Then GoTo NoDisk
+                    If ResetDiskVariables() = False Then GoTo NoDisk
+                End If
                 DiskHeader = ScriptEntryArray(0)
+                NewPart = True
             Case "id:"
+                If NewD = False Then
+                    NewD = True
+                    If FinishDisk(False, SaveIt) = False Then GoTo NoDisk
+                    If ResetDiskVariables() = False Then GoTo NoDisk
+                End If
                 DiskID = ScriptEntryArray(0)
+                NewPart = True
             Case "name:"
+                If NewD = False Then
+                    NewD = True
+                    If FinishDisk(False, SaveIt) = False Then GoTo NoDisk
+                    If ResetDiskVariables() = False Then GoTo NoDisk
+                End If
                 DemoName = ScriptEntryArray(0)
+                NewPart = True
             Case "start:"
+                If NewD = False Then
+                    NewD = True
+                    If FinishDisk(False, SaveIt) = False Then GoTo NoDisk
+                    If ResetDiskVariables() = False Then GoTo NoDisk
+                End If
                 DemoStart = ScriptEntryArray(0)
-			Case "packer:"
+                NewPart = True
+            Case "packer:"
+                If NewD = False Then
+                    NewD = True
+                    If FinishDisk(False, SaveIt) = False Then GoTo NoDisk
+                    If ResetDiskVariables() = False Then GoTo NoDisk
+                End If
                 If LCase(ScriptEntryArray(0)) = "faster" Then
                     Packer = 1
                 Else
                     Packer = 2
                 End If
+                NewPart = True
             Case "dirart:"
+                If NewD = False Then
+                    NewD = True
+                    If FinishDisk(False, SaveIt) = False Then GoTo NoDisk
+                    If ResetDiskVariables() = False Then GoTo NoDisk
+                End If
                 If ScriptEntryArray(0) <> "" Then
                     If InStr(ScriptEntryArray(0), ":") = 0 Then
                         ScriptEntryArray(0) = ScriptPath + ScriptEntryArray(0)
@@ -896,17 +944,29 @@ FindNext:
                         MsgBox("The following DirArt file was not found:" + vbNewLine + vbNewLine + ScriptEntryArray(0), vbOKOnly + vbExclamation, "DirArt file not found")
                     End If
                 End If
+                NewPart = True
             Case "zp:"
+                If NewD = False Then
+                    NewD = True
+                    If FinishDisk(False, SaveIt) = False Then GoTo NoDisk
+                    If ResetDiskVariables() = False Then GoTo NoDisk
+                End If
                 If DiskCnt = 0 Then LoaderZP = ScriptEntryArray(0)  'ZP usage can only be set from first disk
-            Case "list:"
+                NewPart = True
+            Case "list:", "script:"
                 InsertList(ScriptEntryArray(0))
             Case "file:"
                 'Add files to part array, if new part, it will first sort files in last part then add previous part to disk
                 If AddFile() = False Then GoTo NoDisk
+                NewD = False    'We have added at least one file to this disk, so next disk info entry will be a new disk
+                NewPart = False
             Case "new disk"
                 'If new disk, sort, compress and add last part, then update part count, add loader & drive code, save disk, then GoTo NewDisk
-                If FinishDisk(False, SaveIt) = False Then GoTo NoDisk
-                GoTo NewDisk
+                'If FinishDisk(False, SaveIt) = False Then GoTo NoDisk
+                'If ResetDiskVariables() = False Then GoTo NoDisk
+                'NewD = True
+                'NewPart = True
+                'GoTo NewDisk
             Case Else
                 If NewPart = True Then
                     If PartDone() = False Then GoTo NoDisk
@@ -932,18 +992,18 @@ NoDisk:
     Public Sub InsertList(ListPath As String)
         On Error GoTo Err
 
-        If InStr(ListPath, ":") = 0 Then
-            ListPath = ScriptPath + ListPath
-        End If
+        If InStr(ListPath, ":") = 0 Then ListPath = ScriptPath + ListPath
 
         If IO.File.Exists(ListPath) = False Then
             MsgBox("The following Sparkle File List was not found and could not be included:" + vbNewLine + vbNewLine + ListPath, vbOKOnly + vbExclamation + "Sparkle file List not found")
             Exit Sub
         End If
 
-        Dim ScriptList As String = IO.File.ReadAllText(ListPath)
+        'Dim ScriptList As String = IO.File.ReadAllText(ListPath)
+        'Dim SL As Integer = Script.Length - SS + 3
 
-        Script = Left(Script, LastSS + 1) + ScriptList + Right(Script, Script.Length - SS + 3)
+        'Script = Left(Script, LastSS + 1) + ScriptList + Right(Script, SL)
+        Script = Replace(Script, ScriptLine, IO.File.ReadAllText(ListPath))
 
         SS = LastSS
         SE = LastSE
@@ -1809,24 +1869,6 @@ Err:
                 Exit For
             End If
         Next
-
-        Exit Sub
-Err:
-        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
-    End Sub
-
-    Public Sub SimplifyScript()
-        On Error GoTo Err
-
-        If InStr(Script, ScriptPath) <> 0 Then
-            Dim S As String = "This script could be simplified using the script's foler as a relative path." + vbNewLine
-            S += vbNewLine + "Do you want to simplify the script before saving it?" + vbNewLine + vbNewLine
-            S += "(Note: the simplified script will only work if it remains in its current folder!)"
-            If MsgBox(S, vbYesNo + vbQuestion, "Simplify script?") = vbYes Then
-                Script = Replace(Script, ScriptPath, "")
-            End If
-        End If
 
         Exit Sub
 Err:

@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------
-//	SPARKLE V1.2
+//	SPARKLE V1.3
 //	Inspired by Lft's Spindle and Krill's Loader
 //	C64 Code
 //	Tested on 1541-II, 1571, 1541 Ultimate-II+, and THCM's SX-64
@@ -18,7 +18,7 @@
 //	Loader Call:		jsr $0180	Parameterless
 //	IRQ Installer:		jsr $01e0	X/A = Subroutine Vector Lo/Hi
 //					jsr $01e6	Without changing Subroutine Vector
-//	Fallback IRQ:		    $02e1
+//	Fallback IRQ:		    $02dd
 //
 //-----------------------------------------------------------------------
 
@@ -259,7 +259,7 @@ SpSDelay:	lda	#<RcvLoop-<ChgJmp	//2	20	Restore Receive loop
 		sta	$dd00		//Bus lock
 
 //------------------------------------------------------------
-//		LZ DECOMPRESSION ROUTINE
+//		DEPACKER
 //------------------------------------------------------------
 //		$00->	- Bit Stream
 //		($ff	- Block Count in first block only)

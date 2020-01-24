@@ -57,8 +57,8 @@
                     CmdLine = True
                     Script = IO.File.ReadAllText(Path)          'open script...!!
                     SetScriptPath(Path)
-                    If InStr(Script, "File:") = 0 Then
-                        MsgBox("This script does not contain any files", vbOKOnly, "Unable to build disk")
+                    If (InStr(LCase(Script), "file:") = 0) And (InStr(LCase(Script), "list:") = 0) And (InStr(LCase(Script), "script:") = 0) Then
+                        MsgBox("This script does not contain any files!", vbOKOnly + vbExclamation, "Unable to build disk")
                         End
                     Else
                         MakeDisk(sender, e, True)
@@ -335,8 +335,8 @@ ErrSaveFile:
             If R = Windows.Forms.DialogResult.OK Then
                 SetScriptPath(.FileName)
                 Script = IO.File.ReadAllText(ScriptName)
-                If InStr(Script, "File:") = 0 Then
-                    MsgBox("This script does not contain any files", vbOKOnly, "Unable to build disk")
+                If (InStr(LCase(Script), "file:") = 0) And (InStr(LCase(Script), "list:") = 0) And (InStr(LCase(Script), "script:") = 0) Then
+                    MsgBox("This script does not contain any files!", vbOKOnly + vbExclamation, "Unable to build disk")
                 Else
 
                     MakeDisk(sender, e)
