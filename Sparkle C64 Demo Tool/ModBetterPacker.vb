@@ -656,8 +656,8 @@ Err:
 	Public Sub CloseBuffer()
 		On Error GoTo Err
 
-		Buffer(ByteCnt) = EndTag
-		Buffer(0) = Buffer(0) And &H7F                    'Delete Compression Bit (Default (i.e. compressed) value is 0)
+		Buffer(ByteCnt) = EndTag            'Technically, not needed, the default value is #$00 anyway
+		Buffer(0) = Buffer(0) And &H7F      'Delete Compression Bit (Default (i.e. compressed) value is 0)
 
 		'FIND UNCOMPRESSIBLE BLOCKS (only used if there is ONE file in the BLOCK)
 		'THE COMPRESSION BITs ADD 80.5 BYTES TO THE DISK, BUT THIS MAKES DEPACKING OF UNCOMPRESSIBLE BLOCKS MUCH FASTER
@@ -751,16 +751,16 @@ Err:
 		'ADDS NEW PART TAG (Long Match Tag + End Tag) TO THE END OF THE PART, AND RESERVES LAST BYTE IN BUFFER FOR BLOCK COUNT
 
 		Dim Bytes As Integer = 6 'BYTES NEEDED: BlockCnt + Long Match Tag + End Tag + AdLo + AdHi + 1st Literal (ByC=7 if BlockUnderIO=true - checked at SequenceFits)
-
+		'If LastPartOnDisk = True Then Bytes += 1
 		Dim Bits As Integer = IIf((LitCnt = -1) Or (LitCnt Mod (MaxLitLen + 1) = MaxLitLen), 1, 0)   'Calculate whether Match Bit is needed for new part
 
-		If SequenceFits(Bytes, Bits, NextFileIO) Then
+		If SequenceFits(Bytes, Bits, NextFileIO) Then       'This will add the EndTag to the needed bytes
 
 			'Buffer has enough space for New Part Tag and New Part Info and first Literal byte (and IO flag if needed)
 
 			If Bits = 1 Then AddRBits(0, 1)
 
-NextPart:
+NextPart:   'Match Bit is not needed if this is the beginning of the next block
 			FilesInBuffer += 1  'There is going to be more than 1 file in the buffer
 
 			If (BufferCnt > 0) And (FilesInBuffer = 2) Then         'Reserve last byte in buffer for Block Count...
@@ -771,19 +771,24 @@ NextPart:
 				Buffer(255) = 1                                     'Last byte reserved for BlockCnt
 			End If
 
+			'MsgBox(Hex(Buffer(BitCnt)))
+
 			Buffer(ByteCnt) = LongMatchTag                          'Then add New File Match Tag
 			Buffer(ByteCnt - 1) = EndTag
 			ByteCnt -= 2
 
-			If LastPartOnDisk = True Then
+			If LastPartOnDisk = True Then       'This will finish the disk
 				Buffer(ByteCnt) = ByteCnt - 2   'Finish disk with a dummy literal byte that overwrites itself to reset LastX for next disk side
-				Buffer(ByteCnt - 1) = &H3
-				Buffer(ByteCnt - 2) = &H0
-				LitCnt = 0
-				AddRBits(0, 1)
+				Buffer(ByteCnt - 1) = &H3       'New address is the next byte in buffer
+				Buffer(ByteCnt - 2) = &H0       'Dummy $00 Literal that overwrites itself
+				LitCnt = 0                      'One (dummy) literal
 				'AddLitBits()                   'NOT NEEDED, WE ARE IN THE MIDDLE OF THE BUFFER, 1ST BIT NEEDS TO BE OMITTED
-				Buffer(ByteCnt - 3) = &H0       'ADD 2ND BIT SEPARATELY (0-BIT, TECHNCALLY, THIS IS NOT NEEDED)
-				ByteCnt -= 4
+				AddRBits(0, 1)                  'ADD 2ND BIT SEPARATELY (0-BIT, TECHNCALLY, THIS IS NOT NEEDED SINCE THIS IS THE LAST BIT)
+				'-------------------------------------------------------------------
+				'Buffer(ByteCnt - 3) = &H0      'THIS IS THE END TAG, NOT NEEDED HERE, WILL BE ADDED WHEN BUFFER IS CLOSED
+				'ByteCnt -= 4					'*BUGFIX, THANKS TO RAISTLIN FOR REPORTING
+				'-------------------------------------------------------------------
+				ByteCnt -= 3
 			End If
 
 			'DO NOT CLOSE LAST BUFFER HERE, WE ARE GOING TO ADD NEXT PART TO LAST BUFFER
@@ -796,7 +801,7 @@ NextPart:
 			LitCnt = -1                                                 'Reset LitCnt here
 		Else
 			'Next File Info does not fit, so close buffer
-			CloseBuffer()
+			CloseBuffer()               'Adds EndTag and starts new buffer
 			'Then add 1 dummy literal byte to new block (blocks must start with 1 literal, next part tag is a match tag)
 			Buffer(255) = &HFC          'Dummy Address ($03fc* - first literal's address in buffer... (*NextPart above, will reserve BlockCnt)
 			Buffer(254) = &H3           '...we are overwriting it with the same value

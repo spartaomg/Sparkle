@@ -4,7 +4,9 @@
 
 	Public Packer As Integer = 2     '1= faster, 2=better
 
-	Public Drive() As Byte
+    Public DiskLoop As Integer = 0
+
+    Public Drive() As Byte
 
     Public TotLit, TotMatch As Integer
 
@@ -193,13 +195,18 @@ Err:
 NextLine:
         If Mid(Script, SS, 1) = Chr(13) Then                'Check if this is an empty line indicating a new section
             NewPart = True
-            SS += 2                                         'Skip EOL bytes
+            SS += 2                                         'Skip vbCrLf
+            SE = SS + 1
+            GoTo NextLine
+        ElseIf Mid(Script, SS, 1) = Chr(10) Then            'Line ends with vbLf
+            NewPart = True
+            SS += 1                                         'Skip vbLf
             SE = SS + 1
             GoTo NextLine
         End If
 
 NextChar:
-        If Mid(Script, SE, 1) <> Chr(13) Then               'Look for EOL
+        If (Mid(Script, SE, 1) <> Chr(13)) And (Mid(Script, SE, 1) <> Chr(10)) Then   'Look for vbCrLf and vbLF
             SE += 1                                         'Not EOL
             If SE <= Script.Length Then                     'Go to next char if we haven't reached the end of the script
                 GoTo NextChar
@@ -212,7 +219,11 @@ NextChar:
         Else                                                'Found EOL
 Done:       ScriptEntry = Strings.Mid(Script, SS, SE - SS)  'Finish this entry
             ScriptLine = ScriptEntry
-            SS = SE + 2                                     'Skip EOL bytes
+            If Mid(Script, SE, 1) = Chr(13) Then            'Skip vbCrLf (2 chars)
+                SS = SE + 2
+            Else                                            'Otherwise skip 1 char onyl
+                SS = SE + 1
+            End If
             SE = SS + 1
         End If
 
@@ -233,6 +244,7 @@ Err:
 
         ScriptEntryArray = Split(ScriptEntry, vbTab)
 
+        'Remove empty strings (e.g. if there are to TABs between entries)
         For I As Integer = 0 To ScriptEntryArray.Length - 1
             If ScriptEntryArray(I) <> "" Then
                 LastNonEmpty += 1
@@ -861,6 +873,7 @@ Err:
         End If
 
         DiskCnt = -1
+        DiskLoop = 0    'Reset Loop variable
         'Dim NewD As Boolean = False
         'NewDisk:
         'Reset Disk Variables
@@ -953,6 +966,8 @@ FindNext:
                 End If
                 If DiskCnt = 0 Then LoaderZP = ScriptEntryArray(0)  'ZP usage can only be set from first disk
                 NewPart = True
+            Case "loop:"
+                DiskLoop = Convert.ToInt32(ScriptEntryArray(0), 10)
             Case "list:", "script:"
                 InsertList(ScriptEntryArray(0))
             Case "file:"
@@ -1061,14 +1076,21 @@ Err:
 			If FinishPart(0, True) = False Then GoTo NoDisk
 			CloseBuff()
 		Else
-			If ClosePart(0, True) = False Then GoTo NoDisk
-			CloseBuffer()
+            If ClosePart(0, True) = False Then GoTo NoDisk
+            CloseBuffer()
 		End If
 		'Now add compressed parts to disk
 		If AddCompressedPartsToDisk() = False Then GoTo NoDisk
         AddHeaderAndID()
         If InjectLoader(-1, 18, 5, 6) = False Then GoTo NoDisk
-        If InjectDriveCode(DiskCnt + 1, LoaderParts, IIf(LastDisk = False, DiskCnt + 2, 0)) = False Then GoTo NoDisk
+
+        If LastDisk = True Then
+            If DiskLoop > DiskCnt + 1 Then
+                DiskLoop = DiskCnt + 1
+            End If
+        End If
+
+        If InjectDriveCode(DiskCnt + 1, LoaderParts, IIf(LastDisk = False, DiskCnt + 2, DiskLoop)) = False Then GoTo NoDisk
         If DirArt <> "" Then AddDirArt()
 
         BytesSaved += Int(BitsSaved / 8)
@@ -1154,22 +1176,22 @@ Err:
             End If
 		End If
 
-		NewPart = True
-		LastFileOfPart = False
+        NewPart = True
+        LastFileOfPart = False
 		For I As Integer = 0 To Prgs.Count - 1
-			'Mark the last file in a part for better compression
-			If I = Prgs.Count - 1 Then LastFileOfPart = True
-			'The only two parameters that are needed are FA and FUIO... FileLenA(i) is not used
-			If Packer = 1 Then
+            'Mark the last file in a part for better compression
+            If I = Prgs.Count - 1 Then LastFileOfPart = True
+            'The only two parameters that are needed are FA and FUIO... FileLenA(i) is not used
+            If Packer = 1 Then
                 NewLZ(Prgs(I).ToArray, FileAddrA(I), FileIOA(I))  'NewPart is TRUE FOR THE FIRST FILE ONLY
                 If I < Prgs.Count - 1 Then FinishFile()
-			Else
+            Else
                 PackFile(Prgs(I).ToArray, FileAddrA(I), FileIOA(I))
                 If I < Prgs.Count - 1 Then CloseFile()
-			End If
-		Next
+            End If
+        Next
 
-		LastBlockCnt = BlockCnt
+        LastBlockCnt = BlockCnt
 
         If LastBlockCnt > 255 Then
             'Parts cannot be larger than 255 blocks compressed

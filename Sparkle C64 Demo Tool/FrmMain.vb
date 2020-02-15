@@ -16,11 +16,11 @@
         On Error GoTo Err
 
         If DotNetVersion() = False Then
-			MsgBox("Sparkle requires .NET Framework version 4.5 or later!", vbOKOnly, "Please install .NET Framework")
-			End
-		End If
+            MsgBox("Sparkle requires .NET Framework version 4.5 or later!", vbOKOnly, "Please install .NET Framework")
+            End
+        End If
 
-		DoRegistryMagic()
+        DoRegistryMagic()
 
 		Dim T As Integer
 		Dim CmdArg As String() = Environment.GetCommandLineArgs()
@@ -77,7 +77,14 @@
 		CX = 0 : CY = 0 : CB = 0
 		CursorPos(0)
 
-		Exit Sub
+        'ScriptPath = "C:\Sparkle\Example\"
+
+        'Using A As New FrmEditor
+        'A.ShowDialog(Me)
+        'End Using
+
+
+        Exit Sub
 Err:
 		MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 

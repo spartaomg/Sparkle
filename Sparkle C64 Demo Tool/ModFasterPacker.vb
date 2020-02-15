@@ -1499,9 +1499,8 @@ Err:
 
         If DoDebug Then Debug.Print("CloseBuff")
 
-        Buffer(ByteCnt) = EndTag
-
-        Buffer(0) = Buffer(0) And &H7F                    'Delete Compression Bit (Default (i.e. compressed) value is 0)
+        Buffer(ByteCnt) = EndTag                'Technically not needed, defaulte value is #$00 anyway
+        Buffer(0) = Buffer(0) And &H7F          'Delete Compression Bit (Default (i.e. compressed) value is 0)
 
         'FIND UNCOMPRESSIBLE BLOCKS (only applies to first file in buffer in which case LastByte points at the very first data byte in stream)
 
@@ -1672,7 +1671,7 @@ Err:
         Dim Bytes, Bits As Integer
 
         Bytes = 6 'BYTES NEEDED: BlockCnt + Long Match Tag + End Tag + AdLo + AdHi + 1st Literal (ByC=7 if BlockUnderIO=true - checked at SequenceFits)
-
+        'If LastPartOnDisk = True Then Bytes += 1
         IIf((LitCnt = -1) Or (LitCnt Mod (MaxLit + 1) = MaxLit), Bits = 1, Bits = 0)   'Calculate whether Match Bit is needed for new part
 
         If SequenceFits(Bytes, LitCnt, NextFileIO) Then
@@ -1698,13 +1697,16 @@ NextPart:
 
             If LastPartOnDisk = True Then
                 Buffer(ByteCnt) = ByteCnt - 2   'Finish disk with a dummy literal byte that overwrites itself to reset LastX for next disk side
-                Buffer(ByteCnt - 1) = &H3
-                Buffer(ByteCnt - 2) = &H0
-                LitCnt = 0
-                AddRBits(0, 1)
+                Buffer(ByteCnt - 1) = &H3       'New address is the next byte in buffer
+                Buffer(ByteCnt - 2) = &H0       'Dummy $00 Literal that overwrites itself
+                LitCnt = 0                      'One (dummy) literal
                 'AddLitBits()                   'NOT NEEDED, WE ARE IN THE MIDDLE OF THE BUFFER, 1ST BIT NEEDS TO BE OMITTED
-                Buffer(ByteCnt - 3) = &H0       'ADD 2ND BIT SEPARATELY (0-BIT, TECHNCALLY, THIS IS NOT NEEDED)
-                ByteCnt -= 4
+                AddRBits(0, 1)                  'ADD 2ND BIT SEPARATELY (0-BIT, TECHNCALLY, THIS IS NOT NEEDED)
+                '-------------------------------------------------------------------
+                'Buffer(ByteCnt - 3) = &H0      'THIS IS THE END TAG, NOT NEEDED HERE, WILL BE ADDED WHEN BUFFER IS CLOSED
+                'ByteCnt -= 4					'*BUGFIX, THANKS TO RAISTLIN FOR REPORTING
+                '-------------------------------------------------------------------
+                ByteCnt -= 3
             End If
 
             'DO NOT CLOSE LAST BUFFER HERE, WE ARE GOING TO ADD NEXT PART TO LAST BUFFER

@@ -69,7 +69,7 @@ Public Class FrmSE
     Private ReadOnly sDirArt As String = "DirArt: "
     Private ReadOnly sZP As String = "Zeropage: "
     Private ReadOnly sPacker As String = "Packer: "
-
+    Private ReadOnly sLoop As String = "Loop: "
     Private ReadOnly TT As New ToolTip
 
     Private ReadOnly tDiskPath As String = "Double click or press <Enter> to specify where your demo disk will be saved in D64 format."
@@ -93,6 +93,9 @@ Public Class FrmSE
     Private ReadOnly tFile As String = "Double click or press <Enter> to change this file." + vbNewLine +
                 "Press <Delete> to delete this file from this part."
     Private ReadOnly tZP As String = "Double click or press <Enter> to edit the loader's zeropage usage."
+    Private ReadOnly tLoop As String = "Double click or press <Enter> to specify the disk the demo will loop to after finishing the last disk." + vbNewLine +
+                "The default value of 0 will terminate the demo without looping. A value between 1-255 will result in looping to the specified disk" + vbNewLine +
+                "E.g. select 1 to loop to the first disk."
     Private ReadOnly tPacker As String = "Double click or press <Enter> to change the loader's packer selection." + vbNewLine +
                 "The 'faster' option results in a faster but less effective compression and somewhat faster loading." + vbNewLine +
                 "The 'better' option results in a slower but more effective compression and somewhat slower loading."
@@ -432,6 +435,14 @@ FileDataFO:
                                 Packer = 1
                         End Select
                         CalcPartSize(SelNode.Parent.Nodes(SelNode.Index + 1))
+                    Case sLoop
+                        .Text = Strings.Right(N.Text, Len(N.Text) - Len(S))
+                        .Width = TextRenderer.MeasureText("000", N.NodeFont).Width
+                        .Tag = S
+                        N.Text = .Tag
+                        .Left = TV.Left + N.Bounds.Left + N.Bounds.Width
+                        .MaxLength = 3
+                        .Visible = True
                     Case Else
                         .Visible = False
                 End Select
@@ -490,9 +501,16 @@ Err:
                 e.Handled = True
                 TV.Focus()
             Case Else
-                If (txtEdit.MaxLength = 4) Or (txtEdit.MaxLength = 2) Or (txtEdit.MaxLength = 8) Then
+                If (txtEdit.MaxLength = 4) Or (txtEdit.MaxLength = 2) Or (txtEdit.MaxLength = 8) Then   'Hex numbers
                     Select Case e.KeyCode
                         Case Keys.A, Keys.B, Keys.C, Keys.D, Keys.E, Keys.F
+                        Case Keys.D0, Keys.D1, Keys.D2, Keys.D3, Keys.D4, Keys.D5, Keys.D6, Keys.D7, Keys.D8, Keys.D9
+                        Case Else
+                            e.SuppressKeyPress = True
+                            e.Handled = True
+                    End Select
+                ElseIf txtEdit.MaxLength = 3 Then   'Loop feature, on decimals
+                    Select Case e.KeyCode
                         Case Keys.D0, Keys.D1, Keys.D2, Keys.D3, Keys.D4, Keys.D5, Keys.D6, Keys.D7, Keys.D8, Keys.D9
                         Case Else
                             e.SuppressKeyPress = True
@@ -567,6 +585,13 @@ Err:
                 ElseIf txtEdit.Text = "ff" Then
                     txtEdit.Text = "fe"
                 End If
+            Case 3
+                If txtEdit.Text = "" Then
+                    txtEdit.Text = "0"
+                End If
+                'If (txtEdit.Text.Length < 3) And (txtEdit.Text.Length > 0) Then
+                'txtEdit.Text = Strings.Left("000", 3 - txtEdit.Text.Length) + txtEdit.Text
+                'End If
             Case 4  'Address and Length values
                 If (txtEdit.Text.Length < 4) And (txtEdit.Text.Length > 0) Then
                     txtEdit.Text = Strings.Left("0000", 4 - txtEdit.Text.Length) + txtEdit.Text
@@ -926,6 +951,7 @@ Done:
         AddNode(N, sPacker + DC.ToString, sPacker + IIf(My.Settings.DefaultPacker = 1, "faster", "better"), N.Tag, Color.DarkGreen, Fnt)
         If DC = 1 Then
             AddNode(N, sZP + DC.ToString, sZP + "$02", N.Tag, Color.DarkGreen, Fnt)
+            AddNode(N, sLoop + DC.ToString, sLoop + "0", N.Tag, Color.DarkGreen, Fnt)
         End If
 
         AddNewPartNode(N)       '[Add new part...]
@@ -2140,7 +2166,7 @@ FindNext:
             ScriptEntryType = ScriptEntry
         Else
             ScriptEntryType = Strings.Left(ScriptEntry, InStr(ScriptEntry, vbTab) - 1)
-            ScriptEntry = Strings.Right(ScriptEntry, ScriptEntry.Length - InStr(ScriptEntry, vbTab))
+            ScriptEntry = Strings.Right(ScriptEntry, ScriptEntry.Length - InStr(ScriptEntry, vbTab)).TrimStart(vbTab)
         End If
 
         SplitEntry()
@@ -2234,6 +2260,14 @@ FindNext:
                 NewPart = True
             Case "list:", "script:"
                 InsertList(ScriptEntryArray(0))
+            Case "loop:"
+                If NewD = False Then
+                    NewD = True
+                    DiskNode = NewDiskToTree(DiskNode)
+                End If
+                Dim Fnt As New Font("Consolas", 10)
+                UpdateNode(DiskNode.Nodes(sLoop + DC.ToString), sLoop + LCase(ScriptEntryArray(0)), DiskNode.Tag, Color.DarkGreen, Fnt) ', tDemoStart)
+                NewPart = True
             Case "file:"
                 NewD = False
                 AddFileFromScript(DiskNode)
@@ -2610,7 +2644,8 @@ Err:
             "Packer:" + vbTab + Strings.Right(N.Nodes(6).Text, N.Nodes(6).Text.Length - Len(sPacker))
             If D = 0 Then
                 'ZP only for first disk
-                S += vbNewLine + "ZP:" + vbTab + Strings.Right(N.Nodes(7).Text, N.Nodes(7).Text.Length - Len(sZP + "$"))
+                S += vbNewLine + "ZP:" + vbTab + Strings.Right(N.Nodes(7).Text, N.Nodes(7).Text.Length - Len(sZP + "$")) + vbNewLine +
+                                 "Loop:" + vbTab + Strings.Right(N.Nodes(8).Text, N.Nodes(8).Text.Length - Len(sLoop))
             End If
 
             For P As Integer = DP To N.Nodes.Count - 2
@@ -2974,6 +3009,12 @@ Err:
                     TTT = "Type in the first of the two adjacent zeropage addresses you want the loader to use." +
                              vbNewLine + "If this field is left empty, Sparkle will use $02-$03 as default." +
                              vbNewLine + "Press <Enter> or <Tab> to save changes, or <Escape> to cancel editing."
+                Case sLoop
+                    .ToolTipTitle = "Editing where the demo should loop after loading the last disk"
+                    TTT = "Type in a decimal number between 0 and 255." +
+                            vbNewLine + "The default value of 0 will terminate the demo without looping." +
+                            vbNewLine + "A number between 1 and 255 will specify the disk the demo will loop to." +
+                            vbNewLine + "Press <Enter> or <Tab> to save changes, or <Escape> to cancel editing."
                 Case Else
                     Exit Select
             End Select
@@ -3061,6 +3102,9 @@ Err:
                     Case sPacker
                         .ToolTipTitle = "Packer to be used"
                         TTT = tPacker
+                    Case sLoop
+                        .ToolTipTitle = "Looping after Last Disk"
+                        TTT = tLoop
                     Case Else
                 End Select
             End If
@@ -3613,5 +3657,4 @@ Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
-
 End Class
