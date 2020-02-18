@@ -121,6 +121,9 @@
     Public LoaderParts As Integer = 1
     Public FilesInBuffer As Byte = 1
 
+    Public SetNewBlock As Boolean = False      'This will fire at the previous part and will set NewBlock2
+    Public NewBlock As Boolean = False     'This will fire at the specified part
+
     Private DirTrack, DirSector, DirPos As Integer
     Public DirArt As String
     Private DirEntry As String = ""
@@ -982,6 +985,8 @@ FindNext:
                 'NewD = True
                 'NewPart = True
                 'GoTo NewDisk
+            Case "new block", "next block"
+                SetNewBlock = True
             Case Else
                 If NewPart = True Then
                     If PartDone() = False Then GoTo NoDisk
@@ -1166,6 +1171,8 @@ Err:
         'DO NOT RESET ByteSt AND BUFFER VARIABLES HERE!!!
 
         If (BufferCnt = 0) And (ByteCnt = 254) Then
+            NewBlock = SetNewBlock        'NewBlock is true at closing the previous part, so first it just sets NewBlock2
+            SetNewBlock = False            'And NewBlock2 will fire at the desired part
         Else
             PrgAdd = Convert.ToInt32(FileAddrA(0), 16)
             PrgLen = Convert.ToInt32(FileLenA(0), 16)

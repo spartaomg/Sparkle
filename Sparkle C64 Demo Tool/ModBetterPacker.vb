@@ -748,6 +748,8 @@ Err:
 
 		ClosePart = True
 
+		If NewBlock = True Then GoTo NewB   'The part will start in a new block
+
 		'ADDS NEW PART TAG (Long Match Tag + End Tag) TO THE END OF THE PART, AND RESERVES LAST BYTE IN BUFFER FOR BLOCK COUNT
 
 		Dim Bytes As Integer = 6 'BYTES NEEDED: BlockCnt + Long Match Tag + End Tag + AdLo + AdHi + 1st Literal (ByC=7 if BlockUnderIO=true - checked at SequenceFits)
@@ -800,7 +802,7 @@ NextPart:   'Match Bit is not needed if this is the beginning of the next block
 
 			LitCnt = -1                                                 'Reset LitCnt here
 		Else
-			'Next File Info does not fit, so close buffer
+NewB:          'Next File Info does not fit, so close buffer
 			CloseBuffer()               'Adds EndTag and starts new buffer
 			'Then add 1 dummy literal byte to new block (blocks must start with 1 literal, next part tag is a match tag)
 			Buffer(255) = &HFC          'Dummy Address ($03fc* - first literal's address in buffer... (*NextPart above, will reserve BlockCnt)
@@ -822,6 +824,9 @@ NextPart:   'Match Bit is not needed if this is the beginning of the next block
 			'THEN GOTO NEXT PART SECTION
 			GoTo NextPart
 		End If
+
+		NewBlock = SetNewBlock        'NewBlock is true at closing the previous part, so first it just sets NewBlock2
+		SetNewBlock = False            'And NewBlock2 will fire at the desired part
 
 		Exit Function
 Err:
