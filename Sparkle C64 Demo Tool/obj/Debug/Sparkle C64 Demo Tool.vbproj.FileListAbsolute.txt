@@ -33,11 +33,9 @@ C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\bi
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\obj\Debug\Sparkle.FrmAbout.resources
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\obj\Debug\Sparkle.FrmDisk.resources
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\obj\Debug\Sparkle.FrmMain.resources
-C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\obj\Debug\Sparkle.FrmSE.resources
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\obj\Debug\Sparkle.Resources.resources
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\obj\Debug\Sparkle C64 Demo Tool.vbproj.GenerateResource.cache
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\obj\Debug\Sparkle.exe
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\obj\Debug\Sparkle.xml
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\obj\Debug\Sparkle.pdb
-C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\obj\Debug\Sparkle C64 Demo Tool.vbprojAssemblyReference.cache
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\obj\Debug\Sparkle.FrmEditor.resources

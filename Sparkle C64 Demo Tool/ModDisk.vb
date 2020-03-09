@@ -10,7 +10,8 @@
 
     Public TotLit, TotMatch As Integer
 
-    Public BlocksFree As Integer = 664
+    Public ReadOnly MaxDiskSize As Integer = 664
+    Public BlocksFree As Integer = MaxDiskSize
 
     Public Disk(174847), NextTrack, NextSector As Byte   'Next Empty Track and Sector
     Public MaxSector As Byte = 18, LastSector, Prg() As Byte
@@ -75,15 +76,22 @@
     Public CurrentDisk As Integer = -1
     Public CurrentPart As Integer = -1
     Public CurrentFile As Integer = -1
+    Public CurrentScript As Integer = -1
 
     Public D64NameA(), DiskHeaderA(), DiskIDA(), DemoNameA(), DemoStartA(), DirArtA() As String
     Public FileNameA(), FileAddrA(), FileOffsA(), FileLenA() As String
-    Public Prgs As New List(Of Byte())
+    Public tmpFileNameA(), tmpFileAddrA(), tmpFileOffsA(), tmpFileLenA() As String
     Public FileIOA() As Boolean
+    Public tmpFileIOA() As Boolean
+    Public BitsNeededForNextPart As Integer = 0
+
+    Public Prgs As New List(Of Byte())
+    Public tmpPrgs As New List(Of Byte())
 
     Public DiskNoA(), DFDiskNoA(), DFPartNoA(), DiskPartCntA(), DiskFileCntA() As Integer
     Public FilesInPartA() As Integer
     Public PDiskNoA(), PSizeA() As Integer
+    Public PNewBlockA() As Boolean
     Public FDiskNoA(), FPartNoA(), FSizeA() As Integer
     Public TotalParts As Integer = 0
     Public NewFile As String
@@ -121,6 +129,7 @@
     Public LoaderParts As Integer = 1
     Public FilesInBuffer As Byte = 1
 
+    Public TmpSetNewblock As Boolean = False
     Public SetNewBlock As Boolean = False      'This will fire at the previous part and will set NewBlock2
     Public NewBlock As Boolean = False     'This will fire at the specified part
 
@@ -136,9 +145,9 @@
     Private Loader() As Byte
 
     Public CompressPartFromEditor As Boolean = False
-	Public LastFileOfPart As Boolean = False
+    Public LastFileOfPart As Boolean = False
 
-	Public Sub SetLastSector()
+    Public Sub SetLastSector()
         On Error GoTo Err
 
         Select Case CT
@@ -554,13 +563,17 @@ Err:
         Dim ST, SS, A, L, AdLo, AdHi As Byte
         Dim DN As String
 
+        'Check if we have a Demo Start Address
         If DiskIndex > -1 Then
-            B = Convert.ToInt32(DemoStartA(DiskIndex), 16)
+            If DemoStartA(DiskIndex) <> "" Then B = Convert.ToInt32(DemoStartA(DiskIndex), 16)
         Else
-            B = Convert.ToInt32(DemoStart, 16)
+            If DemoStart <> "" Then B = Convert.ToInt32(DemoStart, 16)
         End If
 
-        If B = 0 Then B = Convert.ToInt32(FirstFileStart, 16)
+        'No Demo Start Address, check if we have the first file's start address
+        If B = 0 Then
+            If FirstFileStart <> "" Then B = Convert.ToInt32(FirstFileStart, 16)
+        End If
 
         If B = 0 Then
             MsgBox("Unable to build demo disk." + vbNewLine + vbNewLine + "Missing start address", vbOKOnly)
@@ -603,9 +616,9 @@ Err:
                     Disk(Track(CT) + CS * 256 + 2 + Cnt) = Loader(I * 254 + Cnt)
                 End If
             Next
-			DeleteBit(CT, CS, True)
+            DeleteBit(CT, CS, True)
 
-			AddInterleave(IL)   'Go to next free sector with Interleave IL
+            AddInterleave(IL)   'Go to next free sector with Interleave IL
             If I < L - 1 Then
                 Disk(Track(ST) + SS * 256 + 0) = CT
                 Disk(Track(ST) + SS * 256 + 1) = CS
@@ -698,56 +711,37 @@ Err:
             LoaderZP = "fe"
         End If
 
-		'ZP=02 is the default, no need for update
-		If ZP = 2 Then Exit Sub
+        'ZP=02 is the default, no need for update
+        If ZP = 2 Then Exit Sub
 
         Dim Offset As Integer = 0
         Offset = 5                  'For V1.2
 
         Loader(334 + Offset) = ZP
-		Loader(363 + Offset) = ZP
+        Loader(363 + Offset) = ZP
         Loader(349 + Offset) = ZP + 1
 
         Offset = -4                 'For V1.2
 
         Loader(396 + Offset) = ZP
         Loader(398 + Offset) = ZP
-		Loader(442 + Offset) = ZP
-		Loader(444 + Offset) = ZP
-		Loader(461 + Offset) = ZP
-		Loader(478 + Offset) = ZP
-		Loader(480 + Offset) = ZP
-		Loader(492 + Offset) = ZP
-		Loader(508 + Offset) = ZP
+        Loader(442 + Offset) = ZP
+        Loader(444 + Offset) = ZP
+        Loader(461 + Offset) = ZP
+        Loader(478 + Offset) = ZP
+        Loader(480 + Offset) = ZP
+        Loader(492 + Offset) = ZP
+        Loader(508 + Offset) = ZP
         Loader(406 + Offset) = ZP + 1
         Loader(448 + Offset) = ZP + 1
-		Loader(484 + Offset) = ZP + 1
-		Loader(497 + Offset) = ZP + 1
+        Loader(484 + Offset) = ZP + 1
+        Loader(497 + Offset) = ZP + 1
 
-		Exit Sub
+        Exit Sub
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
-
-    'Public Function ConvertNumberToHexString(HLo As Byte, Optional HHi As Byte = 0) As String
-    'On Error GoTo Err
-
-    'ConvertNumberToHexString = LCase(Hex(HLo + (HHi * 256)))
-
-    'If Len(ConvertNumberToHexString) < 4 Then
-    'ConvertNumberToHexString = Left("0000", 4 - Len(ConvertNumberToHexString)) + ConvertNumberToHexString
-    'End If
-
-    'ConvertIntToHex(HLo + (HHi * 256), 4)
-
-    'Exit Function
-    'Err:
-    'MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
-    'ConvertNumberToHexString = ""
-
-    'End Function
 
     Public Function ConvertIntToHex(HInt As Integer, SLen As Integer) As String
         On Error GoTo Err
@@ -781,7 +775,7 @@ Err:
             Disk(CP + Cnt) = &HA0
         Next
 
-        If DiskHeaderA(DiskIndex) = "" Then DiskHeaderA(DiskIndex) = "demo disk" + IIf(DiskCnt > 0, " " + (DiskIndex + 1).ToString, "")
+        If DiskHeaderA(DiskIndex) = "" Then DiskHeaderA(DiskIndex) = "demo disk" + If(DiskCnt > 0, " " + (DiskIndex + 1).ToString, "")
 
         For Cnt = 1 To Strings.Len(DiskHeaderA(DiskIndex))
             B = Asc(Strings.Mid(DiskHeaderA(DiskIndex), Cnt, 1))
@@ -861,7 +855,7 @@ Err:
 
         BuildDemoFromScript = True
 
-		Packer = My.Settings.DefaultPacker     'Default packer (1 - faster, 2 - better)
+        Packer = My.Settings.DefaultPacker     'Default packer (1 - faster, 2 - better)
 
         TotLit = 0 : TotMatch = 0
 
@@ -874,8 +868,9 @@ Err:
             MsgBox("Invalid Loader Script file!", vbExclamation + vbOKOnly)
             GoTo NoDisk
         End If
-
+        CurrentPart = 0
         DiskCnt = -1
+        TotalParts = 0
         DiskLoop = 0    'Reset Loop variable
         'Dim NewD As Boolean = False
         'NewDisk:
@@ -883,6 +878,7 @@ Err:
         If ResetDiskVariables() = False Then GoTo NoDisk
         Dim NewD As Boolean = True
         NewPart = False
+        TmpSetNewblock = False
         'NewPart = True
 FindNext:
         LastSS = SS
@@ -972,9 +968,10 @@ FindNext:
             Case "loop:"
                 DiskLoop = Convert.ToInt32(ScriptEntryArray(0), 10)
             Case "list:", "script:"
-                InsertList(ScriptEntryArray(0))
+                If InsertScript(ScriptEntryArray(0)) = False Then GoTo NoDisk
+                NewPart = True    'Files in the embedded script will ALWAYS be in a new part (i.e. scripts cannot be embedded in a part)!!!
             Case "file:"
-                'Add files to part array, if new part, it will first sort files in last part then add previous part to disk
+                'Add files to part array, if new part=true, we will first sort, compress and add previous part to disk
                 If AddFile() = False Then GoTo NoDisk
                 NewD = False    'We have added at least one file to this disk, so next disk info entry will be a new disk
                 NewPart = False
@@ -985,8 +982,12 @@ FindNext:
                 'NewD = True
                 'NewPart = True
                 'GoTo NewDisk
-            Case "new block", "next block"
-                SetNewBlock = True
+            Case "new block", "next block", "new sector", "align part", "align"
+                If NewD = False Then
+                    TmpSetNewblock = True
+                    'Else
+                    'SetNewBlock = False     'The first part on a disk ALWAYS starts in a new block, SetNewBlock is not needed
+                End If
             Case Else
                 If NewPart = True Then
                     If PartDone() = False Then GoTo NoDisk
@@ -1009,30 +1010,73 @@ NoDisk:
 
     End Function
 
-    Public Sub InsertList(ListPath As String)
+    Public Function InsertScript(SubScriptPath As String) As Boolean
         On Error GoTo Err
 
-        If InStr(ListPath, ":") = 0 Then ListPath = ScriptPath + ListPath
+        InsertScript = True
 
-        If IO.File.Exists(ListPath) = False Then
-            MsgBox("The following Sparkle File List was not found and could not be included:" + vbNewLine + vbNewLine + ListPath, vbOKOnly + vbExclamation + "Sparkle file List not found")
-            Exit Sub
+        Dim SPath As String = SubScriptPath
+
+        'Calculate full path
+        If InStr(SubScriptPath, ":") = 0 Then SubScriptPath = ScriptPath + SubScriptPath
+
+        If IO.File.Exists(SubScriptPath) = False Then
+            MsgBox("The following script was not found and could not be processed:" + vbNewLine + vbNewLine + SubScriptPath, vbOKOnly + vbExclamation + "Script not found")
+            InsertScript = False
+            Exit Function
         End If
 
-        'Dim ScriptList As String = IO.File.ReadAllText(ListPath)
-        'Dim SL As Integer = Script.Length - SS + 3
+        'Find relative path of subscript
+        For I As Integer = Len(SPath) - 1 To 0 Step -1
+            If Right(SPath, 1) <> "\" Then
+                SPath = Left(SPath, Len(SPath) - 1)
+            Else
+                Exit For
+            End If
+        Next
 
-        'Script = Left(Script, LastSS + 1) + ScriptList + Right(Script, SL)
-        Script = Replace(Script, ScriptLine, IO.File.ReadAllText(ListPath))
+        Dim Lines() As String = Split(IO.File.ReadAllText(SubScriptPath), vbLf)
+
+        Dim S As String = ""
+        For I As Integer = 0 To Lines.Count - 1
+            Lines(I) = Lines(I).TrimEnd(Chr(13))    'Trim vbCR from end of lines if vbCrLf was used
+            'Add relative path of subscript to relative path of subscript entries
+            If Strings.Left(LCase(Lines(I)), 5) = "file:" Then
+                If (InStr(Right(Lines(I), Len(Lines(I)) - 5), ":") = 0) And (InStr(Right(Lines(I), Len(Lines(I)) - 5), SPath) = 0) Then
+                    Lines(I) = "File:" + vbTab + SPath + Right(Lines(I), Len(Lines(I)) - 5).TrimStart(vbTab)    'Trim any extra leading TABs
+                End If
+            ElseIf Strings.Left(LCase(Lines(I)), 7) = "script:" Then
+                If (InStr(Right(Lines(I), Len(Lines(I)) - 7), ":") = 0) And (InStr(Right(Lines(I), Len(Lines(I)) - 7), SPath) = 0) Then
+                    Lines(I) = "Script:" + vbTab + SPath + Right(Lines(I), Len(Lines(I)) - 7).TrimStart(vbTab)
+                End If
+            ElseIf Strings.Left(LCase(Lines(I)), 5) = "list:" Then
+                If (InStr(Right(Lines(I), Len(Lines(I)) - 5), ":") = 0) And (InStr(Right(Lines(I), Len(Lines(I)) - 5), SPath) = 0) Then
+                    Lines(I) = "Script:" + vbTab + SPath + Right(Lines(I), Len(Lines(I)) - 5).TrimStart(vbTab)
+                End If
+            ElseIf Strings.Left(LCase(Lines(I)), 5) = "path:" Then
+                If (InStr(Right(Lines(I), Len(Lines(I)) - 5), ":") = 0) And (InStr(Right(Lines(I), Len(Lines(I)) - 5), SPath) = 0) Then
+                    Lines(I) = "Path:" + vbTab + SPath + Right(Lines(I), Len(Lines(I)) - 5).TrimStart(vbTab)
+                End If
+            ElseIf Strings.Left(LCase(Lines(I)), 7) = "dirart:" Then
+                If (InStr(Right(Lines(I), Len(Lines(I)) - 7), ":") = 0) And (InStr(Right(Lines(I), Len(Lines(I)) - 7), SPath) = 0) Then
+                    Lines(I) = "DirArt:" + vbTab + SPath + Right(Lines(I), Len(Lines(I)) - 7).TrimStart(vbTab)
+                End If
+            End If
+            S += Lines(I) + vbNewLine
+        Next
+
+        Script = Replace(Script, ScriptLine, S)
 
         SS = LastSS
         SE = LastSE
 
-        Exit Sub
+        Exit Function
 Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
-    End Sub
+        InsertScript = False
+
+    End Function
 
     Private Sub AddHeaderAndID()
         On Error GoTo Err
@@ -1075,17 +1119,22 @@ Err:
         On Error GoTo Err
 
         FinishDisk = True
-        If SortPart() = False Then GoTo NoDisk
+
+        If PartDone() = False Then GoTo NoDisk
+
+        'If SortPart() = False Then GoTo NoDisk
+
         If CompressPart() = False Then GoTo NoDisk
-		If Packer = 1 Then
-			If FinishPart(0, True) = False Then GoTo NoDisk
-			CloseBuff()
-		Else
+
+        If Packer = 1 Then
+            If FinishPart(0, True) = False Then GoTo NoDisk
+            CloseBuff()
+        Else
             If ClosePart(0, True) = False Then GoTo NoDisk
             CloseBuffer()
-		End If
-		'Now add compressed parts to disk
-		If AddCompressedPartsToDisk() = False Then GoTo NoDisk
+        End If
+        'Now add compressed parts to disk
+        If AddCompressedPartsToDisk() = False Then GoTo NoDisk
         AddHeaderAndID()
         If InjectLoader(-1, 18, 5, 6) = False Then GoTo NoDisk
 
@@ -1095,7 +1144,7 @@ Err:
             End If
         End If
 
-        If InjectDriveCode(DiskCnt + 1, LoaderParts, IIf(LastDisk = False, DiskCnt + 2, DiskLoop)) = False Then GoTo NoDisk
+        If InjectDriveCode(DiskCnt + 1, LoaderParts, If(LastDisk = False, DiskCnt + 2, DiskLoop)) = False Then GoTo NoDisk
         If DirArt <> "" Then AddDirArt()
 
         BytesSaved += Int(BitsSaved / 8)
@@ -1171,21 +1220,32 @@ Err:
         'DO NOT RESET ByteSt AND BUFFER VARIABLES HERE!!!
 
         If (BufferCnt = 0) And (ByteCnt = 254) Then
-            NewBlock = SetNewBlock        'NewBlock is true at closing the previous part, so first it just sets NewBlock2
-            SetNewBlock = False            'And NewBlock2 will fire at the desired part
+            NewBlock = SetNewBlock          'SetNewBlock is true at closing the previous part, so first it just sets NewBlock2
+            SetNewBlock = False             'And NewBlock will fire at the desired part
         Else
-            PrgAdd = Convert.ToInt32(FileAddrA(0), 16)
-            PrgLen = Convert.ToInt32(FileLenA(0), 16)
-            If Packer = 1 Then
-                If FinishPart(CheckIO(PrgLen - 1), False) = False Then GoTo NoComp
-            Else
-                If ClosePart(CheckIO(PrgLen - 1), False) = False Then GoTo NoComp
+            If FromEditor = False Then      'Don't finish previous part here if we are calculating part size from Editor
+
+                '----------------------------------------------------------------------------------
+                '"SPRITE BUG"
+                'Compression bug involving the transitional block - FIXED
+                'Fix: include the I/O status of the first file of this part in the calculation for
+                'finishing the previous part
+                '----------------------------------------------------------------------------------
+
+                'Before finishing the previous part, calculate I/O status of the first file of this part
+                '(Files already sorted)
+                Dim ThisPartIO As Integer = If(FileIOA.Count > 0, CheckNextIO(FileAddrA(0), FileLenA(0), FileIOA(0)), 0)
+                If Packer = 1 Then
+                    If FinishPart(ThisPartIO, False) = False Then GoTo NoComp
+                Else
+                    If ClosePart(ThisPartIO, False) = False Then GoTo NoComp
+                End If
             End If
-		End If
+        End If
 
         NewPart = True
         LastFileOfPart = False
-		For I As Integer = 0 To Prgs.Count - 1
+        For I As Integer = 0 To Prgs.Count - 1
             'Mark the last file in a part for better compression
             If I = Prgs.Count - 1 Then LastFileOfPart = True
             'The only two parameters that are needed are FA and FUIO... FileLenA(i) is not used
@@ -1203,7 +1263,7 @@ Err:
         If LastBlockCnt > 255 Then
             'Parts cannot be larger than 255 blocks compressed
             'There is some confusion here how PartCnt is used in the Editor and during Disk building...
-            MsgBox("Part " + IIf(CompressPartFromEditor = True, PartCnt + 1, PartCnt).ToString + " would need " + LastBlockCnt.ToString + " blocks on the disk." + vbNewLine + vbNewLine + "Parts cannot be larger than 255 blocks compressed!", vbOKOnly + vbCritical, "Part exceeds 255-block limit!")
+            MsgBox("Part " + If(CompressPartFromEditor = True, PartCnt + 1, PartCnt).ToString + " would need " + LastBlockCnt.ToString + " blocks on the disk." + vbNewLine + vbNewLine + "Parts cannot be larger than 255 blocks compressed!", vbOKOnly + vbCritical, "Part exceeds 255-block limit!")
             If CompressPartFromEditor = False Then GoTo NoComp
         End If
 
@@ -1245,16 +1305,32 @@ NoDisk:
         PartDone = True
 
         'First finish last part, if it exists
-        If PartCnt > 0 Then
+        'If PartCnt > 0 Then
+        If tmpPrgs.Count > 0 Then
+
+            CurrentPart += 1
+
+            'MsgBox(CurrentPart.ToString)
+
             'Sort files in part
             If SortPart() = False Then GoTo NoDisk
+            '-------------------------------------------
             'Then compress files and add them to part
             If CompressPart() = False Then GoTo NoDisk     'THIS WILL RESET NewPart TO FALSE
 
+            Prgs = tmpPrgs.ToList
+            FileNameA = tmpFileNameA
+            FileAddrA = tmpFileAddrA
+            FileOffsA = tmpFileOffsA
+            FileLenA = tmpFileLenA
+            FileIOA = tmpFileIOA
+            SetNewBlock = TmpSetNewblock
+            TmpSetNewblock = False
+            '-------------------------------------------
+            'Then reset part variables (file arrays, prg array, block cnt), increase part counter
+            ResetPartVariables()
+            'NewPart = False
         End If
-
-        'Then reset part variables (file arrays, prg array, block cnt), increase part counter
-        ResetPartVariables()
 
         Exit Function
 Err:
@@ -1263,12 +1339,31 @@ NoDisk:
         PartDone = False
 
     End Function
+
+    Public Function CheckNextIO(sAddress As String, sLength As String, NextFileUnderIO As Boolean) As Integer
+        On Error GoTo Err
+
+        Dim pAddress As Integer = Convert.ToInt32(sAddress, 16) + Convert.ToInt32(sLength, 16)
+
+        If pAddress < 256 Then       'Are we loading to the Zero Page? If yes, we need to signal it by adding IO Flag
+            CheckNextIO = 1
+        Else
+            CheckNextIO = If((pAddress >= &HD000) And (pAddress <= &HDFFF) And (NextFileUnderIO = True), 1, 0)
+        End If
+
+        Exit Function
+Err:
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Function
+
     Public Function SortPart() As Boolean
         On Error GoTo Err
 
         SortPart = True
 
-        If Prgs.Count = 1 Then Exit Function 'GoTo NoSort DOES NOT WORK!!!
+        If tmpPrgs.Count = 0 Then Exit Function
+        If tmpPrgs.Count = 1 Then GoTo SortDone
 
         Dim Change As Boolean
         Dim FSO, FEO, FSI, FEI As Integer   'File Start and File End Outer loop/Inner loop
@@ -1279,24 +1374,24 @@ NoDisk:
         '--------------------------------------------------------------------------------
         'Check files for overlap
 
-        For O As Integer = 0 To Prgs.Count - 2
-            FSO = Convert.ToInt32(FileAddrA(O), 16)              'Outer loop File Start
-            FEO = FSO + Convert.ToInt32(FileLenA(O), 16) - 1     'Outer loop File End
-            For I As Integer = O + 1 To Prgs.Count - 1
-                FSI = Convert.ToInt32(FileAddrA(I), 16)          'Inner loop File Start
-                FEI = FSI + Convert.ToInt32(FileLenA(I), 16) - 1 'Inner loop File End
+        For O As Integer = 0 To tmpPrgs.Count - 2
+            FSO = Convert.ToInt32(tmpFileAddrA(O), 16)              'Outer loop File Start
+            FEO = FSO + Convert.ToInt32(tmpFileLenA(O), 16) - 1     'Outer loop File End
+            For I As Integer = O + 1 To tmpPrgs.Count - 1
+                FSI = Convert.ToInt32(tmpFileAddrA(I), 16)          'Inner loop File Start
+                FEI = FSI + Convert.ToInt32(tmpFileLenA(I), 16) - 1 'Inner loop File End
                 '----|------+---------|--------OR-------|------+---------|-----------------
                 '    FSO    FSI       FEO               FSO    FEI       FEO
                 If ((FSI >= FSO) And (FSI <= FEO)) Or ((FEI >= FSO) And (FEI <= FEO)) Then
-                    Dim OLS As Integer = IIf(FSO >= FSI, FSO, FSI)  'Overlap Start address
-                    Dim OLE As Integer = IIf(FEO <= FEI, FEO, FEI)  'Overlap End address
+                    Dim OLS As Integer = If(FSO >= FSI, FSO, FSI)  'Overlap Start address
+                    Dim OLE As Integer = If(FEO <= FEI, FEO, FEI)  'Overlap End address
 
-                    If (OLS >= &HD000) And (OLE <= &HDFFF) And (FileIOA(O) <> FileIOA(I)) Then
+                    If (OLS >= &HD000) And (OLE <= &HDFFF) And (tmpFileIOA(O) <> tmpFileIOA(I)) Then
                         'Overlap is IO memory only and different IO status - NO OVERLAP
                     Else
                         MsgBox("The following two files overlap in Part " + PartCnt.ToString + ":" _
-                           + vbNewLine + vbNewLine + FileNameA(I) + " ($" + Hex(FSI) + " - $" + Hex(FEI) + ")" + vbNewLine + vbNewLine _
-                           + FileNameA(O) + " ($" + Hex(FSO) + " - $" + Hex(FEO) + ")", vbOKOnly + vbExclamation)
+                           + vbNewLine + vbNewLine + tmpFileNameA(I) + " ($" + Hex(FSI) + " - $" + Hex(FEI) + ")" + vbNewLine + vbNewLine _
+                           + tmpFileNameA(O) + " ($" + Hex(FSO) + " - $" + Hex(FEO) + ")", vbOKOnly + vbExclamation)
                     End If
                 End If
             Next
@@ -1307,30 +1402,30 @@ NoDisk:
 Restart:
         Change = False
 
-        For O As Integer = 0 To Prgs.Count - 2
-            FSO = Convert.ToInt32(FileAddrA(O), 16)
-            FEO = Convert.ToInt32(FileLenA(O), 16)
-            For I As Integer = O + 1 To Prgs.Count - 1
-                FSI = Convert.ToInt32(FileAddrA(I), 16)
-                FEI = Convert.ToInt32(FileLenA(I), 16)
+        For O As Integer = 0 To tmpPrgs.Count - 2
+            FSO = Convert.ToInt32(tmpFileAddrA(O), 16)
+            FEO = Convert.ToInt32(tmpFileLenA(O), 16)
+            For I As Integer = O + 1 To tmpPrgs.Count - 1
+                FSI = Convert.ToInt32(tmpFileAddrA(I), 16)
+                FEI = Convert.ToInt32(tmpFileLenA(I), 16)
 
                 If FSO + FEO = FSI Then
                     'Inner file follows outer file immediately
                     If (FSI <= &HD000) Or (FSI > &HDFFF) Then
                         'Append files as they meet outside IO memory
-Append:                 PO = Prgs(O)
-                        PI = Prgs(I)
+Append:                 PO = tmpPrgs(O)
+                        PI = tmpPrgs(I)
                         ReDim Preserve PO(FEO + FEI - 1)
 
                         For J As Integer = 0 To FEI - 1
                             PO(FEO + J) = PI(J)
                         Next
 
-                        Prgs(O) = PO
+                        tmpPrgs(O) = PO
 
                         Change = True
                     Else
-                        If FileIOA(O) = FileIOA(I) Then
+                        If tmpFileIOA(O) = tmpFileIOA(I) Then
                             'Files meet inside IO memory, append only if their IO status is the same
                             GoTo Append
                         End If
@@ -1339,21 +1434,21 @@ Append:                 PO = Prgs(O)
                     'Outer file follows inner file immediately
                     If (FSO <= &HD000) Or (FSO > &HDFFF) Then
                         'Prepend files as they meet outside IO memory
-Prepend:                PO = Prgs(O)
-                        PI = Prgs(I)
+Prepend:                PO = tmpPrgs(O)
+                        PI = tmpPrgs(I)
                         ReDim Preserve PI(FEI + FEO - 1)
 
                         For J As Integer = 0 To FEO - 1
                             PI(FEI + J) = PO(J)
                         Next
 
-                        Prgs(O) = PI
+                        tmpPrgs(O) = PI
 
-                        FileAddrA(O) = FileAddrA(I)
+                        tmpFileAddrA(O) = tmpFileAddrA(I)
 
                         Change = True
                     Else
-                        If FileIOA(O) = FileIOA(I) Then
+                        If tmpFileIOA(O) = tmpFileIOA(I) Then
                             'Files meet inside IO memory, prepend only if their IO status is the same
                             GoTo Prepend
                         End If
@@ -1361,25 +1456,25 @@ Prepend:                PO = Prgs(O)
                 End If
 
                 If Change = True Then
-					'Update merged file's IO status
-					FileIOA(O) = FileIOA(O) Or FileIOA(I)   'BUG FIX - REPORTED BY RAISTLIN/G*P
-					'New file's length is the length of the two merged files
-					FEO += FEI
+                    'Update merged file's IO status
+                    tmpFileIOA(O) = tmpFileIOA(O) Or tmpFileIOA(I)   'BUG FIX - REPORTED BY RAISTLIN/G*P
+                    'New file's length is the length of the two merged files
+                    FEO += FEI
                     'FileLenA(O) = ConvertNumberToHexString(FEO Mod 256, Int(FEO / 256))
-                    FileLenA(O) = ConvertIntToHex(FEO, 4)
+                    tmpFileLenA(O) = ConvertIntToHex(FEO, 4)
                     'Remove File(I) and all its parameters
-                    For J As Integer = I To Prgs.Count - 2
-                        FileNameA(J) = FileNameA(J + 1)
-                        FileAddrA(J) = FileAddrA(J + 1)
-                        FileOffsA(J) = FileOffsA(J + 1)     'this may not be needed later
-                        FileLenA(J) = FileLenA(J + 1)
-                        FileIOA(J) = FileIOA(J + 1)
+                    For J As Integer = I To tmpPrgs.Count - 2
+                        tmpFileNameA(J) = tmpFileNameA(J + 1)
+                        tmpFileAddrA(J) = tmpFileAddrA(J + 1)
+                        tmpFileOffsA(J) = tmpFileOffsA(J + 1)     'this may not be needed later
+                        tmpFileLenA(J) = tmpFileLenA(J + 1)
+                        tmpFileIOA(J) = tmpFileIOA(J + 1)
                     Next
                     'One less file left
                     FileCnt -= 1
-                    ReDim Preserve FileNameA(Prgs.Count - 2), FileAddrA(Prgs.Count - 2), FileOffsA(Prgs.Count - 2), FileLenA(Prgs.Count - 2)
-                    ReDim Preserve FileIOA(Prgs.Count - 2)
-                    Prgs.Remove(Prgs(I))
+                    ReDim Preserve tmpFileNameA(tmpPrgs.Count - 2), tmpFileAddrA(tmpPrgs.Count - 2), tmpFileOffsA(tmpPrgs.Count - 2), tmpFileLenA(tmpPrgs.Count - 2)
+                    ReDim Preserve tmpFileIOA(tmpPrgs.Count - 2)
+                    tmpPrgs.Remove(tmpPrgs(I))
                     GoTo Restart
                 End If
             Next
@@ -1389,36 +1484,42 @@ Prepend:                PO = Prgs(O)
         'Sort files by length (short files first, thus, last block will more likely contain 1 file only = faster depacking)
 ReSort:
         Change = False
-        For I As Integer = 0 To Prgs.Count - 2
+        For I As Integer = 0 To tmpPrgs.Count - 2
             'Sort except if file length < 3, to allow for ZP relocation script hack
-            If (Convert.ToInt32(FileLenA(I), 16) > Convert.ToInt32(FileLenA(I + 1), 16)) And (Convert.ToInt32(FileLenA(I), 16) > 2) Then
-                PI = Prgs(I)
-                Prgs(I) = Prgs(I + 1)
-                Prgs(I + 1) = PI
+            If (Convert.ToInt32(tmpFileLenA(I), 16) > Convert.ToInt32(tmpFileLenA(I + 1), 16)) And (Convert.ToInt32(tmpFileLenA(I), 16) > 2) Then
+                PI = tmpPrgs(I)
+                tmpPrgs(I) = tmpPrgs(I + 1)
+                tmpPrgs(I + 1) = PI
 
-                S = FileNameA(I)
-                FileNameA(I) = FileNameA(I + 1)
-                FileNameA(I + 1) = S
+                S = tmpFileNameA(I)
+                tmpFileNameA(I) = tmpFileNameA(I + 1)
+                tmpFileNameA(I + 1) = S
 
-                S = FileAddrA(I)
-                FileAddrA(I) = FileAddrA(I + 1)
-                FileAddrA(I + 1) = S
+                S = tmpFileAddrA(I)
+                tmpFileAddrA(I) = tmpFileAddrA(I + 1)
+                tmpFileAddrA(I + 1) = S
 
-                S = FileOffsA(I)
-                FileOffsA(I) = FileOffsA(I + 1)
-                FileOffsA(I + 1) = S
+                S = tmpFileOffsA(I)
+                tmpFileOffsA(I) = tmpFileOffsA(I + 1)
+                tmpFileOffsA(I + 1) = S
 
-                S = FileLenA(I)
-                FileLenA(I) = FileLenA(I + 1)
-                FileLenA(I + 1) = S
+                S = tmpFileLenA(I)
+                tmpFileLenA(I) = tmpFileLenA(I + 1)
+                tmpFileLenA(I + 1) = S
 
-                IO = FileIOA(I)
-                FileIOA(I) = FileIOA(I + 1)
-                FileIOA(I + 1) = IO
+                IO = tmpFileIOA(I)
+                tmpFileIOA(I) = tmpFileIOA(I + 1)
+                tmpFileIOA(I + 1) = IO
                 Change = True
             End If
         Next
         If Change = True Then GoTo ReSort
+
+SortDone:
+        'Once Part is sorted, calculate the I/O status of the first file and the number of bits that will be needed
+        'to find the last block of the previous part (when the I/O status of the just sorted part needs to be known)
+        'This is used in ModBetterPacker:CloseBuffer
+        BitsNeededForNextPart = ((6 + CheckNextIO(tmpFileAddrA(0), tmpFileLenA(0), tmpFileIOA(0))) * 8) + 1
 
         Exit Function
 Err:
@@ -1578,13 +1679,13 @@ NoSort:
         End If
 
         FileCnt += 1
-        ReDim Preserve FileNameA(FileCnt), FileAddrA(FileCnt), FileOffsA(FileCnt), FileLenA(FileCnt), FileIOA(FileCnt)
+        ReDim Preserve tmpFileNameA(FileCnt), tmpFileAddrA(FileCnt), tmpFileOffsA(FileCnt), tmpFileLenA(FileCnt), tmpFileIOA(FileCnt)
 
-        FileNameA(FileCnt) = FN
-        FileAddrA(FileCnt) = FA
-        FileOffsA(FileCnt) = FO     'This may not be needed later
-        FileLenA(FileCnt) = FL
-        FileIOA(FileCnt) = FUIO
+        tmpFileNameA(FileCnt) = FN
+        tmpFileAddrA(FileCnt) = FA
+        tmpFileOffsA(FileCnt) = FO     'This may not be needed later
+        tmpFileLenA(FileCnt) = FL
+        tmpFileIOA(FileCnt) = FUIO
 
         UncomPartSize += Int(FLN / 256)
         If FLN Mod 256 <> 0 Then
@@ -1596,7 +1697,7 @@ NoSort:
             FirstFileOfDisk = False
         End If
 
-        Prgs.Add(P)
+        tmpPrgs.Add(P)
 
         Exit Function
 Err:
@@ -1652,6 +1753,9 @@ Err:
 
         DiskCnt += 1
         ReDim Preserve DiskSizeA(DiskCnt)
+        'Reset Part File variables here, to have an empty array for the first compression on a ReBuild
+        Prgs.Clear()    'this is the one that is needed for the first CompressPart call during a ReBuild
+        ReDim FileNameA(-1), FileAddrA(-1), FileOffsA(-1), FileLenA(-1), FileIOA(-1)    'but reset all arrays just to be safe
 
         BufferCnt = 0
 
@@ -1685,6 +1789,9 @@ Err:
         PartCnt = -1        'WILL BE INCREASED TO 0 IN ResetPartVariables
         LoaderParts = 1
         FilesInBuffer = 1
+
+        CurrentPart = -1
+
         '-------------------------------------------------------------
 
         If ResetPartVariables() = False Then GoTo NoDisk    'Also adds first part
@@ -1705,9 +1812,9 @@ NoDisk:
         ResetPartVariables = True
 
         FileCnt = -1
-        ReDim FileNameA(FileCnt), FileAddrA(FileCnt), FileOffsA(FileCnt), FileLenA(FileCnt), FileIOA(FileCnt)
+        ReDim tmpFileNameA(FileCnt), tmpFileAddrA(FileCnt), tmpFileOffsA(FileCnt), tmpFileLenA(FileCnt), tmpFileIOA(FileCnt)
 
-        Prgs.Clear()
+        tmpPrgs.Clear()
 
         PartCnt += 1
 
@@ -1891,7 +1998,7 @@ Err:
 
         If Path = "" Then Exit Sub
 
-        For I As Integer = Path.Length - 1 To 0 Step -1
+        For I As Integer = Len(Path) - 1 To 0 Step -1
             If Right(ScriptPath, 1) <> "\" Then
                 ScriptPath = Left(ScriptPath, ScriptPath.Length - 1)
             Else

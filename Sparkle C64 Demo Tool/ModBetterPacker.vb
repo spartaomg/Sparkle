@@ -43,12 +43,6 @@
 		'PROCESS FILE
 		'----------------------------------------------------------------------------------------------------------
 
-		'Dim PS As String = ""
-		'For I As Integer = 0 To 255
-		'PS += Hex(PN(I)) + vbTab
-		'Next
-		'MsgBox(PS)
-
 		Prg = PN
 		FileUnderIO = FUIO
 		PrgAdd = Convert.ToInt32(FA, 16)
@@ -64,6 +58,7 @@
 			'.Off = 0            'Offset=0 -> literal sequence, Off is 1 based
 			.Bit = 10           'LitLen bit + 8 bits + type (Lit vs Match) selector bit 
 		End With
+
 		'----------------------------------------------------------------------------------------------------------
 		'CALCULATE BEST SEQUENCE
 		'----------------------------------------------------------------------------------------------------------
@@ -133,9 +128,9 @@ Err:
 			LO(Pos) = 0
 			LL(Pos) = 0
 			'Offset goes from 1 to max offset (cannot be 0)
-			MaxO = IIf(Pos + MaxOffset < SeqStart, MaxOffset, SeqStart - Pos)
+			MaxO = If(Pos + MaxOffset < SeqStart, MaxOffset, SeqStart - Pos)
 			'Match length goes from 1 to max length
-			MaxL = IIf(Pos >= MaxLongLen, MaxLongLen, Pos)  'MaxL=254 or less
+			MaxL = If(Pos >= MaxLongLen, MaxLongLen, Pos)  'MaxL=254 or less
 			For O As Integer = 1 To MaxO                                    'O=1 to 255 or less
 				'Check if first byte matches at offset, if not go to next offset
 				If Prg(Pos) = Prg(Pos + O) Then
@@ -147,7 +142,7 @@ Err:
 							If L >= 2 Then
 Match:                          If O <= ShortOffset Then
 									If (SL(Pos) < MaxShortLen) And (SL(Pos) < L) Then
-										SL(Pos) = IIf(L > MaxShortLen, MaxShortLen, L)
+										SL(Pos) = If(L > MaxShortLen, MaxShortLen, L)
 										SO(Pos) = O       'Keep O 1-based
 									End If
 									If LL(Pos) < L Then
@@ -165,8 +160,8 @@ Match:                          If O <= ShortOffset Then
 						End If
 					Next
 					'If both short and long matches maxed out, we can leave the loop and go to the next Prg position
-					If (LL(Pos) = IIf(Pos >= MaxLongLen, MaxLongLen, Pos)) And
-						(SL(Pos) = IIf(Pos >= MaxShortLen, MaxShortLen, Pos)) Then
+					If (LL(Pos) = If(Pos >= MaxLongLen, MaxLongLen, Pos)) And
+						(SL(Pos) = If(Pos >= MaxShortLen, MaxShortLen, Pos)) Then
 						Exit For
 					End If
 				End If
@@ -191,9 +186,9 @@ Match:                          If O <= ShortOffset Then
 
 			'Check all possible lengths
 			For L As Integer = SeqLen To 2 Step -1
-				'For L As Integer = SeqLen To IIf(SeqLen - 2 > 2, SeqLen - 2, 2) Step -1
+				'For L As Integer = SeqLen To if(SeqLen - 2 > 2, SeqLen - 2, 2) Step -1
 				'Get offset, use short match if possible
-				SeqOff = IIf(L <= SL(Pos), SO(Pos), LO(Pos))
+				SeqOff = If(L <= SL(Pos), SO(Pos), LO(Pos))
 
 				''THIS DOES NOT SEEM TO MAKE ANY DIFFERENCE. RATHER, WE ARE SIMPLY EXLUDING ANY 2-BYTE MID MATCHES
 				'If (L = 2) And (SeqOff > ShortOffset) Then
@@ -727,12 +722,29 @@ Err:
 		ByteCnt -= 2
 		LastByte = ByteCnt               'LastByte = the first byte of the ByteStream after and Address Bytes (253 or 252 with blockCnt)
 
-		If (BlockCnt = 1) Or ((Seq(SI).Bit + 8 < LastByte * 8) And (LastFileOfPart = True)) Then
-			'For the 2nd and last block only recalculate the first byte's sequence
-			CalcBestSequence(IIf(SI > 1, SI, 1), IIf(SI > 1, SI, 1))
+		'------------------------------------------------------------------------------------------------------------------------------
+		'"COLOR BUG"
+		'Compression bug related to the transitional block - FIXED
+		'Fix: add 6 or 7 bytes + 1 bit to the calculation to find the last block of a part
+		'1 block count, +2 new part tag, +2 NEXT PART address, +1 first literal byte of NEXT PART, +0/1 IO status of first literal byte
+		'+1  match bit (may or may not be needed, but we don't know until the end...)
+		'------------------------------------------------------------------------------------------------------------------------------
+
+		'Check if the first literal byte of the NEXT PART will go under IO
+		'Bits needed for next part is calculated in ModDisk:SortPart
+
+		'(Next block = Second block) or (remaining bits of Last File in Part + Needed Bits fit in this block)
+		If (BlockCnt = 1) Or ((Seq(SI).Bit + 8 + BitsNeededForNextPart < LastByte * 8) And (LastFileOfPart = True) And (NewBlock = False)) Then
+			'This is the last block ONLY IF the remainder of the part + the next part's info fits!!!
+			'AND THE NEXT PART IS NOT ALIGNED in which case the next block is the last one
+			'Seg(SI).bit includes both the byte stream in bits and the bit stream (total bits needed to compress the remained of the part)
+			'+End Tag: 8 bits
+			'+BitsNeeded: 6-7 bytes for next part's info + 1 match bit (may or may not be needed, but we wouldn't know until the end)
+			'For the 2nd and last block, only recalculate the first byte's sequence
+			CalcBestSequence(If(SI > 1, SI, 1), If(SI > 1, SI, 1))
 		Else
 			'For all other blocks recalculate the first 256 bytes' sequence (max offset=256)
-			CalcBestSequence(IIf(SI > 1, SI, 1), IIf(SI - MaxOffset > 1, SI - MaxOffset, 1))
+			CalcBestSequence(If(SI > 1, SI, 1), If(SI - MaxOffset > 1, SI - MaxOffset, 1))
 		End If
 
 		StartPos = SI
@@ -743,7 +755,7 @@ Err:
 
 	End Sub
 
-	Public Function ClosePart(Optional NextFileIO As Integer = 1, Optional LastPartOnDisk As Boolean = False) As Boolean
+	Public Function ClosePart(Optional NextFileIO As Integer = 0, Optional LastPartOnDisk As Boolean = False) As Boolean
 		On Error GoTo Err
 
 		ClosePart = True
@@ -752,11 +764,17 @@ Err:
 
 		'ADDS NEW PART TAG (Long Match Tag + End Tag) TO THE END OF THE PART, AND RESERVES LAST BYTE IN BUFFER FOR BLOCK COUNT
 
-		Dim Bytes As Integer = 6 'BYTES NEEDED: BlockCnt + Long Match Tag + End Tag + AdLo + AdHi + 1st Literal (ByC=7 if BlockUnderIO=true - checked at SequenceFits)
-		'If LastPartOnDisk = True Then Bytes += 1
-		Dim Bits As Integer = IIf((LitCnt = -1) Or (LitCnt Mod (MaxLitLen + 1) = MaxLitLen), 1, 0)   'Calculate whether Match Bit is needed for new part
+		'-----------------------------------------------------------------------------------
+		'"SPRITE BUG"
+		'Compression bug related to the transitional block - FIXED
+		'Fix: include next file's I/O status in calculation of needed bytes
+		'-----------------------------------------------------------------------------------
+		'BYTES NEEDED: BlockCnt + Long Match Tag + End Tag + AdLo + AdHi + 1st Literal +1 if next file goes under I/O
+		Dim Bytes As Integer = 6 + NextFileIO
 
-		If SequenceFits(Bytes, Bits, NextFileIO) Then       'This will add the EndTag to the needed bytes
+		Dim Bits As Integer = If((LitCnt = -1) Or (LitCnt Mod (MaxLitLen + 1) = MaxLitLen), 1, 0)   'Calculate whether Match Bit is needed for new part
+
+		If SequenceFits(Bytes, Bits) Then       'This will add the EndTag to the needed bytes
 
 			'Buffer has enough space for New Part Tag and New Part Info and first Literal byte (and IO flag if needed)
 
@@ -773,8 +791,6 @@ NextPart:   'Match Bit is not needed if this is the beginning of the next block
 				Buffer(255) = 1                                     'Last byte reserved for BlockCnt
 			End If
 
-			'MsgBox(Hex(Buffer(BitCnt)))
-
 			Buffer(ByteCnt) = LongMatchTag                          'Then add New File Match Tag
 			Buffer(ByteCnt - 1) = EndTag
 			ByteCnt -= 2
@@ -788,7 +804,7 @@ NextPart:   'Match Bit is not needed if this is the beginning of the next block
 				AddRBits(0, 1)                  'ADD 2ND BIT SEPARATELY (0-BIT, TECHNCALLY, THIS IS NOT NEEDED SINCE THIS IS THE LAST BIT)
 				'-------------------------------------------------------------------
 				'Buffer(ByteCnt - 3) = &H0      'THIS IS THE END TAG, NOT NEEDED HERE, WILL BE ADDED WHEN BUFFER IS CLOSED
-				'ByteCnt -= 4					'*BUGFIX, THANKS TO RAISTLIN FOR REPORTING
+				'ByteCnt -= 4					'*BUGFIX, THANKS TO RAISTLIN/G*P FOR REPORTING
 				'-------------------------------------------------------------------
 				ByteCnt -= 3
 			End If
@@ -816,7 +832,7 @@ NewB:          'Next File Info does not fit, so close buffer
 			If LastBlockCnt > 255 Then
 				'Parts cannot be larger than 255 blocks compressed
 				'There is some confusion here how PartCnt is used in the Editor and during Disk building...
-				MsgBox("Part " + IIf(CompressPartFromEditor = True, PartCnt + 1, PartCnt).ToString + " would need " + LastBlockCnt.ToString + " blocks on the disk." + vbNewLine + vbNewLine + "Parts cannot be larger than 255 blocks!", vbOKOnly + vbCritical, "Part exceeds 255-block limit!")
+				MsgBox("Part " + If(CompressPartFromEditor = True, PartCnt + 1, PartCnt).ToString + " would need " + LastBlockCnt.ToString + " blocks on the disk." + vbNewLine + vbNewLine + "Parts cannot be larger than 255 blocks!", vbOKOnly + vbCritical, "Part exceeds 255-block limit!")
 				If CompressPartFromEditor = False Then GoTo NoGo
 			End If
 
@@ -844,7 +860,7 @@ NoGo:
 
 		'4 bytes and 0-1 bits needed for NextFileTag, Address Bytes and first Lit byte (+1 more if UIO)
 		Dim Bytes As Integer = 4 'BYTES NEEDED: End Tag + AdLo + AdHi + 1st Literal (ByC=5 only if BlockUnderIO=true - checked at SequenceFits()
-		Dim Bits As Integer = IIf((LitCnt = -1) Or (LitCnt Mod (MaxLitLen + 1) = MaxLitLen), 1, 0)   'Calculate whether Match Bit is needed for new file
+		Dim Bits As Integer = If((LitCnt = -1) Or (LitCnt Mod (MaxLitLen + 1) = MaxLitLen), 1, 0)   'Calculate whether Match Bit is needed for new file
 
 		If SequenceFits(Bytes, Bits, CheckIO(PrgLen - 1)) Then
 

@@ -296,16 +296,16 @@ Err:
 
         Dim MaxL As Integer = 1         'Max match length found
         Dim MaxO As Integer = 0         'Offset of match found
-        Dim MaxSL As Integer = IIf(ReplaceLength >= 8, 4, ReplaceLength - 4)        'Max length of short match we need
+        Dim MaxSL As Integer = If(ReplaceLength >= 8, 4, ReplaceLength - 4)        'Max length of short match we need
 
         Dim FrstML, FrstMO As Integer
         Dim ScndML, ScndMO As Integer
         Dim ThrdML, ThrdMO As Integer
 
         'Offset = 1 to 64 or what's left of prg.length
-        For O As Integer = IIf(Prg.Length - 1 - LastPOffset < 64, Prg.Length - 1 - LastPOffset, 64) To 1 Step -1
+        For O As Integer = If(Prg.Length - 1 - LastPOffset < 64, Prg.Length - 1 - LastPOffset, 64) To 1 Step -1
             'Length = 0 to MaxSL or what's left till prg start
-            For L As Integer = 0 To IIf(LastPOffset >= MaxSL, MaxSL, LastPOffset)
+            For L As Integer = 0 To If(LastPOffset >= MaxSL, MaxSL, LastPOffset)
                 If Prg(LastPOffset - L) <> Prg(LastPOffset + O - L) Then
                     If L > MaxL Then
                         'Match of at least 2 bytes
@@ -343,7 +343,7 @@ Err:
         'Next
         'After = "| " + After
 
-        MaxSL = IIf(ReplaceLength >= 6, 4, ReplaceLength - 2)
+        MaxSL = If(ReplaceLength >= 6, 4, ReplaceLength - 2)
 
         If MaxSL < 2 Then GoTo NoReplace
 
@@ -353,9 +353,9 @@ Err:
         MaxO = 0
 
         'Offset = 1 to 64 or what's left of prg.length
-        For O As Integer = 1 To IIf(Prg.Length - 1 - LastPOffset < 64, Prg.Length - 1 - LastPOffset, 64)
+        For O As Integer = 1 To If(Prg.Length - 1 - LastPOffset < 64, Prg.Length - 1 - LastPOffset, 64)
             'Length = 0 to MaxSL or what's left till prg start
-            For L As Integer = 0 To IIf(LastPOffset >= MaxSL, MaxSL, LastPOffset)
+            For L As Integer = 0 To If(LastPOffset >= MaxSL, MaxSL, LastPOffset)
                 If Prg(LastPOffset - L) <> Prg(LastPOffset + O - L) Then
                     If Prg(LastPOffset - L) <> Prg(LastPOffset + O - L) Then
                         If L > MaxL Then
@@ -400,9 +400,9 @@ Err:
         MaxO = 0
 
         'Offset = 1 to 64 or what's left of prg.length
-        For O As Integer = 1 To IIf(Prg.Length - 1 - LastPOffset < 64, Prg.Length - 1 - LastPOffset, 64)
+        For O As Integer = 1 To If(Prg.Length - 1 - LastPOffset < 64, Prg.Length - 1 - LastPOffset, 64)
             'Length = 0 to 4 or what's left till prg start
-            For L As Integer = 0 To IIf(LastPOffset >= ReplaceLength, ReplaceLength, LastPOffset)
+            For L As Integer = 0 To If(LastPOffset >= ReplaceLength, ReplaceLength, LastPOffset)
                 If Prg(LastPOffset - L) <> Prg(LastPOffset + O - L) Then
                     If L >= ReplaceLength Then
                         MaxL = ReplaceLength
@@ -1266,71 +1266,6 @@ Err:
 
     End Function
 
-    'Private Function DataFits(ByteLen As Integer, Literals As Integer, Optional SequenceUnderIO As Integer = 0) As Boolean
-    'On Error GoTo Err
-
-    'If DoDebug Then Debug.Print("DataFits")
-    ''Do not include closing bits in function call!!!
-
-    'Dim NeededBytes As Integer = 1  'Close Byte
-    'Dim CloseBit As Integer = 0     'CloseBit length - Match selector bit length, not needed most of the time, cannot overlap with Close Byte!!!
-
-    ''If (FileUnderIO = True) And (BlockUnderIO = 0) And (SequenceUnderIO = 1) Then
-    'If (BlockUnderIO = 0) And (SequenceUnderIO = 1) Then
-
-    ''Some blocks of the file will go UIO, but sofar this block is not UIO, and next byte is the first one that goes UIO
-
-    'NeededBytes += 1    'Need an extra byte if the next byte in sequence is the first one that goes UIO
-    'End If
-
-    ''Check if we have pending Literals
-    ''If no pending Literals, or Literals=MaxLit, then we need to save 1 bit for match tag
-    ''Otherwise, next item must be a match, we do not need a match tag
-    'If (Literals = -1) Or (Literals Mod (MaxLit + 1) = MaxLit) Then CloseBit = 1
-
-    ''If Literals >= MaxLit Then MsgBox(BitLen.ToString + vbNewLine + Literals.ToString)
-    'Dim BitLen As Integer = Bits
-
-    'CheckBitLen:
-    'If BitLen >= 8 Then     'Can be up to 11 bits
-    'NeededBytes += 1    'Need 1 more byte
-    'BitLen -= 8
-    'GoTo CheckBitLen
-    'End If
-
-    'If BitPos < 8 + BitLen + CloseBit Then
-    'NeededBytes += 1     'Need an extra byte for bit sequence (closing match tag)
-    'End If
-
-    'If ByteCnt >= BitCnt + ByteLen + NeededBytes Then  '>= because NeededBytes also includes Close Byte
-    'DataFits = True
-    ''Data will fit
-    ''If (FileUnderIO = True) And (BlockUnderIO = 0) And (SequenceUnderIO = 1) And (LastByte <> ByteCnt) Then
-    'If (BlockUnderIO = 0) And (SequenceUnderIO = 1) And (LastByte <> ByteCnt) Then
-
-    ''This is the first byte in the block that will go UIO, so lets update the buffer to include the IO flag
-
-    'For I As Integer = ByteCnt To AdHiPos            'Move all data to the left in buffer, including AdHi
-    'Buffer(I - 1) = Buffer(I)
-    'Next
-    'Buffer(AdHiPos) = 0                             'IO Flag to previous AdHi Position
-    'ByteCnt -= 1                                    'Update ByteCt to next empty position in buffer
-    'LastByteCt -= 1                                 'Last Match pointer also needs to be updated (BUG FIX - REPORTED BY RAISTLIN/G*P)
-    'AdHiPos -= 1                                    'Update AdHi Position in Buffer
-    'BlockUnderIO = 1                                'Set BlockUnderIO Flag
-    'End If
-    'Else
-    'DataFits = False
-    'End If
-
-    'Exit Function
-    'Err:
-    'MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
-    'DataFits = False
-
-    'End Function
-
     Private Sub AddLongM()
         On Error GoTo Err
 
@@ -1644,13 +1579,17 @@ Err:
 
     End Sub
 
-    Public Function CheckIO(Offset As Integer) As Integer
+    Public Function CheckIO(Offset As Integer, Optional NextFileUnderIO As Integer = -1) As Integer
         On Error GoTo Err
 
-        If PrgAdd + Offset < 256 Then       'Are we loading to the Zero Page? If yes, we need to signal it by adding IO Flag
+        Offset += PrgAdd
+
+        If Offset < 256 Then       'Are we loading to the Zero Page? If yes, we need to signal it by adding IO Flag
             CheckIO = 1
+        ElseIf NextFileUnderIO > -1 Then
+            CheckIO = If((Offset >= &HD000) And (Offset <= &HDFFF) And (NextFileUnderIO = 1), 1, 0)
         Else
-            CheckIO = If((PrgAdd + Offset >= &HD000) And (PrgAdd + Offset <= &HDFFF) And (FileUnderIO = True), 1, 0)
+            CheckIO = If((Offset >= &HD000) And (Offset <= &HDFFF) And (FileUnderIO = True), 1, 0)
         End If
 
         Exit Function
@@ -1659,7 +1598,7 @@ Err:
 
     End Function
 
-    Public Function FinishPart(Optional NextFileIO As Integer = 1, Optional LastPartOnDisk As Boolean = False) As Boolean
+    Public Function FinishPart(Optional NextFileIO As Integer = 0, Optional LastPartOnDisk As Boolean = False) As Boolean
         On Error GoTo Err
 
         'MatchStart = LastMS
@@ -1672,11 +1611,14 @@ Err:
         'ADDS NEW PART TAG (Long Match Tag + End Tag) TO THE END OF THE PART, AND RESERVES LAST BYTE IN BUFFER FOR BLOCK COUNT
         Dim Bytes, Bits As Integer
 
-        Bytes = 6 'BYTES NEEDED: BlockCnt + Long Match Tag + End Tag + AdLo + AdHi + 1st Literal (ByC=7 if BlockUnderIO=true - checked at SequenceFits)
+        '"Sprite bug"
+        'Compression bug related to the transitional block, reported by Raistlin/G*P - FIXED
+        'Fix: include next file's I/O status in calculation of needed bytes
+        Bytes = 6 + NextFileIO 'BYTES NEEDED: BlockCnt + Long Match Tag + End Tag + AdLo + AdHi + 1st Literal (ByC=7 if BlockUnderIO=true - checked at SequenceFits)
         'If LastPartOnDisk = True Then Bytes += 1
-        IIf((LitCnt = -1) Or (LitCnt Mod (MaxLit + 1) = MaxLit), Bits = 1, Bits = 0)   'Calculate whether Match Bit is needed for new part
+        Bits = If((LitCnt = -1) Or (LitCnt Mod (MaxLit + 1) = MaxLit), 1, 0)   'Calculate whether Match Bit is needed for new part
 
-        If SequenceFits(Bytes, LitCnt, NextFileIO) Then
+        If SequenceFits(Bytes, LitCnt) Then
 
             'Buffer has enough space for New Part Tag and New Part Info and first Literal byte (and IO flag if needed)
 
@@ -1734,7 +1676,7 @@ NewB:            'Next File Info does not fit, so close buffer
             If LastBlockCnt > 255 Then
                 'Parts cannot be larger than 255 blocks compressed
                 'There is some confusion here how PartCnt is used in the Editor and during Disk building...
-                MsgBox("Part " + IIf(CompressPartFromEditor = True, PartCnt + 1, PartCnt).ToString + " would need " + LastBlockCnt.ToString + " blocks on the disk." + vbNewLine + vbNewLine + "Parts cannot be larger than 255 blocks!", vbOKOnly + vbCritical, "Part exceeds 255-block limit!")
+                MsgBox("Part " + If(CompressPartFromEditor = True, PartCnt + 1, PartCnt).ToString + " would need " + LastBlockCnt.ToString + " blocks on the disk." + vbNewLine + vbNewLine + "Parts cannot be larger than 255 blocks!", vbOKOnly + vbCritical, "Part exceeds 255-block limit!")
                 If CompressPartFromEditor = False Then GoTo NoGo
             End If
 
@@ -1764,7 +1706,7 @@ NoGo:
 
         '4 bytes and 0-1 bits needed for NextFileTag, Address Bytes and first Lit byte (+1 more if UIO)
         Bytes = 4 'BYTES NEEDED: End Tag + AdLo + AdHi + 1st Literal (ByC=5 only if BlockUnderIO=true - checked at SequenceFits()
-        IIf((LitCnt = -1) Or (LitCnt Mod (MaxLit + 1) = MaxLit), Bits = 1, Bits = 0)   'Calculate whether Match Bit is needed for new file
+        Bits = If((LitCnt = -1) Or (LitCnt Mod (MaxLit + 1) = MaxLit), 1, 0)   'Calculate whether Match Bit is needed for new file
 
         If SequenceFits(Bytes, LitCnt, CheckIO(PrgLen - 1)) Then
 

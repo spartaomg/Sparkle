@@ -77,13 +77,6 @@
 		CX = 0 : CY = 0 : CB = 0
 		CursorPos(0)
 
-        'ScriptPath = "C:\Sparkle\Example\"
-
-        'Using A As New FrmEditor
-        'A.ShowDialog(Me)
-        'End Using
-
-
         Exit Sub
 Err:
 		MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
@@ -390,6 +383,8 @@ Err:
 
         Cursor = Cursors.WaitCursor
 
+        Dim tmpScript As String = Script
+
         DiskOK = BuildDemoFromScript()
 
         If OnTheFly = False Then
@@ -415,6 +410,7 @@ Done:
         Cursor = Cursors.Default
 
         Frm.Close()
+        Script = tmpScript
 
     End Sub
 
@@ -1083,12 +1079,12 @@ Err:
     Private Sub TsbScriptEditor_Click(sender As Object, e As EventArgs) Handles TsbScriptEditor.Click
         On Error GoTo Err
 
-        Using A As New FrmSE
+        Using A As New FrmEditor
             A.ShowDialog(Me)
         End Using
 
         If bBuildDisk = True Then
-            If InStr(Script, "File:") = 0 Then
+            If (InStr(LCase(Script), "file:") = 0) And (InStr(LCase(Script), "list:") = 0) And (InStr(LCase(Script), "script:") = 0) Then
                 MsgBox("This script does not contain any files", vbOKOnly, "Unable to build disk")
             Else
 
