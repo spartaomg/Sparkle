@@ -1,6 +1,5 @@
 ﻿Imports Microsoft.Win32
 Module ModRegistry
-
     Public Sub DoRegistryMagic()
         On Error GoTo Err
 
@@ -63,6 +62,7 @@ Module ModRegistry
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -104,7 +104,7 @@ Err:
 
         Exit Sub
 Err:
-
+        ErrCode = Err.Number
         MsgBox("Error during creating .sls file association with Sparkle" + vbNewLine + vbNewLine + ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -140,7 +140,7 @@ Err:
 
         Exit Sub
 Err:
-
+        ErrCode = Err.Number
         MsgBox("Error during deleting .sls file association with Sparkle" + vbNewLine + vbNewLine + ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -160,6 +160,7 @@ Err:
 
 		Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Function
@@ -176,7 +177,9 @@ Err:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
     End Function
 
 End Module

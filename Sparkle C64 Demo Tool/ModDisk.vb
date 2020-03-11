@@ -1,6 +1,8 @@
 ﻿Friend Module ModDisk
-	Public ReadOnly UserDeskTop As String = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
-	Public ReadOnly UserFolder As String = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
+    Public ErrCode As Integer = 0
+
+    Public ReadOnly UserDeskTop As String = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
+    Public ReadOnly UserFolder As String = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
 
 	Public Packer As Integer = 2     '1= faster, 2=better
 
@@ -193,6 +195,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -241,6 +244,7 @@ Done:       ScriptEntry = Strings.Mid(Script, SS, SE - SS)  'Finish this entry
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
         FindNextScriptEntry = False
@@ -272,6 +276,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -346,6 +351,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -366,6 +372,7 @@ Err:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
         SectorOK = False
@@ -393,6 +400,7 @@ CheckB:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -415,6 +423,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -447,6 +456,7 @@ Err:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
         AddInterleave = False
@@ -464,6 +474,7 @@ Err:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Function
@@ -509,6 +520,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -548,6 +560,7 @@ Err:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
         InjectDriveCode = False
@@ -680,6 +693,7 @@ SeekNewEntry:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
         InjectLoader = False
@@ -739,6 +753,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -756,6 +771,7 @@ Err:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
         ConvertIntToHex = ""
@@ -799,6 +815,7 @@ Err:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
         UpdateBAM = False
@@ -846,6 +863,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1004,9 +1022,11 @@ FindNext:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 NoDisk:
         BuildDemoFromScript = False
+        If ErrCode = 0 Then ErrCode = -1
 
     End Function
 
@@ -1021,7 +1041,7 @@ NoDisk:
         If InStr(SubScriptPath, ":") = 0 Then SubScriptPath = ScriptPath + SubScriptPath
 
         If IO.File.Exists(SubScriptPath) = False Then
-            MsgBox("The following script was not found and could not be processed:" + vbNewLine + vbNewLine + SubScriptPath, vbOKOnly + vbExclamation + "Script not found")
+            MsgBox("The following script was not found and could not be processed:" + vbNewLine + vbNewLine + SubScriptPath, vbOKOnly + vbExclamation, "Script not found")
             InsertScript = False
             Exit Function
         End If
@@ -1072,6 +1092,7 @@ NoDisk:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
         InsertScript = False
@@ -1111,6 +1132,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1156,6 +1178,7 @@ Err:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 NoDisk:
         FinishDisk = False
@@ -1200,6 +1223,7 @@ NoDisk:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
         SaveDisk = False
@@ -1274,6 +1298,7 @@ Err:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 NoComp:
         CompressPart = False
@@ -1294,6 +1319,7 @@ NoComp:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 NoDisk:
         AddFile = False
@@ -1334,6 +1360,7 @@ NoDisk:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 NoDisk:
         PartDone = False
@@ -1353,6 +1380,7 @@ NoDisk:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Function
@@ -1523,6 +1551,7 @@ SortDone:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 NoSort:
         SortPart = False
@@ -1701,6 +1730,7 @@ NoSort:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 NoDisk:
         AddFileToPart = False
@@ -1740,6 +1770,7 @@ NoDisk:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
         SplitScriptEntry = False
@@ -1800,6 +1831,7 @@ Err:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 NoDisk:
         ResetDiskVariables = False
@@ -1826,6 +1858,7 @@ NoDisk:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
         ResetPartVariables = False
@@ -1862,6 +1895,7 @@ Err:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 NoDisk:
         AddCompressedPartsToDisk = False
@@ -1873,23 +1907,37 @@ NoDisk:
 
         AddDirArt = True
 
+        Dim DirEntries() As String = DirArt.Split(vbLf)
         DirTrack = 18
         DirSector = 1
-        DirPos = 0
-        FindNextDirPos()
-        DirEntry = ""
-        For I As Integer = 1 To DirArt.Length
-            DirEntry += Mid(DirArt, I, 1)
-            If Mid(DirArt, I, 1) = Chr(10) Then
-                If DirPos <> 0 Then AddDirEntry()
-                FindNextDirPos()
+        For I As Integer = 0 To DirEntries.Count - 1
+            DirEntry = DirEntries(I).TrimEnd(Chr(13))
+            FindNextDirPos()
+            If DirPos <> 0 Then
+                AddDirEntry()
+            Else
+                Exit For
             End If
         Next
 
-        If (DirEntry <> "") And (DirPos <> 0) Then AddDirEntry()
+        'DirTrack = 18
+        'DirSector = 1
+        'DirPos = 0
+        'FindNextDirPos()
+        'DirEntry = ""
+        'For I As Integer = 1 To Len(DirArt)
+        'DirEntry += Mid(DirArt, I, 1)
+        'If Mid(DirArt, I, 1) = Chr(10) Then
+        'If DirPos <> 0 Then AddDirEntry()
+        'FindNextDirPos()
+        'End If
+        'Next
+
+        'If (DirEntry <> "") And (DirPos <> 0) Then AddDirEntry()
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
 NoDisk:
@@ -1918,6 +1966,7 @@ FindNextEntry:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1962,6 +2011,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1974,7 +2024,8 @@ Err:
         Disk(Track(DirTrack) + (DirSector * 256) + DirPos + 2) = 5      'Sector 5 (sector pointer of boot loader)
 
         'Remove vbNewLine characters and add 16 SHIFT+SPACE tail characters
-        DirEntry = Replace(Replace(DirEntry, Chr(13), ""), Chr(10), "") + StrDup(16, Chr(160))
+        'DirEntry = Replace(Replace(DirEntry, Chr(13), ""), Chr(10), "") + StrDup(16, Chr(160))
+        DirEntry = DirEntry + StrDup(16, Chr(160))
 
         'Copy only the first 16 characters of the edited DirEntry to the Disk Directory
         For I As Integer = 1 To 16
@@ -1986,6 +2037,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -2008,6 +2060,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub

@@ -200,6 +200,7 @@ Public Class FrmEditor
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -220,6 +221,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -233,6 +235,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -260,6 +263,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -325,6 +329,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -362,6 +367,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -770,6 +776,7 @@ FileDataFO:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -781,6 +788,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -792,6 +800,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
     End Sub
 
@@ -802,6 +811,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -815,6 +825,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -827,6 +838,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -848,6 +860,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -866,6 +879,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -877,6 +891,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -888,6 +903,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -899,6 +915,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -916,6 +933,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -933,6 +951,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -982,6 +1001,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -997,6 +1017,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1025,6 +1046,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1036,6 +1058,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1051,6 +1074,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1083,6 +1107,7 @@ Err:
 
         GoTo Done
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 Done:
         FinishUpdate()
@@ -1112,6 +1137,7 @@ Done:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1127,6 +1153,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1205,8 +1232,8 @@ Err:
 
         GoTo Done
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
 Done:
         FinishUpdate()
 
@@ -1245,6 +1272,7 @@ Done:
 
         GoTo Done
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 Done:
         Frm.Close()
@@ -1281,8 +1309,8 @@ Done:
 
         GoTo Done
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
 Done:
         Frm.Close()
 
@@ -1327,6 +1355,7 @@ Done:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1361,6 +1390,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1403,6 +1433,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1415,6 +1446,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1451,6 +1483,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1506,6 +1539,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1524,6 +1558,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1637,6 +1672,7 @@ Err:
 
         GoTo Done
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
 Done:
@@ -1698,11 +1734,13 @@ Done:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
 
     Private Sub FindCurrentDisk(N As TreeNode, Optional FirstRun As Boolean = False)
+        On Error GoTo Err
 
         If FirstRun Then
             CurrentDisk = 0
@@ -1731,6 +1769,11 @@ Err:
                 End If
         End Select
 
+        Exit Sub
+Err:
+        ErrCode = Err.Number
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
     End Sub
 
     Private Sub StartUpdate()
@@ -1747,6 +1790,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1766,6 +1810,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1808,6 +1853,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1865,6 +1911,7 @@ Node2:              If FileNode.Nodes(2).ForeColor = colFileParamDefault Then Fi
 
         GoTo Done
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
 Done:
@@ -1884,6 +1931,7 @@ Done:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1944,8 +1992,8 @@ Err:
         DFLS = ConvertIntToHex(DFLN, 4)
         GoTo Done
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
 Done:
         FinishUpdate()
 
@@ -1995,6 +2043,7 @@ Done:
 
         GoTo Done
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 Done:
         FinishUpdate()
@@ -2065,9 +2114,9 @@ Done:
 
         GoTo Done
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 Done:
-        'If Loading = False Then TV.EndUpdate()
         FinishUpdate()
 
     End Sub
@@ -2075,7 +2124,6 @@ Done:
     Private Sub CheckFileParameterColors(FileNode As TreeNode)
         On Error GoTo Err
 
-        'If Loading = False Then TV.BeginUpdate()
         StartUpdate()
 
         If Strings.Right(FileNode.Nodes(0).Text, 4) = DFAS Then
@@ -2109,6 +2157,7 @@ Done:
 
         GoTo Done
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 Done:
         'If Loading = False Then TV.EndUpdate()
@@ -2135,6 +2184,7 @@ Done:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Function
@@ -2154,6 +2204,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -2173,6 +2224,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -2246,6 +2298,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -2279,6 +2332,7 @@ Err:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Function
@@ -2364,6 +2418,7 @@ Err:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Function
@@ -2385,6 +2440,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -2415,6 +2471,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -2466,6 +2523,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -2479,6 +2537,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -2507,6 +2566,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -2535,6 +2595,7 @@ Err:
 
         GoTo Done
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
 Done:
@@ -2566,6 +2627,7 @@ Done:
 
         GoTo Done
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 Done:
         Frm.Close()
@@ -2599,13 +2661,20 @@ Done:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
 
     Private Sub ChkSize_CheckedChanged(sender As Object, e As EventArgs) Handles ChkSize.CheckedChanged
+        On Error GoTo Err
 
         CalcDiskSizeWithForm(BaseNode)
+
+        Exit Sub
+Err:
+        ErrCode = Err.Number
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
 
@@ -2622,6 +2691,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -2671,6 +2741,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -2773,6 +2844,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -2786,6 +2858,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -2804,15 +2877,23 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
 
     Private Sub ChkExpand_CheckedChanged(sender As Object, e As EventArgs) Handles ChkExpand.CheckedChanged
+        On Error GoTo Err
 
         If TV.Nodes.Count > 0 Then
             ToggleFileNodes(BaseNode)
         End If
+
+        Exit Sub
+Err:
+        ErrCode = Err.Number
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
     End Sub
 
     Private Sub ConvertScriptToNodes()
@@ -3031,6 +3112,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 Done:
         Frm.Close()
@@ -3228,6 +3310,7 @@ Done:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -3275,6 +3358,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -3293,6 +3377,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -3313,6 +3398,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -3521,6 +3607,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -3541,6 +3628,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -3639,6 +3727,7 @@ Err:
 
         GoTo Done
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
 Done:   Frm.Close()
@@ -3701,11 +3790,8 @@ Done:   Frm.Close()
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
-    End Sub
-
-    Private Sub OptFaster_CheckedChanged(sender As Object, e As EventArgs) Handles OptFaster.CheckedChanged
 
     End Sub
 
@@ -3753,6 +3839,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -3907,6 +3994,7 @@ Err:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Function
@@ -3924,6 +4012,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 Done:
         FinishUpdate()
@@ -3932,6 +4021,7 @@ Done:
     End Sub
 
     Private Sub CalcDiskSize(ParentNode As TreeNode, Optional PartNodeIndex As Integer = -1)
+        On Error GoTo err
 
         'THIS WILL CALCULATE EVERY DISK'S AND PART'S SIZE IN THE SCRIPT AND UPDATE EVERY DISK AND PART NODE
         'ALWAYS CALL IT WITH BASENODE
@@ -4027,6 +4117,11 @@ Done:
             End If
         End If
 
+        Exit Sub
+Err:
+        ErrCode = Err.Number
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
     End Sub
 
     Private Sub TxtEdit_MouseHover(sender As Object, e As EventArgs) Handles txtEdit.MouseHover
@@ -4036,6 +4131,7 @@ Done:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -4111,6 +4207,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -4167,67 +4264,117 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
 
     Private Sub BtnNew_MouseEnter(sender As Object, e As EventArgs) Handles BtnNew.MouseEnter
+        On Error GoTo Err
 
         Dim TTT As String = "Click or press Ctrl+N to start a new script."
         ShowToolTip("New Script", TTT, BtnNew)
 
+        Exit Sub
+Err:
+        ErrCode = Err.Number
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
     End Sub
 
     Private Sub BtnLoad_MouseEnter(sender As Object, e As EventArgs) Handles BtnLoad.MouseEnter
+        On Error GoTo Err
 
         Dim TTT As String = "Click or press Ctrl+L to load an existing script."
         ShowToolTip("Load Script", TTT, BtnLoad)
 
+        Exit Sub
+Err:
+        ErrCode = Err.Number
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
     End Sub
 
     Private Sub BtnSave_MouseEnter(sender As Object, e As EventArgs) Handles BtnSave.MouseEnter
+        On Error GoTo Err
 
         Dim TTT As String = "Click or press Ctrl+S to save your script."
         ShowToolTip("Save Script", TTT, BtnSave)
 
+        Exit Sub
+Err:
+        ErrCode = Err.Number
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
     End Sub
 
     Private Sub BtnEntryDown_MouseEnter(sender As Object, e As EventArgs) Handles BtnEntryDown.MouseEnter
+        On Error GoTo Err
 
         Dim TTT As String = "Click or press Ctrl+PgDn to move this entry and its content down in your script."
         ShowToolTip("Move Entry Down", TTT, BtnEntryDown)
 
+        Exit Sub
+Err:
+        ErrCode = Err.Number
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
     End Sub
 
     Private Sub BtnEntryUp_MouseEnter(sender As Object, e As EventArgs) Handles BtnEntryUp.MouseEnter
+        On Error GoTo Err
 
         Dim TTT As String = "Click or press Ctrl+PgUp to move this entry and its content up in your script."
         ShowToolTip("Move Entry Up", TTT, BtnEntryUp)
 
+        Exit Sub
+Err:
+        ErrCode = Err.Number
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
     End Sub
 
     Private Sub ChkSize_MouseEnter(sender As Object, e As EventArgs) Handles ChkSize.MouseEnter
+        On Error GoTo Err
 
         Dim TTT As String = "Check or press Ctrl+A to autocalculate disk and part sizes during script editing."
         ShowToolTip("Autocalculate Disk and Part Sizes", TTT, ChkSize)
 
+        Exit Sub
+Err:
+        ErrCode = Err.Number
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
     End Sub
 
     Private Sub ChkExpand_MouseEnter(sender As Object, e As EventArgs) Handles ChkExpand.MouseEnter
+        On Error GoTo Err
 
         Dim TTT As String = "Check or press Ctrl+D to show entry details."
         ShowToolTip("Show Details", TTT, ChkExpand)
 
+        Exit Sub
+Err:
+        ErrCode = Err.Number
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
     End Sub
 
     Private Sub ChkToolTips_MouseEnter(sender As Object, e As EventArgs) Handles ChkToolTips.MouseEnter
+        On Error GoTo Err
 
         Dim TTT As String = "Check or press Ctrl+T to show tooltips."
         ShowToolTip("Show TooTips", TTT, ChkToolTips)
 
+        Exit Sub
+Err:
+        ErrCode = Err.Number
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
     End Sub
 
     Private Sub ShowToolTip(TTTitle As String, TTText As String, Owner As Control)
+        On Error GoTo Err
 
         If ChkToolTips.Checked = False Then Exit Sub
 
@@ -4242,89 +4389,88 @@ Err:
             .Show(TTText, Owner)
         End With
 
+        Exit Sub
+Err:
+        ErrCode = Err.Number
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
     End Sub
 
     Private Sub OptFaster_MouseEnter(sender As Object, e As EventArgs) Handles OptFaster.MouseEnter
+        On Error GoTo Err
 
         Dim TTT As String = "Click or press Ctrl+F to use the faster packer by default."
         ShowToolTip("Use Faster Packer", TTT, OptFaster)
 
+        Exit Sub
+Err:
+        ErrCode = Err.Number
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
     End Sub
 
     Private Sub OptBetter_MouseEnter(sender As Object, e As EventArgs) Handles OptBetter.MouseEnter
+        On Error GoTo Err
 
         Dim TTT As String = "Click or press Ctrl+B to use the better packer by default."
         ShowToolTip("Use Better Packer", TTT, OptBetter)
 
+        Exit Sub
+Err:
+        ErrCode = Err.Number
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
     End Sub
 
     Private Sub OptFullPaths_MouseEnter(sender As Object, e As EventArgs) Handles OptFullPaths.MouseEnter
+        On Error GoTo Err
 
         Dim TTT As String = "Check or press Ctrl+P to save your scripts with full file paths."
         ShowToolTip("Use Full Paths", TTT, OptFullPaths)
 
+        Exit Sub
+Err:
+        ErrCode = Err.Number
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
     End Sub
 
     Private Sub OptRelativePaths_MouseEnter(sender As Object, e As EventArgs) Handles OptRelativePaths.MouseEnter
+        On Error GoTo Err
 
         Dim TTT As String = "Check or press Ctrl+R to save your scripts with file paths relative to the script's path."
         ShowToolTip("Use Relative Paths", TTT, OptRelativePaths)
 
+        Exit Sub
+Err:
+        ErrCode = Err.Number
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
     End Sub
 
     Private Sub BtnOK_MouseEnter(sender As Object, e As EventArgs) Handles BtnOK.MouseEnter
+        On Error GoTo Err
 
         Dim TTT As String = "Click or press F5 to close the editor and build your demo."
         ShowToolTip("Close & Build Demo", TTT, BtnOK)
 
+        Exit Sub
+Err:
+        ErrCode = Err.Number
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
     End Sub
 
     Private Sub BtnCancel_MouseEnter(sender As Object, e As EventArgs) Handles BtnCancel.MouseEnter
+        On Error GoTo Err
 
         Dim TTT As String = "Click or press Alt+F4 to closed the editor without building your demo."
         ShowToolTip("Close without Building Demo", TTT, BtnCancel)
 
-    End Sub
-
-    Private Sub OptRelativePaths_MouseLeave(sender As Object, e As EventArgs) Handles OptRelativePaths.MouseLeave
-
-        'TT.Hide(OptRelativePaths)
-
-    End Sub
-
-    Private Sub OptFullPaths_MouseLeave(sender As Object, e As EventArgs) Handles OptFullPaths.MouseLeave
-
-        'TT.Hide(OptFullPaths)
-
-    End Sub
-
-    Private Sub OptBetter_MouseLeave(sender As Object, e As EventArgs) Handles OptBetter.MouseLeave
-
-        'TT.Hide(OptBetter)
-
-    End Sub
-
-    Private Sub OptFaster_MouseLeave(sender As Object, e As EventArgs) Handles OptFaster.MouseLeave
-
-        'TT.Hide(OptFaster)
-
-    End Sub
-
-    Private Sub ChkSize_MouseLeave(sender As Object, e As EventArgs) Handles ChkSize.MouseLeave
-
-        'TT.Hide(ChkSize)
-
-    End Sub
-
-    Private Sub ChkToolTips_MouseLeave(sender As Object, e As EventArgs) Handles ChkToolTips.MouseLeave
-
-        'TT.Hide(ChkToolTips)
-
-    End Sub
-
-    Private Sub ChkExpand_MouseLeave(sender As Object, e As EventArgs) Handles ChkExpand.MouseLeave
-
-        'TT.Hide(ChkExpand)
+        Exit Sub
+Err:
+        ErrCode = Err.Number
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
 

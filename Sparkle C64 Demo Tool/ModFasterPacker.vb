@@ -81,6 +81,7 @@
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -128,11 +129,13 @@ Restart:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
 
     Private Function FindMatch(Optional PO As Integer = -1) As Boolean
+        On Error GoTo Err
         'FINDS MATCHES AND IDENTIFIES THE ONE THAT SAVES THE MOST
 
         On Error GoTo Err
@@ -268,6 +271,7 @@ NextByte:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Function
@@ -466,6 +470,7 @@ Err:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
 NoReplace:
@@ -673,6 +678,7 @@ NoReplace:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Function
@@ -712,6 +718,7 @@ Err:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Function
@@ -754,6 +761,7 @@ Err:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Function
@@ -793,6 +801,7 @@ Err:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Function
@@ -835,6 +844,7 @@ Err:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Function
@@ -857,6 +867,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -937,6 +948,7 @@ Mid2Short:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -969,6 +981,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1000,6 +1013,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1054,6 +1068,7 @@ BufferFull:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Function
@@ -1108,6 +1123,7 @@ BufferFull:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Function
@@ -1145,6 +1161,7 @@ Err:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Function
@@ -1171,6 +1188,7 @@ Err:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
         Literal = False
@@ -1222,6 +1240,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1262,6 +1281,7 @@ Err:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Function
@@ -1290,6 +1310,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1315,6 +1336,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1339,6 +1361,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1355,6 +1378,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1403,6 +1427,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1425,6 +1450,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1517,6 +1543,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1532,6 +1559,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1547,6 +1575,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1575,6 +1604,7 @@ Err:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
@@ -1594,6 +1624,7 @@ Err:
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Function
@@ -1690,8 +1721,8 @@ NewB:            'Next File Info does not fit, so close buffer
 
         Exit Function
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
 NoGo:
         FinishPart = False
 
@@ -1723,6 +1754,7 @@ NoGo:
 
         Exit Sub
 Err:
+        ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
