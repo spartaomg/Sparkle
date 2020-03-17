@@ -12,6 +12,16 @@
 
     Public TotLit, TotMatch As Integer
 
+    'Public ReadOnly CustomIL As Boolean = True
+    Public ReadOnly DefaultIL0 As Byte = 4
+    Public ReadOnly DefaultIL1 As Byte = 3
+    Public ReadOnly DefaultIL2 As Byte = 3
+    Public ReadOnly DefaultIL3 As Byte = 3
+    Public IL0 As Byte = DefaultIL0
+    Public IL1 As Byte = DefaultIL1
+    Public IL2 As Byte = DefaultIL2
+    Public IL3 As Byte = DefaultIL3
+
     Public ReadOnly MaxDiskSize As Integer = 664
     Public BlocksFree As Integer = MaxDiskSize
 
@@ -557,6 +567,19 @@ Err:
         Disk(Track(18) + (0 * 256) + 255) = idcDiskID
         Disk(Track(18) + (0 * 256) + 254) = idcFileCnt
         Disk(Track(18) + (0 * 256) + 253) = idcNextID
+        'Add Custom Interleave Info
+        'If CustomIL Then
+        Disk(Track(18) + (0 * 256) + 252) = 256 - IL3
+        Disk(Track(18) + (0 * 256) + 251) = 256 - IL2
+        Disk(Track(18) + (0 * 256) + 250) = 256 - IL1
+        Disk(Track(18) + (0 * 256) + 249) = IL0
+        Disk(Track(18) + (0 * 256) + 248) = 256 - IL0
+        Disk(Track(18) + (14 * 256) + 96) = 256 - IL3
+        Disk(Track(18) + (14 * 256) + 97) = 256 - IL2
+        Disk(Track(18) + (14 * 256) + 98) = 256 - IL1
+        Disk(Track(18) + (14 * 256) + 99) = IL0
+        Disk(Track(18) + (14 * 256) + 100) = 256 - IL0
+        'End If
 
         Exit Function
 Err:
@@ -985,6 +1008,50 @@ FindNext:
                 NewPart = True
             Case "loop:"
                 DiskLoop = Convert.ToInt32(ScriptEntryArray(0), 10)
+            Case "il0:"
+                'If CustomIL Then
+                If NewD = False Then
+                    NewD = True
+                    If FinishDisk(False, SaveIt) = False Then GoTo NoDisk
+                    If ResetDiskVariables() = False Then GoTo NoDisk
+                End If
+                Dim TmpIL As Integer = Convert.ToInt32(ScriptEntryArray(0), 10)
+                IL0 = If(TmpIL Mod 21 > 0, TmpIL Mod 21, DefaultIL0)
+                'End If
+                NewPart = True
+            Case "il1:"
+                'If CustomIL Then
+                If NewD = False Then
+                    NewD = True
+                    If FinishDisk(False, SaveIt) = False Then GoTo NoDisk
+                    If ResetDiskVariables() = False Then GoTo NoDisk
+                End If
+                Dim TmpIL As Integer = Convert.ToInt32(ScriptEntryArray(0), 10)
+                IL1 = If(TmpIL Mod 19 > 0, TmpIL Mod 19, DefaultIL1)
+                'End If
+                NewPart = True
+            Case "il2:"
+                'If CustomIL Then
+                If NewD = False Then
+                    NewD = True
+                    If FinishDisk(False, SaveIt) = False Then GoTo NoDisk
+                    If ResetDiskVariables() = False Then GoTo NoDisk
+                End If
+                Dim TmpIL As Integer = Convert.ToInt32(ScriptEntryArray(0), 10)
+                IL2 = If(TmpIL Mod 18 > 0, TmpIL Mod 18, DefaultIL2)
+                'End If
+                NewPart = True
+            Case "il3:"
+                'If CustomIL Then
+                If NewD = False Then
+                    NewD = True
+                    If FinishDisk(False, SaveIt) = False Then GoTo NoDisk
+                    If ResetDiskVariables() = False Then GoTo NoDisk
+                End If
+                Dim TmpIL As Integer = Convert.ToInt32(ScriptEntryArray(0), 10)
+                IL3 = If(TmpIL Mod 17 > 0, TmpIL Mod 17, DefaultIL3)
+                'End If
+                NewPart = True
             Case "list:", "script:"
                 If InsertScript(ScriptEntryArray(0)) = False Then GoTo NoDisk
                 NewPart = True    'Files in the embedded script will ALWAYS be in a new part (i.e. scripts cannot be embedded in a part)!!!
@@ -1788,6 +1855,13 @@ Err:
         Prgs.Clear()    'this is the one that is needed for the first CompressPart call during a ReBuild
         ReDim FileNameA(-1), FileAddrA(-1), FileOffsA(-1), FileLenA(-1), FileIOA(-1)    'but reset all arrays just to be safe
 
+        'If CustomIL Then    'Reset interleave
+        IL0 = DefaultIL0
+        IL1 = DefaultIL1
+        IL2 = DefaultIL2
+        IL3 = DefaultIL3
+        'End If
+
         BufferCnt = 0
 
         ReDim ByteSt(-1)
@@ -1874,6 +1948,11 @@ Err:
             MsgBox("Unable to add part to disk", vbOKOnly, "Not enough free space on disk")
             GoTo NoDisk
         End If
+
+        'If CustomIL Then
+        ''GetILfromDisk()
+        CalcILTab()
+        'End If
 
         For I = 0 To BufferCnt - 1
             CT = TabT(I)
@@ -2025,7 +2104,7 @@ Err:
 
         'Remove vbNewLine characters and add 16 SHIFT+SPACE tail characters
         'DirEntry = Replace(Replace(DirEntry, Chr(13), ""), Chr(10), "") + StrDup(16, Chr(160))
-        DirEntry = DirEntry + StrDup(16, Chr(160))
+        DirEntry += StrDup(16, Chr(160))
 
         'Copy only the first 16 characters of the edited DirEntry to the Disk Directory
         For I As Integer = 1 To 16
@@ -2057,6 +2136,99 @@ Err:
                 Exit For
             End If
         Next
+
+        Exit Sub
+Err:
+        ErrCode = Err.Number
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+    Public Sub CalcILTab()
+        'On Error GoTo Err
+
+        Dim SMax, IL As Integer
+        Dim Disk(682) As Byte
+        'Dim TabT(663), TabS(663) As Byte
+        Dim I As Integer = 0
+        Dim SCnt As Integer
+        Dim Tr(35) As Integer
+        Dim S As Integer = 0
+
+        Tr(1) = 0
+        For T = 1 To 34
+            Select Case T
+                Case 1 To 17
+                    Tr(T + 1) = Tr(T) + 21
+                Case 18 To 24
+                    Tr(T + 1) = Tr(T) + 19
+                Case 25 To 30
+                    Tr(T + 1) = Tr(T) + 18
+                Case 31 To 35
+                    Tr(T + 1) = Tr(T) + 17
+            End Select
+        Next
+
+        For T As Integer = 1 To 35
+            If T = 18 Then
+                T += 1
+                S += 2
+            End If
+            SCnt = 0
+
+            Select Case T
+                Case 1 To 17
+                    SMax = 21
+                    IL = IL0
+                Case 18 To 24
+                    SMax = 19
+                    IL = IL1
+                Case 25 To 30
+                    SMax = 18
+                    IL = IL2
+                Case 31 To 35
+                    SMax = 17
+                    IL = IL3
+            End Select
+
+NextSector:
+            If Disk(Tr(T) + S) = 0 Then
+                Disk(Tr(T) + S) = 1
+                TabT(I) = T
+                TabS(I) = S
+                I += 1
+                SCnt += 1
+                S += IL
+                If S >= SMax Then
+                    S -= SMax
+                    If (T < 18) And (S > 0) Then S -= 1 'If track 1-17 then subtract one more if S>0
+                End If
+                If SCnt < SMax Then GoTo NextSector
+            Else
+                S += 1
+                If S >= SMax Then
+                    S = 0
+                End If
+                If SCnt < SMax Then GoTo NextSector
+            End If
+        Next
+
+        'IO.File.WriteAllBytes(UserFolder + "\OneDrive\C64\Coding\TabT.prg", TabT)
+        'IO.File.WriteAllBytes(UserFolder + "\OneDrive\C64\Coding\TabS.prg", TabS)
+
+        Exit Sub
+Err:
+        ErrCode = Err.Number
+        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Public Sub GetILfromDisk()
+        On Error GoTo Err
+
+        IL0 = If(Disk(Track(18) + (0 * 256) + 249) <> 0, Disk(Track(18) + (0 * 256) + 249), 4)
+        IL1 = If(Disk(Track(18) + (0 * 256) + 250) <> 0, 256 - Disk(Track(18) + (0 * 256) + 250), 3)
+        IL2 = If(Disk(Track(18) + (0 * 256) + 251) <> 0, 256 - Disk(Track(18) + (0 * 256) + 251), 3)
+        IL3 = If(Disk(Track(18) + (0 * 256) + 252) <> 0, 256 - Disk(Track(18) + (0 * 256) + 252), 3)
 
         Exit Sub
 Err:

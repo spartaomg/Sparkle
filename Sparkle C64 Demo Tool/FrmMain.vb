@@ -31,8 +31,12 @@ Public Class FrmMain
 
         ReDim PartT(-1), PartS(-1), PartDiskLoc(-1)
 
-        TabT = My.Resources.TabT
-        TabS = My.Resources.TabS
+        'If CustomIL Then
+        CalcILTab()
+        'Else
+        'TabT = My.Resources.TabT
+        'TabS = My.Resources.TabS
+        'End If
 
         Packer = My.Settings.DefaultPacker
 
@@ -49,8 +53,6 @@ Public Class FrmMain
                     Track(T + 1) = Track(T) + (17 * 256)
             End Select
         Next
-
-        'CalcILTab()
 
         CmdLine = False
         If CmdArg.Length > 1 Then
@@ -102,82 +104,6 @@ Err:
 
     End Sub
 
-    Private Sub CalcILTab()
-        On Error GoTo Err
-
-        Dim SMax, IL As Integer
-        Dim Disk(682) As Byte
-        Dim TabT(663), TabS(663) As Byte
-        Dim I As Integer = 0
-        Dim SCnt As Integer
-        Dim Tr(35) As Integer
-        Dim S As Integer = 0
-
-        Tr(1) = 0
-        For T = 1 To 34
-            Select Case T
-                Case 1 To 17
-                    Tr(T + 1) = Tr(T) + 21
-                Case 18 To 24
-                    Tr(T + 1) = Tr(T) + 19
-                Case 25 To 30
-                    Tr(T + 1) = Tr(T) + 18
-                Case 31 To 35
-                    Tr(T + 1) = Tr(T) + 17
-            End Select
-        Next
-
-        For T As Integer = 35 To 1 Step -1
-            If T = 18 Then
-                T += 1
-                S += 2
-            End If
-            SCnt = 0
-
-            Select Case T
-                Case 1 To 17
-                    SMax = 21
-                    IL = 4
-                Case 18 To 24
-                    SMax = 19
-                    IL = 3
-                Case 25 To 30
-                    SMax = 18
-                    IL = 3
-                Case 31 To 35
-                    SMax = 17
-                    IL = 3
-            End Select
-
-NextSector:
-            If Disk(Tr(T) + S) = 0 Then
-                Disk(Tr(T) + S) = 1
-                TabT(I) = T
-                TabS(I) = S
-                I += 1
-                SCnt += 1
-                S += IL
-                If S >= SMax Then
-                    S -= SMax
-                    If (T < 18) And (S > 0) Then S -= 1 'If track 1-17 then subtract one more if S>0
-                End If
-                If SCnt < SMax Then GoTo NextSector
-            Else
-                S += 1
-                If SCnt < SMax Then GoTo NextSector
-            End If
-        Next
-
-        IO.File.WriteAllBytes(UserFolder + "\OneDrive\C64\Coding\TabT.prg", TabT)
-        IO.File.WriteAllBytes(UserFolder + "\OneDrive\C64\Coding\TabS.prg", TabS)
-
-        Exit Sub
-Err:
-        ErrCode = Err.Number
-        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
-    End Sub
-
     Private Sub TsbNew_Click(sender As Object, e As EventArgs) Handles tsbNew.Click
         On Error GoTo Err
 
@@ -221,7 +147,7 @@ Err:
     End Sub
 
     Private Sub TsbOpen_Click(sender As Object, e As EventArgs) Handles tsbOpen.Click
-        On Error GoTo Err
+        'On Error GoTo Err
 
         Dim OpenDLG As New OpenFileDialog
 
@@ -260,7 +186,7 @@ Err:
     End Sub
 
     Private Function OpenFile()
-        On Error GoTo Err
+        'On Error GoTo Err
 
         OpenFile = True
 
@@ -271,6 +197,11 @@ Err:
         End If
 
         Disk = System.IO.File.ReadAllBytes(D64Name)
+
+        'If CustomIL Then
+        GetILfromDisk()
+        CalcILTab()
+        'End If
 
         ScanDiskForParts()
 

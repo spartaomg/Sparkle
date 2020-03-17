@@ -24,8 +24,6 @@ C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\bi
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\bin\Debug\Resources\SDT.prg
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\bin\Debug\Resources\SL.prg
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\bin\Debug\Resources\SLT.prg
-C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\bin\Debug\Resources\TabS.bin
-C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\bin\Debug\Resources\TabT.bin
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\bin\Debug\Sparkle.exe.config
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\bin\Debug\Sparkle.exe
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\bin\Debug\Sparkle.pdb

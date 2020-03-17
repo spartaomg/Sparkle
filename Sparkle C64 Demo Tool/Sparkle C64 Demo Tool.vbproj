@@ -30,8 +30,8 @@
     <PublisherName>Sparta of OMG 2019</PublisherName>
     <SuiteName>Sparkle</SuiteName>
     <OpenBrowserOnPublish>false</OpenBrowserOnPublish>
-    <ApplicationRevision>310</ApplicationRevision>
-    <ApplicationVersion>1.3.20.0310</ApplicationVersion>
+    <ApplicationRevision>317</ApplicationRevision>
+    <ApplicationVersion>1.3.20.0317</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -209,12 +209,6 @@
     <None Include="Resources\SLT.prg">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
-    <None Include="Resources\TabS.bin">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
-    <None Include="Resources\TabT.bin">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <BootstrapperPackage Include=".NETFramework,Version=v4.7.2">
@@ -234,6 +228,8 @@
     </None>
     <Content Include="Sparkle RB 8bit.ico" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <Folder Include="bin\Debug\Resources\" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
 </Project>

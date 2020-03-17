@@ -109,25 +109,5 @@ Namespace My.Resources
                 Return CType(obj,Byte())
             End Get
         End Property
-        
-        '''<summary>
-        '''  Looks up a localized resource of type System.Byte[].
-        '''</summary>
-        Friend ReadOnly Property TabS() As Byte()
-            Get
-                Dim obj As Object = ResourceManager.GetObject("TabS", resourceCulture)
-                Return CType(obj,Byte())
-            End Get
-        End Property
-        
-        '''<summary>
-        '''  Looks up a localized resource of type System.Byte[].
-        '''</summary>
-        Friend ReadOnly Property TabT() As Byte()
-            Get
-                Dim obj As Object = ResourceManager.GetObject("TabT", resourceCulture)
-                Return CType(obj,Byte())
-            End Get
-        End Property
     End Module
 End Namespace

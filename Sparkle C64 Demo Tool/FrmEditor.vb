@@ -108,6 +108,12 @@ Public Class FrmEditor
     Private ReadOnly sZP As String = "Zeropage: "
     Private ReadOnly sPacker As String = "Packer: "
     Private ReadOnly sLoop As String = "Loop: "
+
+    Private ReadOnly sIL0 As String = "Interleave 0: "
+    Private ReadOnly sIL1 As String = "Interleave 1: "
+    Private ReadOnly sIL2 As String = "Interleave 2: "
+    Private ReadOnly sIL3 As String = "Interleave 3: "
+
     Private ReadOnly sScript As String = "Script: "
     Private ReadOnly sFile As String = "File: "
     Private ReadOnly sNewBlock As String = "Start this part in a new sector on the disk: " '"Start part in a new block on the disk: "
@@ -729,7 +735,7 @@ FileDataFO:
                     Case sLoop
 
                         Select Case e.KeyCode
-                            Case Keys.D0 To Keys.D9, Keys.NumPad0 To Keys.NumPad9
+                            Case Keys.D0 To Keys.D9, Keys.NumPad0 To Keys.NumPad9, Keys.Enter
                                 .Text = Strings.Right(N.Text, Len(N.Text) - Len(S))
                                 .Width = TextRenderer.MeasureText("000", N.NodeFont).Width
                                 .Tag = S
@@ -745,6 +751,25 @@ FileDataFO:
                                 Exit Sub
                         End Select
 
+                    Case sIL0, sIL1, sIL2, sIL3
+                        'If CustomIL Then
+                        Select Case e.KeyCode
+                            Case Keys.D0 To Keys.D9, Keys.NumPad0 To Keys.NumPad9, Keys.Enter
+                                .Text = Strings.Right(N.Text, Len(N.Text) - Len(S))
+                                .Width = TextRenderer.MeasureText("00", N.NodeFont).Width
+                                .Tag = S
+                                N.Text = .Tag
+                                .Left = TV.Left + N.Bounds.Left + N.Bounds.Width
+                                .MaxLength = 2
+                                .Visible = True
+
+                                HandleKey = True
+                                e.SuppressKeyPress = True
+                            Case Else
+                                HandleKey = False
+                                Exit Sub
+                        End Select
+                        'end If
                     Case Else
                         HandleKey = False
                         .Visible = False
@@ -752,7 +777,7 @@ FileDataFO:
                 End Select
                 .Top = TV.Top + N.Bounds.Top + 3
                 .ForeColor = N.ForeColor
-            End With
+        End With
         End If
         With txtEdit
             If txtEdit.Visible = True Then
@@ -972,21 +997,27 @@ Err:
                 TV.Focus()
             Case Else
                 If (txtEdit.MaxLength = 4) Or (txtEdit.MaxLength = 2) Or (txtEdit.MaxLength = 8) Then   'Hex numbers
-                    Select Case e.KeyCode
-                        Case Keys.A To Keys.F, Keys.D0 To Keys.D9, Keys.NumPad0 To Keys.NumPad9
-                            Select Case e.KeyCode
-                                Case Keys.D0 To Keys.D9, Keys.NumPad0 To Keys.NumPad9
-                                    If (e.Modifiers = Keys.Shift) OrElse (e.Modifiers = Keys.Control) OrElse (e.Modifiers = Keys.Alt) Then
-                                        e.SuppressKeyPress = True
-                                        e.Handled = True
-                                    End If
-                            End Select
-                        Case Else
-                            e.SuppressKeyPress = True
-                            e.Handled = True
-                    End Select
+                    If Strings.Left(txtEdit.Tag, 2) = Strings.Left(sIL0, 2) Then
+                        'If CustomIL Then
+                        GoTo Numeric
+                        'End If
+                    Else
+                        Select Case e.KeyCode
+                            Case Keys.A To Keys.F, Keys.D0 To Keys.D9, Keys.NumPad0 To Keys.NumPad9
+                                Select Case e.KeyCode
+                                    Case Keys.D0 To Keys.D9, Keys.NumPad0 To Keys.NumPad9
+                                        If (e.Modifiers = Keys.Shift) OrElse (e.Modifiers = Keys.Control) OrElse (e.Modifiers = Keys.Alt) Then
+                                            e.SuppressKeyPress = True
+                                            e.Handled = True
+                                        End If
+                                End Select
+                            Case Else
+                                e.SuppressKeyPress = True
+                                e.Handled = True
+                        End Select
+                    End If
                 ElseIf txtEdit.MaxLength = 3 Then   'Loop feature, on decimals
-                    Select Case e.KeyCode
+Numeric:            Select Case e.KeyCode
                         Case Keys.D0 To Keys.D9, Keys.NumPad0 To Keys.NumPad9
                             If (e.Modifiers = Keys.Shift) OrElse (e.Modifiers = Keys.Control) OrElse (e.Modifiers = Keys.Alt) Then
                                 e.SuppressKeyPress = True
@@ -1519,6 +1550,12 @@ Err:
         AddNode(DiskNode, sDemoStart + DC.ToString, sDemoStart + "$", DiskNode.Tag, colDiskInfo, Fnt)
         AddNode(DiskNode, sDirArt + DC.ToString, sDirArt, DiskNode.Tag, colDiskInfo, Fnt)
         AddNode(DiskNode, sPacker + DC.ToString, sPacker + If(My.Settings.DefaultPacker = 1, "faster", "better"), DiskNode.Tag, colDiskInfo, Fnt)
+        'If CustomIL Then
+        AddNode(DiskNode, sIL0 + DC.ToString, sIL0 + Strings.Left("04", 2 - Len(IL0.ToString)) + IL0.ToString, DiskNode.Tag, colDiskInfo, Fnt)
+        AddNode(DiskNode, sIL1 + DC.ToString, sIL1 + Strings.Left("03", 2 - Len(IL1.ToString)) + IL1.ToString, DiskNode.Tag, colDiskInfo, Fnt)
+        AddNode(DiskNode, sIL2 + DC.ToString, sIL2 + Strings.Left("03", 2 - Len(IL2.ToString)) + IL2.ToString, DiskNode.Tag, colDiskInfo, Fnt)
+        AddNode(DiskNode, sIL3 + DC.ToString, sIL3 + Strings.Left("03", 2 - Len(IL3.ToString)) + IL3.ToString, DiskNode.Tag, colDiskInfo, Fnt)
+        'End If
         If ZPSet = False Then
             ZPNode.Tag = DiskNode.Tag
             DiskNode.Nodes.Add(ZPNode)
@@ -1821,8 +1858,57 @@ Err:
         'Corrects the length of txtEdit to 2 or 4 characters depending on MaxLength
         'Eliminates invalid values
 
-        Select Case txtEdit.MaxLength
-            Case 2  'ZP value
+        'Verify IL, Loop, ZP, and address values (cannot be 0, otherwise IL=Max mod IL)
+        Select Case txtEdit.Tag
+            Case sIL0
+                If Len(txtEdit.Text) < 2 Then
+                    txtEdit.Text = Strings.Left("00", 2 - Len(txtEdit.Text)) + txtEdit.Text
+                End If
+
+                Dim IL As Integer = Convert.ToInt32(txtEdit.Text, 10) Mod 21
+                If IL = 0 Then IL = DefaultIL0
+                txtEdit.Text = IL.ToString
+
+                If Len(txtEdit.Text) < 2 Then
+                    txtEdit.Text = Strings.Left("00", 2 - Len(txtEdit.Text)) + txtEdit.Text
+                End If
+            Case sIL1
+                If Len(txtEdit.Text) < 2 Then
+                    txtEdit.Text = Strings.Left("00", 2 - Len(txtEdit.Text)) + txtEdit.Text
+                End If
+
+                Dim IL As Integer = Convert.ToInt32(txtEdit.Text, 10) Mod 19
+                If IL = 0 Then IL = DefaultIL1
+                txtEdit.Text = IL.ToString
+
+                If Len(txtEdit.Text) < 2 Then
+                    txtEdit.Text = Strings.Left("00", 2 - Len(txtEdit.Text)) + txtEdit.Text
+                End If
+            Case sIL2
+                If Len(txtEdit.Text) < 2 Then
+                    txtEdit.Text = Strings.Left("00", 2 - Len(txtEdit.Text)) + txtEdit.Text
+                End If
+
+                Dim IL As Integer = Convert.ToInt32(txtEdit.Text, 10) Mod 18
+                If IL = 0 Then IL = DefaultIL2
+                txtEdit.Text = IL.ToString
+
+                If Len(txtEdit.Text) < 2 Then
+                    txtEdit.Text = Strings.Left("00", 2 - Len(txtEdit.Text)) + txtEdit.Text
+                End If
+            Case sIL3
+                If Len(txtEdit.Text) < 2 Then
+                    txtEdit.Text = Strings.Left("00", 2 - Len(txtEdit.Text)) + txtEdit.Text
+                End If
+
+                Dim IL As Integer = Convert.ToInt32(txtEdit.Text, 10) Mod 17
+                If IL = 0 Then IL = DefaultIL3
+                txtEdit.Text = IL.ToString
+
+                If Len(txtEdit.Text) < 2 Then
+                    txtEdit.Text = Strings.Left("00", 2 - Len(txtEdit.Text)) + txtEdit.Text
+                End If
+            Case sZP + "$"
                 If Len(txtEdit.Text) < 2 Then
                     txtEdit.Text = Strings.Left("02", 2 - Len(txtEdit.Text)) + txtEdit.Text
                 End If
@@ -1833,20 +1919,26 @@ Err:
                 ElseIf txtEdit.Text = "ff" Then
                     txtEdit.Text = "fe"
                 End If
-            Case 3
-                If txtEdit.Text = "" Then
-                    txtEdit.Text = "0"
-                End If
-            Case 4  'Address and Length values
-                If (Len(txtEdit.Text) < 4) And (Len(txtEdit.Text) > 0) Then
-                    txtEdit.Text = Strings.Left("0000", 4 - Len(txtEdit.Text)) + txtEdit.Text
-                End If
-            Case 8  'Offset values
-                If (Len(txtEdit.Text) < 8) And (Len(txtEdit.Text) > 0) Then
-                    txtEdit.Text = Strings.Left("00000000", 8 - Len(txtEdit.Text)) + txtEdit.Text
-                End If
+            Case sLoop
+                If txtEdit.Text = "" Then txtEdit.Text = "0"
+                Dim L As Integer = Convert.ToInt32(txtEdit.Text, 10)
+                If L > 255 Then L = 255
+                txtEdit.Text = L.ToString
             Case Else
-                Exit Sub
+                Select Case txtEdit.MaxLength
+                    Case 2  'ZP value, see above
+                    Case 3  'Loop value, see above
+                    Case 4  'Address and Length values
+                        If (Len(txtEdit.Text) < 4) And (Len(txtEdit.Text) > 0) Then
+                            txtEdit.Text = Strings.Left("0000", 4 - Len(txtEdit.Text)) + txtEdit.Text
+                        End If
+                    Case 8  'Offset values
+                        If (Len(txtEdit.Text) < 8) And (Len(txtEdit.Text) > 0) Then
+                            txtEdit.Text = Strings.Left("00000000", 8 - Len(txtEdit.Text)) + txtEdit.Text
+                        End If
+                    Case Else
+                        Exit Sub
+                End Select
         End Select
 
         txtEdit.Text = LCase(txtEdit.Text)
@@ -3080,6 +3172,78 @@ Err:
                         ZPSet = True
                     End If
                     NewPart = True
+                Case "il0:"
+                    'If CustomIL Then
+                    If NewD = False Then
+                        NewD = True
+                        AddDiskToScriptNode(BaseNode)
+                    End If
+                    If Len(ScriptEntryArray(0)) < 2 Then
+                        ScriptEntryArray(0) = Strings.Left("04", 2 - Len(ScriptEntryArray(0))) + ScriptEntryArray(0)
+                    ElseIf Len(ScriptEntryArray(0)) > 2 Then
+                        ScriptEntryArray(0) = Strings.Right(ScriptEntryArray(0), 2)
+                    End If
+                    If DiskNode.Nodes(sIL0 + DC.ToString) Is Nothing Then
+                        AddNode(DiskNode, sIL0 + DC.ToString, sIL0 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfo, Fnt)
+                    Else
+                        UpdateNode(DiskNode.Nodes(sIL0 + DC.ToString), sIL0 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfo, Fnt) ', tDemoName)
+                    End If
+                    'End If
+                    NewPart = True
+                Case "il1:"
+                    'If CustomIL Then
+                    If NewD = False Then
+                        NewD = True
+                        AddDiskToScriptNode(BaseNode)
+                    End If
+                    If Len(ScriptEntryArray(0)) < 2 Then
+                        ScriptEntryArray(0) = Strings.Left("03", 2 - Len(ScriptEntryArray(0))) + ScriptEntryArray(0)
+                    ElseIf Len(ScriptEntryArray(0)) > 2 Then
+                        ScriptEntryArray(0) = Strings.Right(ScriptEntryArray(0), 2)
+                    End If
+                    If DiskNode.Nodes(sIL1 + DC.ToString) Is Nothing Then
+                        AddNode(DiskNode, sIL1 + DC.ToString, sIL1 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfo, Fnt)
+                    Else
+                        UpdateNode(DiskNode.Nodes(sIL1 + DC.ToString), sIL1 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfo, Fnt) ', tDemoName)
+                    End If
+                    'End If
+                    NewPart = True
+                Case "il2:"
+                    'If CustomIL Then
+                    If NewD = False Then
+                        NewD = True
+                        AddDiskToScriptNode(BaseNode)
+                    End If
+                    If Len(ScriptEntryArray(0)) < 2 Then
+                        ScriptEntryArray(0) = Strings.Left("03", 2 - Len(ScriptEntryArray(0))) + ScriptEntryArray(0)
+                    ElseIf Len(ScriptEntryArray(0)) > 2 Then
+                        ScriptEntryArray(0) = Strings.Right(ScriptEntryArray(0), 2)
+                        End If
+                    If DiskNode.Nodes(sIL2 + DC.ToString) Is Nothing Then
+                        AddNode(DiskNode, sIL2 + DC.ToString, sIL2 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfo, Fnt)
+                    Else
+                        UpdateNode(DiskNode.Nodes(sIL2 + DC.ToString), sIL2 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfo, Fnt) ', tDemoName)
+                    End If
+                    'End If
+                    NewPart = True
+                Case "il3:"
+                    'If CustomIL Then
+                    If NewD = False Then
+                        NewD = True
+                        AddDiskToScriptNode(BaseNode)
+                    End If
+                    If Len(ScriptEntryArray(0)) < 2 Then
+                        ScriptEntryArray(0) = Strings.Left("03", 2 - Len(ScriptEntryArray(0))) + ScriptEntryArray(0)
+                    ElseIf Len(ScriptEntryArray(0)) > 2 Then
+                        ScriptEntryArray(0) = Strings.Right(ScriptEntryArray(0), 2)
+                    End If
+                    If DiskNode.Nodes(sIL3 + DC.ToString) Is Nothing Then
+                        AddNode(DiskNode, sIL3 + DC.ToString, sIL3 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfo, Fnt)
+                    Else
+                        UpdateNode(DiskNode.Nodes(sIL3 + DC.ToString), sIL3 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfo, Fnt) ', tDemoName)
+                    End If
+                    'End If
+                    NewPart = True
                 Case "list:", "script:"
                     NewD = False
                     If InStr(ScriptEntryArray(0), ":") = 0 Then ScriptEntryArray(0) = ScriptPath + ScriptEntryArray(0)
@@ -3289,6 +3453,79 @@ Done:
                         ZPSet = True
                     End If
                     NewPart = True
+                Case "il0:"
+                    'If CustomIL Then
+                    If NewD = False Then
+                        NewD = True
+                        AddDiskToScriptNode(BaseNode)
+                    End If
+                    If Len(ScriptEntryArray(0)) < 2 Then
+                        ScriptEntryArray(0) = Strings.Left("04", 2 - Len(ScriptEntryArray(0))) + ScriptEntryArray(0)
+                    ElseIf Len(ScriptEntryArray(0)) > 2 Then
+                        ScriptEntryArray(0) = Strings.Right(ScriptEntryArray(0), 2)
+                        End If
+                    If DiskNode.Nodes(sIL0 + DC.ToString) Is Nothing Then
+                        AddNode(DiskNode, sIL0 + DC.ToString, sIL0 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfoGray, Fnt)
+                    Else
+                        UpdateNode(DiskNode.Nodes(sIL0 + DC.ToString), sIL0 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfoGray, Fnt) ', tDemoName)
+                    End If
+                    'End If
+                    NewPart = True
+                Case "il1:"
+                    'If CustomIL Then
+                    If NewD = False Then
+                        NewD = True
+                        AddDiskToScriptNode(BaseNode)
+                    End If
+                    If Len(ScriptEntryArray(0)) < 2 Then
+                        ScriptEntryArray(0) = Strings.Left("03", 2 - Len(ScriptEntryArray(0))) + ScriptEntryArray(0)
+                    ElseIf Len(ScriptEntryArray(0)) > 2 Then
+                        ScriptEntryArray(0) = Strings.Right(ScriptEntryArray(0), 2)
+                    End If
+
+                    If DiskNode.Nodes(sIL1 + DC.ToString) Is Nothing Then
+                        AddNode(DiskNode, sIL1 + DC.ToString, sIL1 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfoGray, Fnt)
+                    Else
+                        UpdateNode(DiskNode.Nodes(sIL1 + DC.ToString), sIL1 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfoGray, Fnt) ', tDemoName)
+                    End If
+                    'End If
+                    NewPart = True
+                Case "il2:"
+                    'If CustomIL Then
+                    If NewD = False Then
+                        NewD = True
+                        AddDiskToScriptNode(BaseNode)
+                    End If
+                    If Len(ScriptEntryArray(0)) < 2 Then
+                        ScriptEntryArray(0) = Strings.Left("03", 2 - Len(ScriptEntryArray(0))) + ScriptEntryArray(0)
+                    ElseIf Len(ScriptEntryArray(0)) > 2 Then
+                        ScriptEntryArray(0) = Strings.Right(ScriptEntryArray(0), 2)
+                    End If
+                    If DiskNode.Nodes(sIL2 + DC.ToString) Is Nothing Then
+                        AddNode(DiskNode, sIL2 + DC.ToString, sIL2 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfoGray, Fnt)
+                    Else
+                        UpdateNode(DiskNode.Nodes(sIL2 + DC.ToString), sIL2 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfoGray, Fnt) ', tDemoName)
+                    End If
+                    'End If
+                    NewPart = True
+                Case "il3:"
+                    'If CustomIL Then
+                    If NewD = False Then
+                        NewD = True
+                        AddDiskToScriptNode(BaseNode)
+                    End If
+                    If Len(ScriptEntryArray(0)) < 2 Then
+                        ScriptEntryArray(0) = Strings.Left("03", 2 - Len(ScriptEntryArray(0))) + ScriptEntryArray(0)
+                    ElseIf Len(ScriptEntryArray(0)) > 2 Then
+                        ScriptEntryArray(0) = Strings.Right(ScriptEntryArray(0), 2)
+                    End If
+                    If DiskNode.Nodes(sIL3 + DC.ToString) Is Nothing Then
+                        AddNode(DiskNode, sIL3 + DC.ToString, sIL3 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfoGray, Fnt)
+                    Else
+                        UpdateNode(DiskNode.Nodes(sIL3 + DC.ToString), sIL3 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfoGray, Fnt) ', tDemoName)
+                    End If
+                    'End If
+                    NewPart = True
                 Case "list:", "script:"
                     NewD = False
                     If InStr(ScriptEntryArray(0), ":") = 0 Then ScriptEntryArray(0) = Path + ScriptEntryArray(0)
@@ -3337,6 +3574,12 @@ Err:
             AddNode(DiskNode, sDemoStart + DC.ToString, sDemoStart + "$", DiskNode.Tag, colDiskInfo, Fnt)
             AddNode(DiskNode, sDirArt + DC.ToString, sDirArt, DiskNode.Tag, colDiskInfo, Fnt)
             AddNode(DiskNode, sPacker + DC.ToString, sPacker + If(My.Settings.DefaultPacker = 1, "faster", "better"), DiskNode.Tag, colDiskInfo, Fnt)
+            'If CustomIL Then
+            AddNode(DiskNode, sIL0 + DC.ToString, sIL0 + Strings.Left("04", 2 - Len(IL0.ToString)) + IL0.ToString, DiskNode.Tag, colDiskInfo, Fnt)
+            AddNode(DiskNode, sIL1 + DC.ToString, sIL1 + Strings.Left("03", 2 - Len(IL1.ToString)) + IL1.ToString, DiskNode.Tag, colDiskInfo, Fnt)
+            AddNode(DiskNode, sIL2 + DC.ToString, sIL2 + Strings.Left("03", 2 - Len(IL2.ToString)) + IL2.ToString, DiskNode.Tag, colDiskInfo, Fnt)
+            AddNode(DiskNode, sIL3 + DC.ToString, sIL3 + Strings.Left("03", 2 - Len(IL3.ToString)) + IL3.ToString, DiskNode.Tag, colDiskInfo, Fnt)
+            'End If
             If ZPSet = False Then
                 ZPNode.Tag = DiskNode.Tag
                 DiskNode.Nodes.Add(ZPNode)
@@ -3678,6 +3921,22 @@ Err:
                                 Script += "ZP:" + vbTab + Strings.Right(DiskNode.Nodes(J).Text, Len(DiskNode.Nodes(J).Text) - Len(sZP) - 1) + vbNewLine
                             Case sLoop
                                 Script += "Loop:" + vbTab + Strings.Right(DiskNode.Nodes(J).Text, Len(DiskNode.Nodes(J).Text) - Len(sLoop)) + vbNewLine
+                            Case sIL0 + CurrentDisk.ToString
+                                'If CustomIL Then
+                                Script += "IL0:" + vbTab + Strings.Right(DiskNode.Nodes(J).Text, Len(DiskNode.Nodes(J).Text) - Len(sIL0)) + vbNewLine
+                                'End If
+                            Case sIL1 + CurrentDisk.ToString
+                                'If CustomIL Then
+                                Script += "IL1:" + vbTab + Strings.Right(DiskNode.Nodes(J).Text, Len(DiskNode.Nodes(J).Text) - Len(sIL1)) + vbNewLine
+                                'End If
+                            Case sIL2 + CurrentDisk.ToString
+                                'If CustomIL Then
+                                Script += "IL2:" + vbTab + Strings.Right(DiskNode.Nodes(J).Text, Len(DiskNode.Nodes(J).Text) - Len(sIL2)) + vbNewLine
+                                'End If
+                            Case sIL3 + CurrentDisk.ToString
+                                'If CustomIL Then
+                                Script += "IL3:" + vbTab + Strings.Right(DiskNode.Nodes(J).Text, Len(DiskNode.Nodes(J).Text) - Len(sIL3)) + vbNewLine
+                                'End If
                         End Select
                     Next
                 Case &H20000 To &H2FFFF
