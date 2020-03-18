@@ -85,8 +85,7 @@ Public Class FrmMain
                     MsgBox("Sparkle is unable to open the following file:" + vbNewLine + vbNewLine + Path, vbOKOnly + vbCritical, "Invalid command-line argument")
 ExitErr:            ErrCode = -1                            'To produce an error code...
 ExitNoErr:          Close()                                 'This will close the main form and set the exit code and exit Sparkle
-                    Application.Exit()                      '...and exit app!!! - not needed?
-                    'End                                    'End does not return an exit code
+                    Exit Sub                                'This is needed to prevent Error Chime on exit
             End Select
         End If
 
