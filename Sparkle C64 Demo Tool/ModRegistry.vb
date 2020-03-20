@@ -158,7 +158,7 @@ Err:
             End If
         End Using
 
-		Exit Function
+        Exit Function
 Err:
         ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")

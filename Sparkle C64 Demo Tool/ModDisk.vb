@@ -40,9 +40,9 @@
 
     Public ByteSt(), BitSt(), Buffer(255), BitPos, LastByte, AdLo, AdHi As Byte
     Public Match, MaxBit, MatchSave(), PrgLen, Distant As Integer
-	Public MatchOffset(), MatchCnt, RLECnt, MatchLen(), MaxSave, MaxOffset, MaxLen, LitCnt, Bits, BuffAdd, PrgAdd As Integer
-	Public MaxSLen, MaxSOff, MaxSSave As Integer
-	Public DistAd(), DistLen(), DistSave(), DistCnt, DistBase As Integer
+    Public MatchOffset(), MatchCnt, RLECnt, MatchLen(), MaxSave, MaxOffset, MaxLen, LitCnt, Bits, BuffAdd, PrgAdd As Integer
+    Public MaxSLen, MaxSOff, MaxSSave As Integer
+    Public DistAd(), DistLen(), DistSave(), DistCnt, DistBase As Integer
     Public DtPos, CmPos, CmLast, DtLen, MatchStart, BitCnt As Integer
     Public LastPO, LastMS As Integer    'save previous POffset and MatchStart positions to recompress last block of part
     Public LastBitP, LastBytC, LastBitC As Integer

@@ -321,6 +321,7 @@ UnPkdLoop:	lda	Buffer,y
 //----------------------------
 //		END OF BLOCK
 //----------------------------
+
 NextBlock:	ldx	#$00		//X=$00 needed to load next block
 		jmp	RcvBlock
 

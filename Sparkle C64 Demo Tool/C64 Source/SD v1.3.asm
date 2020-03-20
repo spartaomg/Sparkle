@@ -10,7 +10,7 @@
 //	0082	00ff	GCR Loop
 //	0100	01ff	Data Buffer in Stack
 //	0200	02ff	Secondary buffer for last block of a demo part
-//	0300	05e2	Drive Code (#$1d bytes free)
+//	0300	05f1	Drive Code (#$0e bytes free)
 //	0600	06ff	ZP GCR Tabs and GCR Loop, moved to ZP, overwritten by GCR Tabs
 //	0600	06ff	GCR Tabs for GCR decoding, H2STab
 //	0700	07ff	GCR Tabs for GCR decoding, GCR Mod Tabs
@@ -24,6 +24,11 @@
 //	18:00:$ff	$0101	   DiskID	(for flip detection, compare to NextID @ $21 on ZP)
 //	18:00:$fe	$0102	   PartCtr	(will be copied to PartCtr @ $20 on ZP after flip)
 //	18:00:$fd	$0103	   NextID	(will be copied to NextID  @ $21 on ZP after flip, =#$00 if no more flips)
+//	18:00:$fc	$0104	   IL3R	(will be copied to $60 in ILTab)
+//	18:00:$fb	$0105	   IL2R	(will be copied to $61 in ILTab)
+//	18:00:$fa	$0106	   IL1R	(will be copied to $62 in ILTab)
+//	18:00:$f9	$0107	   IL0	(will be copied to $63, used to update nS)
+//	18:00:$f8	$0108	   IL0R	(will be copied to $64 in ILTab)
 //
 //----------------------------------------------------------------------------------------
 
@@ -47,26 +52,30 @@
 .const	SCtr		=$10		//Sector Counter, sectors left to be fetched in track
 .const	LastT		=$11		//Track number of last block of a part, initial value=#$01
 .const	LastS		=$18		//Sector number of last block of a part, initial value=#$00
-.const	VerifCtr	=$19		//Checksum Verification Counter, copied to ZP
+.const	VerifCtr	=$19		//Checksum Verification Counter
 .const	PartCtr	=$20		//Part Counter - will be updated from 18:00:$fe of next side
 .const	NextID	=$21		//Next Side's ID - will be updated from 18:00:$fd of next side
 .const	ZPT		=$22		//Temporary value on ZP for H2STab preparation and GCR loop timing
 .const	NewPart	=$23		//Marks the first block of the next part, default = #$00, stop motor if changed to #$01
 .const	StepDir	=$28		//Stepper Seek Direction
 .const	ScndBuff	=$29		//#$01 if last block of a part is stored in secondary buffer, otherwise $00
-.const	WList		=$3e		//Wanted Sector list ($3e-$52 on zeropage) (00=unfetched, [-]=wanted, [+]=fetched)
+.const	WList		=$3e		//Wanted Sector list ($3e-$52 on zeropage),(0)=unfetched, (-)=wanted, (+)=fetched
 
-.const	ZP1		=$58		//=T2Base
-.const	ZP2		=$60		//=Tab2+$40
-.const	ZP3		=$62		//=T2Base+$20
-.const	ZP4		=$68		//=Tab2+$60
+//ZP1-ZP4 overlap with Wanted List but they are only used during initialization
+.const	ZP1		=$40		//ZP pointer for T2Base
+.const	ZP2		=$42		//ZP pointer for Tab2+$40
+.const	ZP3		=$44		//ZP pointer for T2Base+$20
+.const	ZP4		=$46		//ZP pointer for Tab2+$60
 
-.const	LM1		=$30		//=LMT1 ($0720)
-.const	LM2		=$38		//=LMT2 ($077d)
-.const	LM3		=$78		//=LMT3 ($0783)
-.const	LM4		=$7e		//=LMT4 ($078b)
+.const	ILTab		=$60		//Inverted Custom Interleave Table: $60-$64
+.const	IL0		=$63		//for nS
 
-.const	ZP0101	=$70		//$70/$71 = $0101
+.const	LM1		=$30		//ZP pointer for LMT1 ($0720)
+.const	LM2		=$38		//ZP pointer for LMT2 ($077d)
+.const	LM3		=$7e		//ZP pointer for LMT3 ($0783)
+.const	LM4		=$80		//ZP pointer for LMT4 ($078b)
+
+.const	ZP0101	=$70		//$70/$71 = $0101, points at the last fetched value in the buffer
 .const	ZP0201	=$71		//$71/$72 = $0201
 
 .const	ZP07		=$1c		//=#$07
@@ -75,7 +84,7 @@
 .const	ZPf8		=$7c		//=#$f8
 
 //Unused ZP addresses:
-//54,56,5a,5e,64,66,6a,6e,74,76,7a,80-81
+//54,56,58-5a,5e,66,68-6a,6e,74,76,78-7a
 
 //GCR Decoding Tabs:
 .const	Tab1		=$0704
@@ -91,8 +100,8 @@
 
 //Other Tabs:
 .const	H2STab	=$0601	//HiNibble-to-Serial Conversion Tab (16 bytes total, $10 bytes apart)
-.const	BST		=$0701	//Bit Shuffle Tab (16 bytes total, insterspersed on page)
-.const	BRT		=$07c0	//Bitrate Tab, to adjust GCR loop
+.const	BitShufTab	=$0701	//Bit Shuffle Tab (16 bytes total, insterspersed on page)
+.const	BitrateTab	=$07c0	//Bitrate Tab, to adjust GCR loop
 
 //----------------------------------
 
@@ -163,17 +172,21 @@ MakeH2STab:	lda	#$50		//Prepare HiNibble-to-Serial Conversion Tab, X=#$00 at sta
 //		HERE STARTS THE FUN	X=#$00/#$11, Y=#$00
 //-------------------------------------------------------
 
-StartChain:	lda	#$04
-		sta	nS		//Reset Next Sector (we start with Sector 0 and IL=4 so next sector is Sector 4)
+NextSide:	lda	IL0		//Next sector = first sector + interleave0
+		sta	nS		//Reset Next Sector depending on custom interleave for speed zone 0
+		inc	WantedCtr	//#$00 -> #$01	We need 1 block at start (not needed for BAM)
+LoadBAM:	lda	#CSV
 		sta	VerifCtr	//Verify first track after head movement
-		inc	WantedCtr	//#$00 -> #$01	We need 1 block at start (Track 1, Sector 0)
-NextSide:	lda	#$ff
-		sta	WList		//Mark Sector 0 as wanted (#$00=unfetched, #$01=fetched, #$ff=wanted)
-		stx	LastS		//Reset LastS=#$00/#$11 - the latter value is not used
-		
-NextTrack:	inx			// -> Track 1 or -> Track 18
-		stx	LastT		//Reset LastT=#$01/#$12
-		txa			//A=X=Wanted Track, Y MUST be #$00 here (only to save 1 byte, though...)
+		stx	LastS		//LastS=#$00/#$11 - the latter value is not used
+		inx
+		stx	LastT		//LastT=#$01/#$12
+		ldx	#$14
+ClrWList:	sty	WList,x	//Y=00, clear Wanted Block List
+		dex
+		bpl	ClrWList
+		stx	WList		//#$00 -> #$ff	Mark Sector 0 as wanted (0)=unfetched, (+)=fetched, (-)=wanted
+
+		lax	LastT		//A=X=wanted track for stepper code
 		sec
 		sbc	cT		//Calculate Stepper Direction and number of halftrack steps
 		iny			//Y=#$01 -> Stepper moves Up/Inward
@@ -188,6 +201,7 @@ SkipStepDn:	sty	StepDir	//Store stepper direction UP/INWARD (Y=#$01) or DOWN/OUT
 //----------------------------
 //		Multi-track stepping
 //----------------------------
+
 		lda	#$60		//Insert "RTS"
 		sta	RTS_LAX
 
@@ -397,7 +411,7 @@ StepTmr:	lda	#$98
 		sta	$1c05
 
 Step:		lda	$1c00
-PreCalc:	//anc	#$1b		//ANC	DOES NOT WORK ON ULTIMATE-II+!!!
+PreCalc:	//anc	#$1b		//ANC	DOES NOT WORK ON ULTIMATE-II+
 		and	#$1b		//So we use AND+CLC
 		clc
 		adc	StepDir	//#$03 for stepping down/outward, #$01 for stepping up/inward
@@ -446,18 +460,17 @@ RateDone:	sta	Spartan+1	//Save bitrate for Spartan Step
 		sty	MaxSct1+1	//Update Max No. of Sectors in this Track
 		sty	MaxSct2+1	//Three extra bytes here but faster loop later
 
-		ldx	BRT,y		//Adjust GCR Loop length
+		ldx	BitrateTab,y//Adjust GCR Loop length
 		stx.z	ModGCR+1
 
-		lda	#$fc		//Inverted Interleave (IL=4 if SCtr=15 (Tracks 1-17))
+		lda	ILTab-$11,y	//Inverted Interleave Tab
+		sta	IL+1
+
 		ldx	#$01		//Extra subtraction for Zone 0
 		stx	StepDir	//Reset stepper seek direction to Up/Inward here
-
 		cpy	#$15
-		beq	StoreVal
-		lda	#$fd		//IL=3 for the rest of the disk
-		dex			//No extra subtraction for Zones 1-3
-StoreVal:	sta	IL+1
+		beq	*+3
+		dex
 		stx	SubSct+1
 
 //----------------------------
@@ -533,17 +546,18 @@ Flip:		lda	$0101		//DiskID, compare it to NextID in memory	DO NOT CHANGE TO ZP01
 
 //----------------------------
 
-		ldy	#$02		//Flip detected, copy Next Side Info
-CopyInfo:	lda	(ZP0101),y	//[$70/$71] -> $0102=PartCtr, $0103=NextID
+		ldy	#$07		//Flip detected, copy Next Side Info
+CopyInfo:	lda	(ZP0101),y	//[$70/$71] -> $0102=PartCtr, $0103=NextID, $104=IL3R, $105=IL2R, $106=IL1R, $107=IL0, $108=IL0R
 		jsr	ShufToRaw
-		sta	PartCtr-1,y
-		dey
+		cpy	#$03
+		bcc	ToPC
+		sta	ILTab-3,y	//Update ILTab (5 bytes)
+		bcs	SkipPC
+ToPC:		sta	PartCtr-1,y	//Update NextID and Part Counter (2 bytes)
+SkipPC:	dey
 		bne	CopyInfo
-		ldx	#$15
-ClrWtd:	sty	WList-1,x	//Reset Wanted List (#$00=unfetched)
-		dex
-		bne	ClrWtd
-		jmp	NextSide	//Y=#$00 here (NEEDED!), X=#$00 (Move head to Track 1)
+		ldx	#$00		//We will start on Track 1 again
+		jmp	NextSide	//Y=#$00 here (NEEDED!), X=#$00 (Seek to Track 1)
 
 //----------------------------
 ToFHeader:	jmp	FetchHeader
@@ -650,7 +664,7 @@ CheckPCtr:	ldy	PartCtr	//WantedCtr=#$00, check PartCtr
 		bne	CheckEoD	//PartCtr<>#$00, check if we have reached End of Disk
 
 ToTrack18:	ldx	#$11		//PartCtr=#$00 or EoD, move head to Track 18 (X will be increased to #$12 after jump)
- 		jmp	StartChain	//Move head to Track 18 to fetch Sector 0 (BAM) for Next Side Info, X=#$11, Y=#$00
+ 		jmp	LoadBAM	//Move head to Track 18 to fetch Sector 0 (BAM) for Next Side Info, X=#$11, Y=#$00
 
 CheckEoD:	ldy	SCtr		//Last sector transferred?
 		beq	ToTrack18	//Yes, go to Track 18 (SCtr can only be zero here if we are on the last track)
@@ -665,10 +679,11 @@ BuildList:	cpy	BlockCtr	//Check if we have less unfetched sectors left on track 
 NewWCtr:	sty	WantedCtr	//Store new Wanted Counter (SCtr vs BlockCtr whichever is smaller)
 
 		ldx	nS		//Preload Next Sector in chain
-
-		.byte	$a9		//Skip first INX
+		bpl	ChainLoop
 
 NxtSct:	inx
+		iny			//temporary increase as we will have an unwanter decrease after bne
+		bne	MaxSct1	//Branch ALWAYS
 ChainLoop:	lda	WList,x	//Check if sector is unfetched (=00)
 		bne	NxtSct	//If sector is not unfetched (it is either fetched or wanted), go to next sector
 
@@ -714,7 +729,7 @@ ZPCode:
 //
 //	   125-cycle GCR read+decode+verify loop on ZP
 //	    works with rotation speeds of 289-311 rpm
-//		       with max wobble in VICE
+//   across all four speed zones with max wobble in VICE
 //
 //----------------------------------------------------------
 
@@ -821,35 +836,30 @@ FetchAgain:	jmp	Fetch		//Fetch again if A<>#$00 (Checksum Error)
 .pc=$2600	"ZP Tabs"		//#$80 bytes
 .pseudopc	$0600	{
 //	 x0  x1  x2  x3  x4  x5  x6  x7  x8  x9  xa  xb  xc  xd  xe  xf
-.byte $00,$01,$12,$01,$d0,$60,$90,$20,$00,$40,$f0,$00,$50,$30,$10,$f0	//0x
-.byte $15,$01,$57,$9e,$47,$9f,$c7,$97,$00,CSV,$17,$9a,$07,$9b,$87,$93	//1x	$1c=#$07 for Tab3 and GCR loop mod
-.byte $ff,$00,$ff,$00,$67,$9d,$e7,$95,$ff,$00,$b7,$90,$27,$99,$a7,$91	//2x
+.byte $00,$04,$12,$01,$d0,$60,$90,$20,$00,$40,$f0,$00,$50,$30,$10,$f0		//0x
+.byte $15,$01,$57,$9e,$47,$9f,$c7,$97,$00,CSV,$17,$9a,$07,$9b,$87,$93		//1x	$1c=#$07 for Tab3 and GCR loop mod
+.byte $ff,$00,$ff,$00,$67,$9d,$e7,$95,$ff,$00,$b7,$90,$27,$99,$a7,$91		//2x
 .byte <LMT1,>LMT1
 .byte		  $d7,$96,$77,$9c,$f7,$94,<LMT2,>LMT2
-.byte							    $97,$92,$37,$98,$00,$00	//3x	Wanted List $3e-$52
-.byte $00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00,$00	//4x	#$00 - unfetched, #$01 - fetched, #$ff - wanted
-.byte $00,$00,$00,$1e,$5c,$1f,$c5,$17
-.byte						  <T2Base,>T2Base
-.byte							    $78,$1a,$0f,$1b,$4b,$13	//5x $5c=#$0f for GCR loop mod 
-.byte	<Tab2+$40,>Tab2+$40,<T2Base+$20,>T2Base+$20
-.byte 		    $9e,$1d,$1e,$15
-.byte						  <Tab2+$60,>Tab2+$60
-.byte							    $23,$10,$3e,$19,$25,$11	//6x	$6c=#$3e for GCR loop mod 
-.byte $01,$01,$02,$16,$69,$1c,$7a,$14,<LMT3,>LMT4
-.byte						  	$85,$12,$f8,$18,<LMT4,>LMT4	//7x	$7c=#$f8 for GCR loop mod 
-.byte	$41,$14								
+.byte							    $97,$92,$37,$98,$00,$00		//3x	Wanted List $3e-$52
+.byte	<T2Base,>T2Base,<Tab2+$40,>Tab2+$40,<T2Base+$20,>T2Base+$20,<Tab2+$60,>Tab2+$60
+.byte 					  $00,$00,$00,$00,$00,$00,$00,$00		//4x	(0) unfetched, (+) fetched, (-) wanted
+.byte $00,$00,$00,$1e,$5c,$1f,$c5,$17,$61,$bd,$78,$1a,$0f,$1b,$4b,$13		//5x	$5c=#$0f for GCR loop mod 
+.byte	$fd,$fd,$fd,$04,$fc,$1d,$1e,$15,$59,$3b,$23,$10,$3e,$19,$25,$11		//6x	$6c=#$3e for GCR loop mod, $60-$64 - ILTab
+.byte $01,$01,$02,$16,$69,$1c,$7a,$14,$8b,$9c,$85,$12,$f8,$18,<LMT3,>LMT3	//7x	$7c=#$f8 for GCR loop mod 
+.byte	<LMT4,>LMT4
 }
 
 .pc=$2700	"Tabs"		//#$100 bytes
 .pseudopc $0700 {
 //	 x0  x1  x2  x3  x4  x5  x6  x7  x8  x9  xa  xb  xc  xd  xe  xf
-.byte $48,$ff,$2b,$2f,$59,$25,$23,$27,$7b,$f6,$64,$65,$6d,$8c,$60,$61	//0x
-.byte $69,$6f,$66,$67,$6f,$9d,$6a,$63,$6b,$66,$6c,$66,$6e,$d9,$68,$62	//1x
+.byte $48,$ff,$2b,$2f,$59,$25,$23,$27,$7b,$f6,$64,$65,$6d,$8c,$60,$61		//0x
+.byte $69,$6f,$66,$67,$6f,$9d,$6a,$63,$6b,$66,$6c,$66,$6e,$d9,$68,$62		//1x
 //$0720
-LMT1:		ldx	#$07		//2 cycles for Zone 0
-		ldx	ZP07		//3 cycles for Zones 1-3
+LMT1:		ldx	#$07		//2 cycles
+		ldx	ZP07		//3 cycles
 //$0724
-.byte 		    $85,$8a,$74,$0a,$63,$8a,$52,$0a,$41,$8a,$14,$0a	//2x
+.byte 		    $85,$8a,$74,$0a,$63,$8a,$52,$0a,$41,$8a,$14,$0a		//2x
 //$0730
 UpdateBCnt:	inc	NewPart	//#$00 -> #$01, next block will be first of next part
 		dec	PartCtr	//Last block of this part transferred, decrease Part Counter
@@ -859,35 +869,35 @@ UpdateBCnt:	inc	NewPart	//#$00 -> #$01, next block will be first of next part
 		rts
 //$073d
 ShufToRaw:	ldx	#$99		//Fetched data are bit shuffled and
-		axs	#$00		//inverted for fast transfer
-		eor	BST,x		//revert back to raw (works both ways)
+		axs	#$00		//EOR transformed for fast transfer
+		eor	BitShufTab,x//revert back to raw (works both ways)
 		rts
 //	 x0  x1  x2  x3  x4  x5  x6  x7  x8  x9  xa  xb  xc  xd  xe  xf
 //$0745
-.byte				  $9a,$ba,$aa,$b9,$9a,$ba,$aa,$c5,$9a,$ba,$aa	//4x
-.byte $b8,$4b,$5a,$69,$d5,$78,$87,$96,$b0,$a5,$b4,$c3,$55,$b5,$c4,$d3	//5x $075d 8 bytes free
-.byte	$e2,$f1,$1e,$2d,$3c,$1a,$3a,$2a,$bd,$1a,$3a,$2a,$85,$1a,$3a,$2a	//6x
-.byte $bc,$79,$3e,$4d,$95,$5c,$6b,$7a,$b4,$89,$98,$a7,$15			//7x
+.byte				  $9a,$ba,$aa,$b9,$9a,$ba,$aa,$c5,$9a,$ba,$aa		//4x
+.byte $b8,$4b,$5a,$69,$d5,$78,$87,$96,$b0,$a5,$b4,$c3,$55,$b5,$c4,$d3		//5x
+.byte	$e2,$f1,$1e,$2d,$3c,$1a,$3a,$2a,$bd,$1a,$3a,$2a,$85,$1a,$3a,$2a		//6x
+.byte $bc,$79,$3e,$4d,$95,$5c,$6b,$7a,$b4,$89,$98,$a7,$15				//7x
 //$077d
-LMT2:		and	#$f8		//2 cycles for Zone 0
-		and	ZPf8-$07,x	//4 cycles for Zones 1-3
+LMT2:		and	#$f8		//2 cycles
+		and	ZPf8-$07,x	//4 cycles
 //$0781
 .byte     $6f,$66
 //$0783
-LMT3:		ldx	#$3e		//2 cycles for Zone 0
-		ldx	ZP3e		//3 cycles for Zones 1-3
+LMT3:		ldx	#$3e		//2 cycles
+		ldx	ZP3e		//3 cycles
 //$0787
 .byte					    $8a,$a8,$66,$6f
 //$078b
-LMT4:		ldx	#$0f		//2 cycles for Zone 0
-		ldx	ZP0f		//3 cycles for Zones 1-3
+LMT4:		ldx	#$0f		//2 cycles
+		ldx	ZP0f		//3 cycles
 //$078f
-.byte											$1e	//8x
-.byte $ba,$ff,$f6,$2d,$f5,$3c,$4b,$5a,$b2,$f6,$ff,$69,$75,$f6,$2a,$2e	//9x
-.byte $28,$2c,$29,$2d,$e1,$ca,$6a,$4a,$b7,$ca,$6a,$4a,$25,$ca,$6a,$4a	//ax
-.byte $be,$39,$45,$db,$b5,$ae,$cd,$d5,$b6,$64,$38,$92,$35,$6f,$22,$26	//bx
-.byte $20,$24,$21,$b8,$a7,$da,$fa,$ea,$b1,$da,$fa,$ea,$45,$da,$fa,$ea	//cx Bitrate Tab @ $07c0 ($07d1,$07d2,$07d3,$07d5)
-.byte $bb,$a1,$a4,$a7,$e5,$a8,$da,$cb,$b3,$87,$5a,$a6,$65,$78,$87,$96	//dx
-.byte $a5,$01,$c3,$d2,$b1,$5a,$7a,$12,$b5,$5a,$7a,$21,$05,$5a,$7a,$43	//ex
-.byte $bf,$23,$12,$13,$a5,$ed,$45,$54,$d2,$19,$1e,$2e,$3d,$4c,$5b,$1f	//fx
+.byte											$1e		//8x
+.byte $ba,$ff,$f6,$2d,$f5,$3c,$4b,$5a,$b2,$f6,$ff,$69,$75,$f6,$2a,$2e		//9x
+.byte $28,$2c,$29,$2d,$e1,$ca,$6a,$4a,$b7,$ca,$6a,$4a,$25,$ca,$6a,$4a		//ax
+.byte $be,$39,$45,$db,$b5,$ae,$cd,$d5,$b6,$64,$38,$92,$35,$6f,$22,$26		//bx
+.byte $20,$24,$21,$b8,$a7,$da,$fa,$ea,$b1,$da,$fa,$ea,$45,$da,$fa,$ea		//cx Bitrate Tab @ $07c0 ($07d1,$07d2,$07d3,$07d5)
+.byte $bb,$a1,$a4,$a7,$e5,$a8,$da,$cb,$b3,$87,$5a,$a6,$65,$78,$87,$96		//dx
+.byte $a5,$01,$c3,$d2,$b1,$5a,$7a,$12,$b5,$5a,$7a,$21,$05,$5a,$7a,$43		//ex
+.byte $bf,$23,$12,$13,$a5,$ed,$45,$54,$d2,$19,$1e,$2e,$3d,$4c,$5b,$1f		//fx
 }
