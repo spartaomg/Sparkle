@@ -1253,7 +1253,6 @@ NoDisk:
     End Function
 
     Private Function SaveDisk() As Boolean
-        On Error GoTo Err
 
         SaveDisk = True
 
@@ -1263,37 +1262,41 @@ NoDisk:
             D64Name = ScriptPath + D64Name
         End If
 
-
-        If CmdLine = True Then
-            'We are in command line, just save the disk
-            IO.File.WriteAllBytes(D64Name, Disk)
-        Else
-            'We are in app mode, show dialog
-            Dim SaveDLG As New SaveFileDialog With {
+TryAgain:
+        ErrCode = 0
+        Try
+            If CmdLine = True Then
+                'We are in command line, just save the disk
+                IO.File.WriteAllBytes(D64Name, Disk)
+            Else
+                'We are in app mode, show dialog
+                Dim SaveDLG As New SaveFileDialog With {
             .Filter = "D64 Files (*.d64)|*.d64",
             .Title = "Save D64 File As...",
             .FileName = D64Name,
             .RestoreDirectory = True
         }
 
-            Dim R As DialogResult = SaveDLG.ShowDialog(FrmMain)
+                Dim R As DialogResult = SaveDLG.ShowDialog(FrmMain)
 
-            If R = Windows.Forms.DialogResult.OK Then
-                D64Name = SaveDLG.FileName
-                If Strings.Right(D64Name, 4) <> ".d64" Then
-                    D64Name += ".d64"
+                If R = Windows.Forms.DialogResult.OK Then
+                    D64Name = SaveDLG.FileName
+                    If Strings.Right(D64Name, 4) <> ".d64" Then
+                        D64Name += ".d64"
+                    End If
+                    IO.File.WriteAllBytes(D64Name, Disk)
                 End If
-                IO.File.WriteAllBytes(D64Name, Disk)
+
             End If
-
-        End If
-
-        Exit Function
-Err:
-        ErrCode = Err.Number
-        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
-        SaveDisk = False
+        Catch ex As Exception
+            ErrCode = Err.Number    'Save error code here
+            If MsgBox(ex.Message + vbNewLine + "Error code:  " + Err.Number.ToString + vbNewLine + vbNewLine + "Do you want to try again?", vbYesNo + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error") = vbYes Then
+                Err.Clear()
+                GoTo TryAgain
+            Else
+                SaveDisk = False
+            End If
+        End Try
 
     End Function
 

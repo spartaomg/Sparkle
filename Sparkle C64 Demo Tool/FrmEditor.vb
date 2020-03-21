@@ -384,7 +384,6 @@ Err:
         Dim S As String
         Dim N As TreeNode = TV.SelectedNode
 
-
         If e.KeyCode = Keys.Delete Then
             HandleKey = True
             e.SuppressKeyPress = True
@@ -429,6 +428,7 @@ Err:
                     e.SuppressKeyPress = True
                     AddPartNode()
                 Else
+                    HandleKey = False
                 End If
                 Exit Sub
             Case NewScriptEntryText
@@ -452,8 +452,13 @@ Err:
         End Select
 
         If SelNode.Name = BaseScriptKey Then
-            If e.KeyCode = Keys.Enter Then BtnLoad_Click(sender, e)
-            HandleKey = False
+            If e.KeyCode = Keys.Enter Then
+                HandleKey = True
+                e.SuppressKeyPress = True
+                BtnLoad_Click(sender, e)
+            Else
+                HandleKey = False
+            End If
             Exit Sub
         End If
 
@@ -483,6 +488,7 @@ Err:
             End If
             Exit Sub
         ElseIf Strings.Right(N.Name, 3) = ":FA" Then
+
             'Load Address
             Select Case e.KeyCode
                 Case Keys.D0 To Keys.D9, Keys.A To Keys.F, Keys.Enter
@@ -581,10 +587,9 @@ FileDataFO:
 
                                 FilePath = Strings.Right(N.Text, Len(N.Text) - Len(S))
                                 .Tag = S
-                                UpdateDiskPath()
-
                                 HandleKey = True
                                 e.SuppressKeyPress = True
+                                UpdateDiskPath()
                             Case Else
                                 HandleKey = False
                         End Select
@@ -678,10 +683,10 @@ FileDataFO:
                                 FilePath = Strings.Right(N.Text, Len(N.Text) - Len(S))
                                 .Tag = S
                                 .Visible = False
-                                UpdateDirArtPath()
-
                                 HandleKey = True
                                 e.SuppressKeyPress = True
+
+                                UpdateDirArtPath()
                             Case Else
                                 HandleKey = False
                         End Select
@@ -721,11 +726,12 @@ FileDataFO:
                                         N.Text = sPacker + "faster"
                                         Packer = 1
                                 End Select
+
+                                HandleKey = True
+                                e.SuppressKeyPress = True
                                 '----------------
                                 CalcDiskSizeWithForm(BaseNode, -1) ' SelNode.Parent.Index + 1)
                                 '----------------
-                                HandleKey = True
-                                e.SuppressKeyPress = True
                             Case Else
                                 HandleKey = False
                         End Select
@@ -985,11 +991,26 @@ Err:
         On Error GoTo Err
 
         Select Case e.KeyCode
-            Case Keys.Left, Keys.Right, Keys.Back, Keys.Delete, Keys.Home, Keys.End
-            Case Keys.Enter, Keys.Up, Keys.Down, Keys.PageUp, Keys.PageDown
+            Case Keys.Left, Keys.Right, Keys.Back, Keys.Delete, Keys.End' Keys.Home, Keys.End
+            Case Keys.Enter, Keys.Up, Keys.Down, Keys.Home ', Keys.PageUp, Keys.PageDown
                 e.SuppressKeyPress = True
                 e.Handled = True
                 TV.Focus()
+                If e.KeyCode = Keys.Up Then
+                    If SelNode.Index = 0 Then
+                        TV.SelectedNode = SelNode.Parent
+                    Else
+                        TV.SelectedNode = SelNode.Parent.Nodes(SelNode.Index - 1)
+                    End If
+                ElseIf (e.KeyCode = Keys.Down) Or (e.KeyCode = Keys.Enter) Then
+                    If SelNode.Index = SelNode.Parent.Nodes.Count - 1 Then
+                        TV.SelectedNode = SelNode.Parent.Parent.Nodes(SelNode.Parent.Index + 1)
+                    Else
+                        TV.SelectedNode = SelNode.Parent.Nodes(SelNode.Index + 1)
+                    End If
+                Else
+                    TV.SelectedNode = TV.TopNode
+                End If
             Case Keys.Escape
                 txtEdit.Text = txtBuffer
                 e.SuppressKeyPress = True
@@ -1067,6 +1088,8 @@ Err:
         TV.Invalidate(SelNode.Bounds)   'This is to repaint selnode
 
         txtEdit.Visible = False
+
+        If txtEdit.Text = txtBuffer Then Exit Sub
 
         Select Case Strings.Right(SelNode.Name, 3)
             Case ":FA", ":FO", ":FL"
@@ -3669,7 +3692,9 @@ Err:
         If IO.File.Exists(Replace(FileName, "*", "")) = False Then
             FileNode.NodeFont = New Font(TV.Font, FontStyle.Italic)
             MsgBox("The following file does not exist:" + vbNewLine + vbNewLine + FileName, vbOKOnly + vbCritical, "File cannot be found")
-            Exit Sub
+            GoTo Done
+            'If SNisBaseNode Then AddNewFileEntryNode(PartNode)
+            'Exit Sub
         End If
 
         GetDefaultFileParameters(FileNode, FA, FO, FL)
@@ -3842,6 +3867,11 @@ Err:
 
         If SNisBaseNode Then
             CheckFileParameterColors(FileNode)  'This will make sure colors are OK
+        End If
+
+Done:
+
+        If SNisBaseNode Then
             If PartNode.Nodes(PartNode.Name + ":" + NewFileKey) IsNot Nothing Then
                 PartNode.Nodes(PartNode.Name + ":" + NewFileKey).Remove()
             End If
@@ -4103,13 +4133,29 @@ Err:
 
     End Sub
 
-    Private Function CalcPartSize(PN As TreeNode) As Integer
+    Private Function CalcPartSize(PartN As TreeNode) As Integer
         On Error GoTo Err
 
         'THIS WILL CALCULATE THE SIZE OF A SINGLE PART, UPDATE PART NODE AND RETURN PART SIZE
 
-        If ((PN.Parent.Name = BaseNode.Name) And (PN.Nodes.Count = 2)) OrElse (PN.Nodes.Count = 1) Then
+        If ((PartN.Parent.Name = BaseNode.Name) And (PartN.Nodes.Count = 2)) OrElse (PartN.Nodes.Count = 1) Then
             Return 0
+        Else
+            Dim FileExist As Boolean = False
+            For I As Integer = 1 To PartN.Nodes.Count - 2
+                If PartN.Nodes(I).NodeFont IsNot Nothing Then
+                    If PartN.Nodes(I).NodeFont.Italic = False Then
+                        FileExist = True
+                        Exit For
+                    End If
+                Else
+                    FileExist = True
+                    Exit For
+                End If
+            Next
+            If FileExist = False Then
+                Return 0
+            End If
         End If
 
         Dim P() As Byte
@@ -4122,16 +4168,16 @@ Err:
         UncomPartSize = 0
         BlockCnt = -0
 
-        For I As Integer = 1 To PN.Nodes.Count - 1
-            If PN.Nodes(I).Tag < &H10000 Then
+        For I As Integer = 1 To PartN.Nodes.Count - 1
+            If PartN.Nodes(I).Tag < &H10000 Then
                 Dim IsItalic As Boolean = False
-                If PN.Nodes(I).NodeFont IsNot Nothing Then
-                    If PN.Nodes(I).NodeFont.Italic = True Then
+                If PartN.Nodes(I).NodeFont IsNot Nothing Then
+                    If PartN.Nodes(I).NodeFont.Italic = True Then
                         IsItalic = True
                     End If
                 End If
                 If IsItalic = False Then
-                    Dim FN As String = PN.Nodes(I).Text
+                    Dim FN As String = PartN.Nodes(I).Text
                     Dim FUIO As Boolean
 
                     If InStr(FN, "*") <> 0 Then
@@ -4143,9 +4189,9 @@ Err:
 
                     If IO.File.Exists(FN) Then
                         P = IO.File.ReadAllBytes(FN)
-                        FA = Strings.Right(PN.Nodes(I).Nodes(0).Text, 4)
-                        FO = Strings.Right(PN.Nodes(I).Nodes(1).Text, 8)
-                        FL = Strings.Right(PN.Nodes(I).Nodes(2).Text, 4)
+                        FA = Strings.Right(PartN.Nodes(I).Nodes(0).Text, 4)
+                        FO = Strings.Right(PartN.Nodes(I).Nodes(1).Text, 8)
+                        FL = Strings.Right(PartN.Nodes(I).Nodes(2).Text, 4)
 
                         FON = Convert.ToInt32(FO, 16)
                         FLN = Convert.ToInt32(FL, 16)
@@ -4177,7 +4223,7 @@ Err:
                     Else
                         'file does not exist, skip it
                         MsgBox("The following file does not exist:" + vbNewLine + vbNewLine + FN, vbOKOnly + vbCritical, "File not found")
-                        PN.Nodes(I).NodeFont = New Font(TV.Font, FontStyle.Italic)
+                        PartN.Nodes(I).NodeFont = New Font(TV.Font, FontStyle.Italic)
                     End If
                 End If
             End If
@@ -4188,15 +4234,25 @@ Err:
         PartCnt = CurrentPart
 
         BufferCnt = 0
-        If (Strings.Left(PN.Name, 1) = "P") Or (Strings.Right(PN.Nodes(0).Text, 3) = "YES") Then
+        If (Strings.Left(PartN.Name, 1) = "P") Or (Strings.Right(PartN.Nodes(0).Text, 3) = "YES") Then
             'First part on disk or aligned part
             'BufferCnt = 1
             ResetBuffer()
         Else
+            Dim PrevCP As Integer = 1
             ReDim Buffer(255)
-            ByteCnt = PartByteCntA(CurrentPart - 1)
-            BitCnt = PartBitCntA(CurrentPart - 1)
-            BitPos = PartBitPosA(CurrentPart - 1)
+TryAgain:
+            ByteCnt = PartByteCntA(CurrentPart - PrevCP)
+            BitCnt = PartBitCntA(CurrentPart - PrevCP)
+            BitPos = PartBitPosA(CurrentPart - PrevCP)
+            If ByteCnt = 0 Then
+                If CurrentPart - PrevCP > 0 Then
+                    PrevCP += 1
+                    GoTo TryAgain
+                Else
+                    ResetBuffer()
+                End If
+            End If
         End If
 
         SortPart()
@@ -4236,7 +4292,7 @@ Err:
         PartBitCntA(CurrentPart) = BitCnt
         PartBitPosA(CurrentPart) = BitPos
 
-        If Strings.Left(PN.Name, 1) = "P" Then
+        If Strings.Left(PartN.Name, 1) = "P" Then
             BufferCnt += 1
         End If
 
@@ -4244,7 +4300,7 @@ Err:
 
         If Prgs.Count = 0 Then
         Else
-            PN.Text = "[Part " + Strings.Right(PN.Name, Len(PN.Name) - 1) + ": " + BufferCnt.ToString +
+            PartN.Text = "[Part " + Strings.Right(PartN.Name, Len(PartN.Name) - 1) + ": " + BufferCnt.ToString +
                 " block" + If(BufferCnt = 1, "", "s") + " packed from " + UncomPartSize.ToString + " block" + If(UncomPartSize = 1, "", "s") +
                 " unpacked, " + (Int(10000 * BufferCnt / UncomPartSize) / 100).ToString + "% of unpacked size]"
         End If
@@ -4288,6 +4344,7 @@ Done:
         'If PartNode Is Nothing Then Exit Sub
 
         If ChkSize.Checked = False Then
+            'No recalc, only renumber
             ReNumberEntries(BaseNode, PartNodeIndex)
             Exit Sub
         End If
@@ -4493,6 +4550,7 @@ Err:
                         ToggleFileNodes(N.Nodes(I))
                 End Select
             Next
+            'N.Nodes(N.Nodes.Count - 1).Expand()
         Else
             For I As Integer = 0 To N.Nodes.Count - 1
                 N.Nodes(I).Expand()
