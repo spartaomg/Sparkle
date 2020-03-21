@@ -1262,6 +1262,8 @@ NoDisk:
             D64Name = ScriptPath + D64Name
         End If
 
+        Dim SaveCtr As Integer = 20
+
 TryAgain:
         ErrCode = 0
         Try
@@ -1289,9 +1291,17 @@ TryAgain:
 
             End If
         Catch ex As Exception
+            If CmdLine = True Then
+                If SaveCtr > 0 Then
+                    Threading.Thread.Sleep(20)  'If file could not be saved, wait 20 msec and try again 20 times before showing error message
+                    SaveCtr -= 1
+                    GoTo TryAgain
+                End If
+            End If
             ErrCode = Err.Number    'Save error code here
             If MsgBox(ex.Message + vbNewLine + "Error code:  " + Err.Number.ToString + vbNewLine + vbNewLine + "Do you want to try again?", vbYesNo + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error") = vbYes Then
                 Err.Clear()
+                SaveCtr = 20
                 GoTo TryAgain
             Else
                 SaveDisk = False
