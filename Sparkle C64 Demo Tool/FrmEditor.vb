@@ -202,7 +202,10 @@ Public Class FrmEditor
 
         NewD = False
 
-        If Script <> "" Then ConvertScriptToNodes()
+        If Script <> "" Then
+            If ScriptName <> "" Then tssLabel.Text = "Script: " + ScriptName
+            ConvertScriptToNodes()
+        End If
 
         Exit Sub
 Err:
@@ -1511,7 +1514,7 @@ Err:
         PartNode = NewEntryNode    'TV.SelectedNode
 
         PC += 1
-        ReDim Preserve PartByteCntA(PC), PartBitCntA(PC), PartBitPosA(PC), PartSizeA(PC)
+        ReDim Preserve PartByteCntA(PC), PartBitCntA(PC), PartBitPosA(PC), PartSizeA(PC), PartOrigSizeA(PC)
 
         CurrentPart = PC
 
@@ -2832,7 +2835,7 @@ Err:
         CurrentPart = PC
         CurrentFile = FC
 
-        ReDim PartSizeA(PC), PartByteCntA(PC), PartBitCntA(PC), PartBitPosA(PC)
+        ReDim PartSizeA(PC), PartByteCntA(PC), PartBitCntA(PC), PartBitPosA(PC), PartOrigSizeA(PC)
 
         PartByteCntA(PC) = 254
         PartBitCntA(PC) = 0
@@ -3048,7 +3051,7 @@ Err:
         CurrentPart = PC
         CurrentFile = FC
 
-        ReDim PartSizeA(PC), PartByteCntA(PC), PartBitCntA(PC), PartBitPosA(PC)
+        ReDim PartSizeA(PC), PartByteCntA(PC), PartBitCntA(PC), PartBitPosA(PC), PartOrigSizeA(PC)
 
         PartByteCntA(PC) = 254
         PartBitCntA(PC) = 0
@@ -3890,7 +3893,7 @@ Err:
         Dim SNisBaseNode As Boolean = SN.Name = BaseNode.Name
 
         PC += 1
-        ReDim Preserve PartByteCntA(PC), PartBitCntA(PC), PartBitPosA(PC), PartSizeA(PC)
+        ReDim Preserve PartByteCntA(PC), PartBitCntA(PC), PartBitPosA(PC), PartSizeA(PC), PartOrigSizeA(PC)
 
         AddNode(SN, "P" + PC.ToString, "[Part]", &H20000 + PC, If(SNisBaseNode, colPart, colPartGray))
         PartNode = SN.Nodes("P" + PC.ToString)
@@ -4133,30 +4136,10 @@ Err:
 
     End Sub
 
-    Private Function CalcPartSize(PartN As TreeNode) As Integer
+    Private Function CalcPartSize(PartN As TreeNode, Optional prevPartN As TreeNode = Nothing) As Integer
         On Error GoTo Err
 
         'THIS WILL CALCULATE THE SIZE OF A SINGLE PART, UPDATE PART NODE AND RETURN PART SIZE
-
-        If ((PartN.Parent.Name = BaseNode.Name) And (PartN.Nodes.Count = 2)) OrElse (PartN.Nodes.Count = 1) Then
-            Return 0
-        Else
-            Dim FileExist As Boolean = False
-            For I As Integer = 1 To PartN.Nodes.Count - 2
-                If PartN.Nodes(I).NodeFont IsNot Nothing Then
-                    If PartN.Nodes(I).NodeFont.Italic = False Then
-                        FileExist = True
-                        Exit For
-                    End If
-                Else
-                    FileExist = True
-                    Exit For
-                End If
-            Next
-            If FileExist = False Then
-                Return 0
-            End If
-        End If
 
         Dim P() As Byte
         Dim FA, FO, FL As String
@@ -4229,22 +4212,46 @@ Err:
             End If
         Next
 
-        'CurrentPart = Convert.ToInt32(Strings.Right(PN.Name, Len(PN.Name) - 1), 10)
-        'CurrentPart = PN.Tag And &HFFFF
         PartCnt = CurrentPart
 
         BufferCnt = 0
+        Dim PrevCP As Integer = 1
+        Dim PrevBC As Integer = 0
+        Dim PrevPartChgd As Boolean = False
         If (Strings.Left(PartN.Name, 1) = "P") Or (Strings.Right(PartN.Nodes(0).Text, 3) = "YES") Then
             'First part on disk or aligned part
-            'BufferCnt = 1
             ResetBuffer()
         Else
-            Dim PrevCP As Integer = 1
+
+            'Sort part, but SortPart Sub works with temporary arrays and liasts
+
+            tmpPrgs = Prgs.ToList
+            tmpFileNameA = FileNameA
+            tmpFileAddrA = FileAddrA
+            tmpFileOffsA = FileOffsA
+            tmpFileLenA = FileLenA
+            tmpFileIOA = FileIOA
+
+            SortPart()
+
+            'Restor arrays and lists
+
+            Prgs = tmpPrgs.ToList
+            FileNameA = tmpFileNameA
+            FileAddrA = tmpFileAddrA
+            FileOffsA = tmpFileOffsA
+            FileLenA = tmpFileLenA
+            FileIOA = tmpFileIOA
+
             ReDim Buffer(255)
+
+            'Find the previous part's variables
 TryAgain:
             ByteCnt = PartByteCntA(CurrentPart - PrevCP)
             BitCnt = PartBitCntA(CurrentPart - PrevCP)
             BitPos = PartBitPosA(CurrentPart - PrevCP)
+            PrevBC = PartSizeA(CurrentPart - PrevCP)
+
             If ByteCnt = 0 Then
                 If CurrentPart - PrevCP > 0 Then
                     PrevCP += 1
@@ -4255,7 +4262,29 @@ TryAgain:
             End If
         End If
 
-        SortPart()
+        'Will need to finish the previous part here!!!
+        If (BufferCnt = 0) And (ByteCnt = 254) Then
+            NewBlock = SetNewBlock          'SetNewBlock is true at closing the previous part, so first it just sets NewBlock2
+            SetNewBlock = False             'And NewBlock will fire at the desired part
+        Else
+            Dim ThisPartIO As Integer = If(FileIOA.Count > 0, CheckNextIO(FileAddrA(0), FileLenA(0), FileIOA(0)), 0)
+            If Packer = 1 Then
+                FinishPart(ThisPartIO, False)
+            Else
+                ClosePart(ThisPartIO, False, True)
+            End If
+        End If
+
+        If BufferCnt = 1 Then
+            'Closing the previous part resulted in an additional block, update previous part info
+            BufferCnt = 0
+            PartByteCntA(CurrentPart - PrevCP) = ByteCnt
+            PartBitCntA(CurrentPart - PrevCP) = BitCnt
+            PartBitPosA(CurrentPart - PrevCP) = BitPos
+            PartSizeA(CurrentPart - PrevCP) = PrevBC + 1
+            PrevPartChgd = True 'We will add an additional block to the disk size
+        End If
+
         CompressPart(True)
 
         If CurrentPart + 1 < PDiskNoA.Count Then
@@ -4266,26 +4295,8 @@ TryAgain:
             NewBlock = False
         End If
 
-        'If PN.Parent.Nodes(PN.Index + 1) IsNot Nothing Then
-        'If Int(PN.Parent.Nodes(PN.Index + 1).Tag / &H10000) = 2 Then
-        'If Strings.Right(PN.Parent.Nodes(PN.Index + 1).Nodes(0).Text, 3) = "YES" Then
-        'NewBlock = True
-        'Else
-        'NewBlock = False
-        'End If
-        'End If
-        'End If
-
-        PrgAdd = Convert.ToInt32(FileAddrA(0), 16)
-        PrgLen = Convert.ToInt32(FileLenA(0), 16)
-        If Packer = 1 Then
-            FinishPart(CheckIO(PrgLen - 1), False)
-        Else
-            ClosePart(CheckIO(PrgLen - 1), False)
-        End If
-
         If CurrentPart > PartByteCntA.Count Then
-            ReDim Preserve PartByteCntA(CurrentPart), PartBitCntA(CurrentPart), PartBitPosA(CurrentPart), PartSizeA(CurrentPart)
+            ReDim Preserve PartByteCntA(CurrentPart), PartBitCntA(CurrentPart), PartBitPosA(CurrentPart), PartSizeA(CurrentPart), PartOrigSizeA(CurrentPart)
         End If
 
         PartByteCntA(CurrentPart) = ByteCnt
@@ -4297,15 +4308,9 @@ TryAgain:
         End If
 
         PartSizeA(CurrentPart) = BufferCnt
+        PartOrigSizeA(CurrentPart) = UncomPartSize
 
-        If Prgs.Count = 0 Then
-        Else
-            PartN.Text = "[Part " + Strings.Right(PartN.Name, Len(PartN.Name) - 1) + ": " + BufferCnt.ToString +
-                " block" + If(BufferCnt = 1, "", "s") + " packed from " + UncomPartSize.ToString + " block" + If(UncomPartSize = 1, "", "s") +
-                " unpacked, " + (Int(10000 * BufferCnt / UncomPartSize) / 100).ToString + "% of unpacked size]"
-        End If
-
-        CalcPartSize = BufferCnt
+        CalcPartSize = BufferCnt + If(PrevPartChgd = True, 1, 0)
 
         Exit Function
 Err:
@@ -4431,12 +4436,43 @@ Done:
                             If(DiskSizeA(CurrentDisk) = 1, "", "s") + " used, " + (MaxDiskSize - DiskSizeA(CurrentDisk)).ToString + " block" +
                             If((MaxDiskSize - DiskSizeA(DC)) = 1, "", "s") + " free]"
             End If
+            UpdatePartNames(BaseNode)
         End If
 
         Exit Sub
 Err:
         ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
+
+    End Sub
+
+    Private Sub UpdatePartNames(ParentNode As TreeNode)
+        On Error GoTo Err
+
+        For I As Integer = 0 To ParentNode.Nodes.Count - 1
+            Select Case Int(ParentNode.Nodes(I).Tag / &H10000)
+                Case 1
+                    'Disk
+                Case 2
+                    'Part
+                    PartNode = ParentNode.Nodes(I)
+                    CurrentPart = (PartNode.Tag And &HFFFF)
+                    BufferCnt = PartSizeA(CurrentPart)
+                    UncomPartSize = PartOrigSizeA(CurrentPart)
+
+                    PartNode.Text = "[Part " + Strings.Right(PartNode.Name, Len(PartNode.Name) - 1) + ": " + BufferCnt.ToString +
+                    " block" + If(BufferCnt = 1, "", "s") + " packed from " + UncomPartSize.ToString + " block" + If(UncomPartSize = 1, "", "s") +
+                    " unpacked, " + (Int(10000 * BufferCnt / UncomPartSize) / 100).ToString + "% of unpacked size]"
+                Case 3
+                    'Script
+                    UpdatePartNames(ParentNode.Nodes(I))
+            End Select
+        Next
+
+        Exit Sub
+Err:
+            ErrCode = Err.Number
+            MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
 

@@ -769,7 +769,7 @@ Err:
 
 	End Sub
 
-	Public Function ClosePart(Optional NextFileIO As Integer = 0, Optional LastPartOnDisk As Boolean = False) As Boolean
+	Public Function ClosePart(Optional NextFileIO As Integer = 0, Optional LastPartOnDisk As Boolean = False, Optional FromEditor As Boolean = False) As Boolean
 		On Error GoTo Err
 
 		ClosePart = True
@@ -797,17 +797,31 @@ Err:
 NextPart:   'Match Bit is not needed if this is the beginning of the next block
 			FilesInBuffer += 1  'There is going to be more than 1 file in the buffer
 
-			If (BufferCnt > 0) And (FilesInBuffer = 2) Then         'Reserve last byte in buffer for Block Count...
-				For I = ByteCnt + 1 To 255                          '... only once, when the 2nd file is added to the same buffer
-					Buffer(I - 1) = Buffer(I)
-				Next
-				ByteCnt -= 1
-				Buffer(255) = 1                                     'Last byte reserved for BlockCnt
+			'MsgBox(FilesInBuffer.ToString + vbNewLine + BufferCnt.ToString)
+
+			If FromEditor = True Then
+				If (PartCnt > 2) And (FilesInBuffer = 2) Then         'Reserve last byte in buffer for Block Count...
+					For I = ByteCnt + 1 To 255                          '... only once, when the 2nd file is added to the same buffer
+						Buffer(I - 1) = Buffer(I)
+					Next
+					ByteCnt -= 1
+					Buffer(255) = 1                                     'Last byte reserved for BlockCnt
+				End If
+			Else
+				If (BufferCnt > 0) And (FilesInBuffer = 2) Then         'Reserve last byte in buffer for Block Count...
+					For I = ByteCnt + 1 To 255                          '... only once, when the 2nd file is added to the same buffer
+						Buffer(I - 1) = Buffer(I)
+					Next
+					ByteCnt -= 1
+					Buffer(255) = 1                                     'Last byte reserved for BlockCnt
+				End If
 			End If
 
 			Buffer(ByteCnt) = LongMatchTag                          'Then add New File Match Tag
 			Buffer(ByteCnt - 1) = EndTag
 			ByteCnt -= 2
+
+			'MsgBox(Hex(ByteCnt) + vbNewLine + PartCnt.ToString)
 
 			If LastPartOnDisk = True Then       'This will finish the disk
 				Buffer(ByteCnt) = ByteCnt - 2   'Finish disk with a dummy literal byte that overwrites itself to reset LastX for next disk side

@@ -110,6 +110,7 @@
 
     Public DiskSizeA() As Integer
     Public PartSizeA() As Integer
+    Public PartOrigSizeA() As Integer
     Public FileSizeA() As Integer
     Public FBSDisk() As Integer
     Public PartByteCntA() As Integer
@@ -193,7 +194,7 @@ Err:
         ReDim DiskSizeA(DiskCnt)
 
         PartCnt = -1
-        ReDim PDiskNoA(PartCnt), PSizeA(PartCnt), PartSizeA(PartCnt), FilesInPartA(PartCnt)
+        ReDim PDiskNoA(PartCnt), PSizeA(PartCnt), PartSizeA(PartCnt), FilesInPartA(PartCnt), PartOrigSizeA(PartCnt)
 
         FileCnt = -1
 
@@ -872,6 +873,22 @@ Err:
             End Select
             If T <> 18 Then
                 For S As Integer = 0 To SMax
+                    'For I As Integer = 0 To 255
+                    'Select Case (I And 15)
+                    'Case 0, 2, 4, 6, 9, 11, 13, 15
+                    'B = (I And 15) Xor &HF
+                    'Case Else
+                    'B = (I And 15) Xor &H6
+                    'End Select
+                    '
+                    'Select Case Int(I / 16)
+                    'Case 0, 2, 4, 6, 9, 11, 13, 15
+                    'B += (I And &HF0) Xor &HF0
+                    'Case Else
+                    'B += (I And &HF0) Xor &H60
+                    'End Select
+                    'Disk(Track(T) + S * 256 + I) = I
+                    'Next
                     For I As Integer = S To S + 255
                         B = I Mod 256
                         Disk(Track(T) + S * 256 + I - S) = B
@@ -1938,7 +1955,7 @@ NoDisk:
         PartCnt += 1
 
         TotalParts += 1
-        ReDim Preserve PartSizeA(TotalParts)
+        ReDim Preserve PartSizeA(TotalParts), PartOrigSizeA(TotalParts)
         BlockCnt = 0
 
         UncomPartSize = 0

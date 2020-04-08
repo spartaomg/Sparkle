@@ -629,6 +629,8 @@ Err:
                     txtSector.SelectionColor = Color.Red
                     txtSector.SelectedText = Chr(e.KeyCode)
                     MoveCursorRight()
+                    CursorPos(0)
+
                     FileChanged = True
                     tsbUndo.Enabled = True
 
@@ -978,6 +980,30 @@ Err:
 
     Private Sub CursorPos(SelLen As Integer)
         On Error GoTo Err
+
+        Dim CheckStart As Integer = 0
+StartCheck1:
+        If (InStr(Mid(txtSector.Text, CheckStart + 1), "00 F8") <> 0) Then
+            CheckStart += InStr(Mid(txtSector.Text, CheckStart + 1), "00 F8") - 1
+            txtSector.SelectionStart = CheckStart
+            txtSector.SelectionLength = 5
+            txtSector.SelectionColor = Color.FromArgb(180, 8, 196)
+            CheckStart += 6
+            If CheckStart < Len(txtSector.Text) Then GoTo StartCheck1
+        End If
+
+        CheckStart = 0
+StartCheck2:
+        If (InStr(Mid(txtSector.Text, CheckStart + 1), "00 " + Chr(10) + "F8") <> 0) Then
+            CheckStart += InStr(Mid(txtSector.Text, CheckStart + 1), "00 " + Chr(10) + "F8") - 1
+            txtSector.SelectionStart = CheckStart
+            txtSector.SelectionLength = 6
+            txtSector.SelectionColor = Color.FromArgb(180, 8, 196)
+            CheckStart += 7
+            If CheckStart < Len(txtSector.Text) Then GoTo StartCheck2
+        End If
+
+        'IO.File.WriteAllText("C:\Users\Tamas\OneDrive\C64\Coding\RichText.txt", txtSector.Text)
 
         txtSector.Select((CY * 49) + (CX * 3) + CB, SelLen)
 
