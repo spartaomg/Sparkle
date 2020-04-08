@@ -1,5 +1,5 @@
 //----------------------------------------------------------------------------------------
-//	SPARKLE V1.3
+//	SPARKLE V1.4
 //	Inspired by Lft's Spindle and Krill's Loader
 //	Drive Code
 //	Tested on 1541-II, 1571, 1541 Ultimate-II+, and THCM's SX-64
@@ -10,7 +10,7 @@
 //	0082	00ff	GCR Loop
 //	0100	01ff	Data Buffer in Stack
 //	0200	02ff	Secondary buffer for last block of a demo part
-//	0300	05f1	Drive Code (#$0e bytes free)
+//	0300	05f9	Drive Code (#$06 bytes free)
 //	0600	06ff	ZP GCR Tabs and GCR Loop, moved to ZP, overwritten by GCR Tabs
 //	0600	06ff	GCR Tabs for GCR decoding, H2STab
 //	0700	07ff	GCR Tabs for GCR decoding, GCR Mod Tabs
@@ -72,8 +72,10 @@
 
 .const	LM1		=$30		//ZP pointer for LMT1 ($0720)
 .const	LM2		=$38		//ZP pointer for LMT2 ($077d)
-.const	LM3		=$7e		//ZP pointer for LMT3 ($0783)
-.const	LM4		=$80		//ZP pointer for LMT4 ($078b)
+.const	LM3		=$69		//ZP pointer for LMT3 ($075d)
+.const	LM4		=$79		//ZP pointer for LMT4 ($0761)
+.const	LM5		=$7e		//ZP pointer for LMT5 ($0783)
+.const	LM6		=$80		//ZP pointer for LMT6 ($078b)
 
 .const	ZP0101	=$70		//$70/$71 = $0101, points at the last fetched value in the buffer
 .const	ZP0201	=$71		//$71/$72 = $0201
@@ -84,7 +86,7 @@
 .const	ZPf8		=$7c		//=#$f8
 
 //Unused ZP addresses:
-//54,56,58-5a,5e,66,68-6a,6e,74,76,78-7a
+//54,56,58-5a,5e,66,68,6e,74,76,78
 
 //GCR Decoding Tabs:
 .const	Tab1		=$0704
@@ -490,9 +492,14 @@ LMLoop:	lda	(LM1),y	//Adding 4 extra cycles between Read1 and Read2
 		sta.z	LoopMod3,x
 		lda	(LM4),y
 		sta.z	LoopMod4,x
+		lda	(LM5),y
+		sta.z	LoopMod5,x
+		lda	(LM6),y
+		sta.z	LoopMod5+1,x
 		dey
 		dex
 		bpl	LMLoop
+
 RTS_LAX:
 
 //----------------------------
@@ -679,7 +686,7 @@ BuildList:	cpy	BlockCtr	//Check if we have less unfetched sectors left on track 
 NewWCtr:	sty	WantedCtr	//Store new Wanted Counter (SCtr vs BlockCtr whichever is smaller)
 
 		ldx	nS		//Preload Next Sector in chain
-		bpl	ChainLoop
+		bpl	ChainLoop	//Branch ALWAYS
 
 NxtSct:	inx
 		iny			//temporary increase as we will have an unwanter decrease after bne
@@ -728,37 +735,37 @@ ZPCode:
 //----------------------------------------------------------
 //
 //	   125-cycle GCR read+decode+verify loop on ZP
-//	    works with rotation speeds of 289-311 rpm
+//	    works with rotation speeds of 284-311 rpm
 //   across all four speed zones with max wobble in VICE
 //
 //----------------------------------------------------------
 
-Zone3:	nop			//							   63
-		nop			//							   65
-		nop			//+6							   67
+Zone3:	inc	ZPT		//							   66
+		nop			//+7							   68
 
-Zone2:	nop			//						  63	   69
-		nop			//						  65	   71
-		nop			//+6						  67	   73
+Zone2:	nop			//						  63	   70
+		nop			//						  65	   72
+		nop			//+6						  67	   74
 
-Zone1:	nop 			//+2					 63	  69	   75
+Zone1:	nop 			//+2					 63	  69	   76
 
-Zone0:	eor	$0102,x	//	   ^$01ff		61	 67	  73	   79
-		eor	$0103,x	//				65	 71	  77	   83
-		sta.z	CSumT+1	//				68	 74	  80	   86
+Zone0:	eor	$0102,x	//				61	 67	  73	   80
+		eor	$0103,x	//				65	 71	  77	   84
+		sta.z	CSumT+1	//				68	 74	  80	   87
 
-					//			     [53-78  57-84  61-90  65-96]
-Read3:	lda	$1c01		//Read3 = 44445555  4	72/-6  78/-6  84/-6  90/-6
-LoopMod4:	ldx	#$0f		// <-> ldx $5c	  6	74
-		sax.z	t5+1		//t5+1 = 00005555	  9	77
-		arr	#$f0		//A=44444000	 11	79
-		tay			//Y=44444000	 13	81
+					//			     [52-77  56-83  60-89  64-95]
+Read3:	lda	$1c01		//Read3 = 44445555  4	72/-5  78/-5  84/-5  91/-4
+LoopMod4:	ldx	#$0f		//<-> ldx $5c	  2/3	74	 81	  87	   94
+		sax.z	t5+1		//t5+1 = 00005555	  3	77
+		arr	#$f0		//A=44444000	  2	79
+		tay			//Y=44444000	  2	81
 
-					//			     [79-104  85-112  91-120  97-128]
-Read4:	lda	$1c01		//Read4 = 56666677  4	85/+6   92/+7   98/+7   104/+7
-		sax.z	t7+1		//t7+1 = 00006677	  7	88
-		alr	#$fc		//A=05666660, C=0   9	90
-		tax			//X=05666660	 11	92
+LoopMod5:				//			     [78-103  84-111  90-119  96-127]
+Read4:	lda	$1c01		//Read4 = 56666677  4/5	85/+7   93/+9   99/+9   106/+10
+					//<-> lda $1c01-$0f,x
+		sax.z	t7+1		//t7+1 = 00006677	  3	88
+		alr	#$fc		//A=05666660, C=0	  2	90
+		tax			//X=05666660	  2	92
 
 t3:		lda	Tab3		//00333330	(ZP)		95
 t4:		eor	Tab4,y	//00000000,44444000	99
@@ -769,13 +776,13 @@ CSum:		eor	#$00		//				106
 		sta.z	CSum+1	//				109
 
 t6:		lda	Tab6,x	//00000000,056666600	113
-t5:		adc	Tab5		//00005555 (ZP)	V=0	116!/+11 123!/+10  129!/+8  135!/+6
+t5:		adc	Tab5		//00005555 (ZP)	V=0	116!/+12 124!/+12 130!/+10  137!/+9
 Write2:	pha			//Buffer=$01ff/$0103	119	SP=#$ff->#$fe or #$03->#$02
 
-					//			     [105-130  113-140  121-150  129-160]
-Read5:	lax	$1c01		//Read5 = 77788888  4	123/-7   130/-10  136/-14  142/+13
+					//			     [104-129  112-139  120-149  128-159]
+Read5:	lax	$1c01		//Read5 = 77788888  4	123/-6   131/-8	137/-12  144/-15
 					//X=77788888
-		and	#$e0		//			  6	125	   132	138	   144 cycles total
+		and	#$e0		//			  2	125	   133	139	   146 cycles total
 
 //-------------------------------------------------------------------------------------
 
@@ -788,12 +795,12 @@ t8:		eor	Tab8,x	//00000000,77788888	12
 Write3:	pha			//Buffer=$01fe/$0102	15	SP=#$fe->#$fd or #$02->#$01
 					//			     [01-26  01-28  01-30  01-32]
 Read1:	lda	$1c01		//Read1 = 11111222  4	19/-7  19/-9  19/-11 19,-13
-LoopMod1:	ldx	#$07		// <-> ldx $1c	  6	21	 22	  22	   22
+LoopMod1:	ldx	#$07		//<-> ldx $1c	  6	21	 22	  22	   22
 		sax.z	t2+1		//t2+1=00000222	  9	24	 25	  25	   25
 LoopMod2:	and	#$f8		// <-> and $75,x	 11	26	 29	  29	   29
 		tay			//Y=11111000	 13	28	 31	  31	   31
 
-LoopMod3:	ldx	#$3e		// <-> ldx $6c	  2	30	 34	  34	   34
+LoopMod3:	ldx	#$3e		//<-> ldx $6c	  2	30	 34	  34	   34
 					//			     [27-52  29-56  31-60  33-64]
 Read2:	lda	$1c01		//A=22333334	  6	34/+7  38/+9  38/+7  38/+5 (tightest read)
 		sax.z	t3+1		//t3+1=00333330	  9	37
@@ -845,9 +852,9 @@ FetchAgain:	jmp	Fetch		//Fetch again if A<>#$00 (Checksum Error)
 .byte	<T2Base,>T2Base,<Tab2+$40,>Tab2+$40,<T2Base+$20,>T2Base+$20,<Tab2+$60,>Tab2+$60
 .byte 					  $00,$00,$00,$00,$00,$00,$00,$00		//4x	(0) unfetched, (+) fetched, (-) wanted
 .byte $00,$00,$00,$1e,$5c,$1f,$c5,$17,$61,$bd,$78,$1a,$0f,$1b,$4b,$13		//5x	$5c=#$0f for GCR loop mod 
-.byte	$fd,$fd,$fd,$04,$fc,$1d,$1e,$15,$59,$3b,$23,$10,$3e,$19,$25,$11		//6x	$6c=#$3e for GCR loop mod, $60-$64 - ILTab
-.byte $01,$01,$02,$16,$69,$1c,$7a,$14,$8b,$9c,$85,$12,$f8,$18,<LMT3,>LMT3	//7x	$7c=#$f8 for GCR loop mod 
-.byte	<LMT4,>LMT4
+.byte	$fd,$fd,$fd,$04,$fc,$1d,$1e,$15,$59,<LMT3,>LMT3,$10,$3e,$19,$25,$11	//6x	$6c=#$3e for GCR loop mod, $60-$64 - ILTab
+.byte $01,$01,$02,$16,$69,$1c,$7a,$14,$8b,<LMT4,>LMT4,$12,$f8,$18,<LMT5,>LMT5	//7x	$7c=#$f8 for GCR loop mod 
+.byte	<LMT6,>LMT6
 }
 
 .pc=$2700	"Tabs"		//#$100 bytes
@@ -875,8 +882,13 @@ ShufToRaw:	ldx	#$99		//Fetched data are bit shuffled and
 //	 x0  x1  x2  x3  x4  x5  x6  x7  x8  x9  xa  xb  xc  xd  xe  xf
 //$0745
 .byte				  $9a,$ba,$aa,$b9,$9a,$ba,$aa,$c5,$9a,$ba,$aa		//4x
-.byte $b8,$4b,$5a,$69,$d5,$78,$87,$96,$b0,$a5,$b4,$c3,$55,$b5,$c4,$d3		//5x
-.byte	$e2,$f1,$1e,$2d,$3c,$1a,$3a,$2a,$bd,$1a,$3a,$2a,$85,$1a,$3a,$2a		//6x
+.byte $b8,$4b,$5a,$69,$d5,$78,$87,$96,$b0,$a5,$b4,$c3,$55				//5x
+LMT5:									    
+.byte									    $ad,$01,$bd		//LDA $XX01 vs. LDA $XXf2,x (4 vs 5 cycles)
+.byte	$f2
+LMT6:
+.byte	    $01,$1c,$f2,$1b									//$1c01 vs. $1c01-$0f
+.byte				  $1a,$3a,$2a,$bd,$1a,$3a,$2a,$85,$1a,$3a,$2a		//6x
 .byte $bc,$79,$3e,$4d,$95,$5c,$6b,$7a,$b4,$89,$98,$a7,$15				//7x
 //$077d
 LMT2:		and	#$f8		//2 cycles
@@ -898,6 +910,6 @@ LMT4:		ldx	#$0f		//2 cycles
 .byte $be,$39,$45,$db,$b5,$ae,$cd,$d5,$b6,$64,$38,$92,$35,$6f,$22,$26		//bx
 .byte $20,$24,$21,$b8,$a7,$da,$fa,$ea,$b1,$da,$fa,$ea,$45,$da,$fa,$ea		//cx Bitrate Tab @ $07c0 ($07d1,$07d2,$07d3,$07d5)
 .byte $bb,$a1,$a4,$a7,$e5,$a8,$da,$cb,$b3,$87,$5a,$a6,$65,$78,$87,$96		//dx
-.byte $a5,$01,$c3,$d2,$b1,$5a,$7a,$12,$b5,$5a,$7a,$21,$05,$5a,$7a,$43		//ex
+.byte $a5,$01,$c3,$d2,$b1,$5a,$7a,$12,$b5,$5a,$7a,$21,$05,$5a,$7a,$43		//ex Track Tab   @ $07e0 ($01, $12, $13, $19, $1f)
 .byte $bf,$23,$12,$13,$a5,$ed,$45,$54,$d2,$19,$1e,$2e,$3d,$4c,$5b,$1f		//fx
 }

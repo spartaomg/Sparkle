@@ -1,5 +1,5 @@
 //-----------------------------------------------------------------------
-//	SPARKLE V1.3
+//	SPARKLE V1.4
 //	Inspired by Lft's Spindle and Krill's Loader
 //	C64 Code
 //	Tested on 1541-II, 1571, 1541 Ultimate-II+, and THCM's SX-64
