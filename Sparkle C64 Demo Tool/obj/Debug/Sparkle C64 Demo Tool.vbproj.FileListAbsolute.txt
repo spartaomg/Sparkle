@@ -34,7 +34,7 @@ C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\ob
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\obj\Debug\Sparkle.FrmMain.resources
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\obj\Debug\Sparkle.Resources.resources
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\obj\Debug\Sparkle C64 Demo Tool.vbproj.GenerateResource.cache
+C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\obj\Debug\Sparkle C64 Demo Tool.vbproj.CoreCompileInputs.cache
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\obj\Debug\Sparkle.exe
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\obj\Debug\Sparkle.xml
 C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\obj\Debug\Sparkle.pdb
-C:\Users\Tamas\OneDrive\C64\VB\Sparkle C64 Demo Builder\Sparkle C64 Demo Tool\obj\Debug\Sparkle C64 Demo Tool.vbproj.CoreCompileInputs.cache

@@ -9,8 +9,8 @@
 //	0000	0081	ZP GCR Tabs and variables
 //	0082	00ff	GCR Loop
 //	0100	01ff	Data Buffer in Stack
-//	0200	02ff	Secondary buffer for last block of a demo part
-//	0300	05f9	Drive Code (#$06 bytes free)
+//	0200	02ff	Secondary buffer for last block of a file bundle
+//	0300	05fc	Drive Code (#$03 bytes free)
 //	0600	06ff	ZP GCR Tabs and GCR Loop, moved to ZP, overwritten by GCR Tabs
 //	0600	06ff	GCR Tabs for GCR decoding, H2STab
 //	0700	07ff	GCR Tabs for GCR decoding, GCR Mod Tabs
@@ -22,7 +22,7 @@
 //
 //	Disk:		Buffer:  Function:
 //	18:00:$ff	$0101	   DiskID	(for flip detection, compare to NextID @ $21 on ZP)
-//	18:00:$fe	$0102	   PartCtr	(will be copied to PartCtr @ $20 on ZP after flip)
+//	18:00:$fe	$0102	   BundleCt	(will be copied to BundleCt @ $20 on ZP after flip)
 //	18:00:$fd	$0103	   NextID	(will be copied to NextID  @ $21 on ZP after flip, =#$00 if no more flips)
 //	18:00:$fc	$0104	   IL3R	(will be copied to $60 in ILTab)
 //	18:00:$fb	$0105	   IL2R	(will be copied to $61 in ILTab)
@@ -44,21 +44,21 @@
 .const	Sp		=$52		//Spartan Stepping constant (=82*72=5904=$1710=$17 bycles delay)
 
 //ZP Usage:
-.const	cS		=$00		//Current Sector
-.const	nS		=$01		//Next Sector
-.const	cT		=$02		//Current Track
-.const	BlockCtr	=$03		//No. of blocks in Part, stored as the last byte of first block
+.const	cT		=$00		//Current Track
+.const	cS		=$01		//Current Sector
+.const	nS		=$02		//Next Sector
+.const	BlockCtr	=$03		//No. of blocks in Bundle, stored as the second byte of the first block in the Bundle
 .const	WantedCtr	=$08		//Wanted Sector Counter
 .const	SCtr		=$10		//Sector Counter, sectors left to be fetched in track
-.const	LastT		=$11		//Track number of last block of a part, initial value=#$01
-.const	LastS		=$18		//Sector number of last block of a part, initial value=#$00
+.const	LastT		=$11		//Track number of last block of a bundle, initial value=#$01
+.const	LastS		=$18		//Sector number of last block of a bundle, initial value=#$00
 .const	VerifCtr	=$19		//Checksum Verification Counter
-.const	PartCtr	=$20		//Part Counter - will be updated from 18:00:$fe of next side
+.const	BundleCt	=$20		//Bundle Counter - will be updated from 18:00:$fe of next side
 .const	NextID	=$21		//Next Side's ID - will be updated from 18:00:$fd of next side
 .const	ZPT		=$22		//Temporary value on ZP for H2STab preparation and GCR loop timing
-.const	NewPart	=$23		//Marks the first block of the next part, default = #$00, stop motor if changed to #$01
+.const	NewBundle	=$23		//Marks the first block of the next bundle, default = #$00, stop motor if changed to #$01
 .const	StepDir	=$28		//Stepper Seek Direction
-.const	ScndBuff	=$29		//#$01 if last block of a part is stored in secondary buffer, otherwise $00
+.const	ScndBuff	=$29		//#$01 if last block of a bundle is stored in secondary buffer, otherwise $00
 .const	WList		=$3e		//Wanted Sector list ($3e-$52 on zeropage),(0)=unfetched, (-)=wanted, (+)=fetched
 
 //ZP1-ZP4 overlap with Wanted List but they are only used during initialization
@@ -77,8 +77,9 @@
 .const	LM5		=$7e		//ZP pointer for LMT5 ($0783)
 .const	LM6		=$80		//ZP pointer for LMT6 ($078b)
 
-.const	ZP0101	=$70		//$70/$71 = $0101, points at the last fetched value in the buffer
-.const	ZP0201	=$71		//$71/$72 = $0201
+.const	ZP01ff	=$58		//$58/$59 = $01ff, points at the second fetched value in the buffer
+.const	ZP0101	=$59		//$59/$5a = $0101
+.const	ZPNBCnt	=$70		//$70/$71 = $0735
 
 .const	ZP07		=$1c		//=#$07
 .const	ZP0f		=$5c		//=#$0f
@@ -86,7 +87,7 @@
 .const	ZPf8		=$7c		//=#$f8
 
 //Unused ZP addresses:
-//54,56,58-5a,5e,66,68,6e,74,76,78
+//54,56,5e,66,68,6e,72,74,76,78
 
 //GCR Decoding Tabs:
 .const	Tab1		=$0704
@@ -281,7 +282,7 @@ CheckID:	ldy	NextID	//Side is done, check if there is a next side
 //----------------------------
 
 SkipReset:	ldy	#$01
-		sty	NewPart	//Set NewPart Flag (=#$01) - this will stop motor if part is not requested
+		sty	NewBundle	//Set NewBundle Flag (=#$01) - this will stop motor if Bundle is not requested
 		jmp	CheckATN
 
 //----------------------------
@@ -303,7 +304,6 @@ ChkSect:	lda	(Zone0+4),y	//=lda $0103 but shorter
 		//Got Wanted Sector header, now fetch data block
 
 		stx	cS		//Save sector number to Current Sector
-
 		bmi	FetchData	//Branch ALWAYS
 
 //----------------------------
@@ -335,25 +335,18 @@ Data:		ldy	VerifCtr	//Checksum Verification Counter
 		cpx	LastS
 		bne	CheckSCnt
 
-		lda	WantedCtr	//A=LastT & X=LastS, we have found the last block of a part
-		beq	CopyBCnt	//Y=#$00 here
+		lda	(ZP01ff),y	//Save new block count for later use
+		sta	(ZPNBCnt),y
+		lda	#$ff		//And delete it from the block
+		sta	(ZP01ff),y	//So that it does not confuse the depacker...
 
-StoreLoop:	lda	$0100,y	//Store last block of part in secondary buffer and fetch next block, Y=#$00 here
-		sta	$0200,y
-//		lda	$0180,y	//This would be marginally faster
-//		sta	$0280,y	//but we are most likely going to miss the next sector anyway
-//		iny			//we could probably use (ZP),y to save 2 bytes without affecting load times
-//		bpl	StoreLoop
-		iny
-		bne	StoreLoop
-
-		inc	ScndBuff	//=#$01, raise "secondary buffer occupied" flag, do not transfer block
-		bne	ToFH		//Branch ALWAYS, back to fetching next header via trampoline
-
-//----------------------------
-
-CopyBCnt:	lda	(ZP0101),y	//If this is also the last block on the wanted list,
-		sta	(ZP0201),y	//copy BlockCtr only, not the whole block
+		lda	WantedCtr
+		beq	SkipSLoop	//If this is also the last block on the wanted list, do not copy the block
+					//Otherwise, copy the whole block to the secondary buffer and then back to fetching the next block
+		jmp	StoreLoop	//StoreLoop moved to $07f5, cannot use JSR here, stack is full
+BlockInSB:	inc	ScndBuff	//=#$01 raise "secondary buffer occupied" flag
+		bne	ToFH		//Branch always
+SkipSLoop:			
 
 //----------------------------
 
@@ -372,11 +365,11 @@ CopyBCnt:	lda	(ZP0101),y	//If this is also the last block on the wanted list,
 
 CheckSCnt:	lda	SCtr
 		beq	Check2ndB
-ToCATN:	jmp	CheckATN	//If more sectors left on track then continue with transferring the last block of this part
+ToCATN:	jmp	CheckATN	//If more sectors left on track then continue with transferring the last block of this Bundle
 
 //----------------------------
 
-Check2ndB:	lda	ScndBuff	//If no more sectors left, check if we have the last block of a part in the buffer
+Check2ndB:	lda	ScndBuff	//If no more sectors left, check if we have the last block of a Bundle in the buffer
 		bne	ToCATN	//If yes, then the now-fetched sector will be transferred without stepping to next track...
 
 //----------------------------
@@ -392,7 +385,7 @@ RstWtd:	sta	WList,x	//Reset Wanted List
 		ldy	#$81		//Prepare Y for halftrack step
 
 		cpx	#$23		//Track 35?
-		beq	ToCATN	//Reset Part Counter, skip stepping, finish transfer
+		beq	ToCATN	//Reset Bundle Counter, skip stepping, finish transfer
 
 		inx			//Go to next track
 
@@ -459,6 +452,12 @@ BR20:		ora	#$20		//Bitrate=%11
 RateDone:	sta	Spartan+1	//Save bitrate for Spartan Step
 		stx	cT		//Store new Track number
 		sty	SCtr		//Update Sector Counter in Track
+
+//----------------------------		
+		cpy	MaxSct1+1	//Check if we are entering a new speed zone
+		beq	RTS_LAX
+//----------------------------
+
 		sty	MaxSct1+1	//Update Max No. of Sectors in this Track
 		sty	MaxSct2+1	//Three extra bytes here but faster loop later
 
@@ -485,7 +484,7 @@ RateDone:	sta	Spartan+1	//Save bitrate for Spartan Step
 		lda	#$03
 		tay
 LMLoop:	lda	(LM1),y	//Adding 4 extra cycles between Read1 and Read2
-		sta.z	LoopMod1,x	//and 1 cycle between Read3 and Read4
+		sta.z	LoopMod1,x	//and 2 cycles between Read3 and Read4
 		lda	(LM2),y	//to improve rotation speed tolerance in Zones 1-3
 		sta.z	LoopMod2,x
 		lda	(LM3),y
@@ -507,9 +506,9 @@ RTS_LAX:
 //----------------------------
 
 CheckATN:	lax	$1c00		//Fetch Motor and LED status
-		lsr	NewPart	//Check if this is the first block of a new part
-		bcc	SkipDelay	//NewPart=#$00 - any other full blocks of the part, skip delay, continue transfer
-					//NewPart=#$01 - first block of new part, stop motor if block is not requested...
+		lsr	NewBundle	//Check if this is the first block of a new Bundle
+		bcc	SkipDelay	//NewBundle=#$00 - any other full blocks of the Bundle, skip delay, continue transfer
+					//NewBundle=#$01 - first block of new Bundle, stop motor if block is not requested...
 		and	#$77
 		sta	$1c00		//Turn LED off but let disk spin for 2 seconds
 
@@ -554,13 +553,13 @@ Flip:		lda	$0101		//DiskID, compare it to NextID in memory	DO NOT CHANGE TO ZP01
 //----------------------------
 
 		ldy	#$07		//Flip detected, copy Next Side Info
-CopyInfo:	lda	(ZP0101),y	//[$70/$71] -> $0102=PartCtr, $0103=NextID, $104=IL3R, $105=IL2R, $106=IL1R, $107=IL0, $108=IL0R
+CopyInfo:	lda	(ZP0101),y	//[$70/$71] -> $0102=BundleCt, $0103=NextID, $104=IL3R, $105=IL2R, $106=IL1R, $107=IL0, $108=IL0R
 		jsr	ShufToRaw
 		cpy	#$03
 		bcc	ToPC
 		sta	ILTab-3,y	//Update ILTab (5 bytes)
 		bcs	SkipPC
-ToPC:		sta	PartCtr-1,y	//Update NextID and Part Counter (2 bytes)
+ToPC:		sta	BundleCt-1,y	//Update NextID and Bundle Counter (2 bytes)
 SkipPC:	dey
 		bne	CopyInfo
 		ldx	#$00		//We will start on Track 1 again
@@ -649,16 +648,16 @@ Spartan:	lda	#$00		//00,01		Last halftrack step is taken during data transfer
 //----------------------------
 
 		dec	BlockCtr	//Decrease Block Counter
-		bne	SkipBCnt
+		bne	SkipBCtr
 
-		jsr	UpdateBCnt	//Block Counter = #$00, fetch next Block Counter from buffer, decrease Part Counter
+		jsr	UpdateBCtr	//Block Counter = #$00, fetch next Block Counter from buffer, decrease Bundle Counter
 					//Transfer is complete, safe to use stack for JSR
 
-SkipBCnt:	lda	WantedCtr
+SkipBCtr:	lda	WantedCtr
 		bne	ToFetch	//If there are more blocks on the list then fetch next
 		lsr	ScndBuff	//No more blocks on wanted list, check if the last block has been stored...
-		bcc	CheckPCtr	//If we do not have the last block stored then check part counter
-					//Last block of part stored, so transfer it
+		bcc	CheckPCtr	//If we do not have the last block stored then check Bundle counter
+					//Last block of Bundle stored, so transfer it
 		inc	SLoop+2	//Modify transfer loop to transfer data from secondary buffer ($0100 -> $0200)
 		lda	SCtr
 		bne	JmpCATN	//If more sectors left in track, then transfer this block without stepping to next track
@@ -667,10 +666,10 @@ JmpCATN:	jmp	CheckATN
 
 //----------------------------
 
-CheckPCtr:	ldy	PartCtr	//WantedCtr=#$00, check PartCtr
-		bne	CheckEoD	//PartCtr<>#$00, check if we have reached End of Disk
+CheckPCtr:	ldy	BundleCt	//WantedCtr=#$00, check BundleCt
+		bne	CheckEoD	//BundleCt<>#$00, check if we have reached End of Disk
 
-ToTrack18:	ldx	#$11		//PartCtr=#$00 or EoD, move head to Track 18 (X will be increased to #$12 after jump)
+ToTrack18:	ldx	#$11		//BundleCt=#$00 or EoD, move head to Track 18 (X will be increased to #$12 after jump)
  		jmp	LoadBAM	//Move head to Track 18 to fetch Sector 0 (BAM) for Next Side Info, X=#$11, Y=#$00
 
 CheckEoD:	ldy	SCtr		//Last sector transferred?
@@ -680,7 +679,7 @@ CheckEoD:	ldy	SCtr		//Last sector transferred?
 //		Build wanted list
 //----------------------------
 
-BuildList:	cpy	BlockCtr	//Check if we have less unfetched sectors left on track than blocks left in part
+BuildList:	cpy	BlockCtr	//Check if we have less unfetched sectors left on track than blocks left in Bundle
 		bcc	NewWCtr	//Pick the smaller of the two for new Wanted Counter
 		ldy	BlockCtr
 NewWCtr:	sty	WantedCtr	//Store new Wanted Counter (SCtr vs BlockCtr whichever is smaller)
@@ -697,13 +696,13 @@ ChainLoop:	lda	WList,x	//Check if sector is unfetched (=00)
 		lda	#$ff
 		sta	WList,x	//Mark Sector as wanted
 		stx	LastS		//Save Last Sector's number
-IL:		axs	#$fc		//Calculate Next Sector using IL
-MaxSct1:	cpx	#$15		//Reached Max?
+IL:		axs	#$00		//Calculate Next Sector using IL
+MaxSct1:	cpx	#$00		//Reached Max?
 		bcc	SkipSub	//Has not reached Max yet, so skip adjustments
 
-MaxSct2:	axs	#$15		//Reached Max, so subtract Max
+MaxSct2:	axs	#$00		//Reached Max, so subtract Max
 		beq	SkipSub
-SubSct:	axs	#$01		//Decrease if sector > 0 and we are in Zone 0
+SubSct:	axs	#$00		//Decrease if sector > 0 and we are in Zone 0
 
 SkipSub:	dey			//Any more blocks to be put in chain?
 		bne	ChainLoop	//Yes, continue building sector chain
@@ -713,7 +712,7 @@ SkipSub:	dey			//Any more blocks to be put in chain?
 		lda	SCtr
 		cmp	BlockCtr
 		bcc	SkipLast
-		ldy	cT		//If SCtr>=BlockCtr then part will end on this track...
+		ldy	cT		//If SCtr>=BlockCtr then Bundle will end on this track...
 SkipLast:	sty	LastT		//so save current track to LastT, otherwise put 0
 
 ToFetch:	jmp	Fetch
@@ -788,19 +787,19 @@ Read5:	lax	$1c01		//Read5 = 77788888  4	123/-6   131/-8	137/-12  144/-15
 
 		bvc	*		//				02
 
-		tay			//Y=77700000        8	04
+		tay			//Y=77700000		04
 
 t7:		lda	Tab7,y	//00006677,77700000	08
 t8:		eor	Tab8,x	//00000000,77788888	12
 Write3:	pha			//Buffer=$01fe/$0102	15	SP=#$fe->#$fd or #$02->#$01
 					//			     [01-26  01-28  01-30  01-32]
 Read1:	lda	$1c01		//Read1 = 11111222  4	19/-7  19/-9  19/-11 19,-13
-LoopMod1:	ldx	#$07		//<-> ldx $1c	  6	21	 22	  22	   22
-		sax.z	t2+1		//t2+1=00000222	  9	24	 25	  25	   25
-LoopMod2:	and	#$f8		// <-> and $75,x	 11	26	 29	  29	   29
-		tay			//Y=11111000	 13	28	 31	  31	   31
+LoopMod1:	ldx	#$07		//<-> ldx $1c	  2/3	21	 22	  22	   22
+		sax.z	t2+1		//t2+1=00000222	  3	24	 25	  25	   25
+LoopMod2:	and	#$f8		// <-> and $75,x	  2/4	26	 29	  29	   29
+		tay			//Y=11111000	  2	28	 31	  31	   31
 
-LoopMod3:	ldx	#$3e		//<-> ldx $6c	  2	30	 34	  34	   34
+LoopMod3:	ldx	#$3e		//<-> ldx $6c	  2/3	30	 34	  34	   34
 					//			     [27-52  29-56  31-60  33-64]
 Read2:	lda	$1c01		//A=22333334	  6	34/+7  38/+9  38/+7  38/+5 (tightest read)
 		sax.z	t3+1		//t3+1=00333330	  9	37
@@ -843,7 +842,7 @@ FetchAgain:	jmp	Fetch		//Fetch again if A<>#$00 (Checksum Error)
 .pc=$2600	"ZP Tabs"		//#$80 bytes
 .pseudopc	$0600	{
 //	 x0  x1  x2  x3  x4  x5  x6  x7  x8  x9  xa  xb  xc  xd  xe  xf
-.byte $00,$04,$12,$01,$d0,$60,$90,$20,$00,$40,$f0,$00,$50,$30,$10,$f0		//0x
+.byte $12,$00,$04,$01,$d0,$60,$90,$20,$00,$40,$f0,$00,$50,$30,$10,$f0		//0x
 .byte $15,$01,$57,$9e,$47,$9f,$c7,$97,$00,CSV,$17,$9a,$07,$9b,$87,$93		//1x	$1c=#$07 for Tab3 and GCR loop mod
 .byte $ff,$00,$ff,$00,$67,$9d,$e7,$95,$ff,$00,$b7,$90,$27,$99,$a7,$91		//2x
 .byte <LMT1,>LMT1
@@ -851,9 +850,10 @@ FetchAgain:	jmp	Fetch		//Fetch again if A<>#$00 (Checksum Error)
 .byte							    $97,$92,$37,$98,$00,$00		//3x	Wanted List $3e-$52
 .byte	<T2Base,>T2Base,<Tab2+$40,>Tab2+$40,<T2Base+$20,>T2Base+$20,<Tab2+$60,>Tab2+$60
 .byte 					  $00,$00,$00,$00,$00,$00,$00,$00		//4x	(0) unfetched, (+) fetched, (-) wanted
-.byte $00,$00,$00,$1e,$5c,$1f,$c5,$17,$61,$bd,$78,$1a,$0f,$1b,$4b,$13		//5x	$5c=#$0f for GCR loop mod 
+.byte $00,$00,$00,$1e,$12,$1f,$c5,$17,$ff,$01,$01,$1a,$0f,$1b,$4b,$13		//5x	$5c=#$0f for GCR loop mod 
 .byte	$fd,$fd,$fd,$04,$fc,$1d,$1e,$15,$59,<LMT3,>LMT3,$10,$3e,$19,$25,$11	//6x	$6c=#$3e for GCR loop mod, $60-$64 - ILTab
-.byte $01,$01,$02,$16,$69,$1c,$7a,$14,$8b,<LMT4,>LMT4,$12,$f8,$18,<LMT5,>LMT5	//7x	$7c=#$f8 for GCR loop mod 
+.byte <NBC+1,>NBC+1
+.byte		  $5a,$16,$69,$1c,$7a,$14,$8b,<LMT4,>LMT4,$12,$f8,$18,<LMT5,>LMT5	//7x	$7c=#$f8 for GCR loop mod 
 .byte	<LMT6,>LMT6
 }
 
@@ -868,12 +868,13 @@ LMT1:		ldx	#$07		//2 cycles
 //$0724
 .byte 		    $85,$8a,$74,$0a,$63,$8a,$52,$0a,$41,$8a,$14,$0a		//2x
 //$0730
-UpdateBCnt:	inc	NewPart	//#$00 -> #$01, next block will be first of next part
-		dec	PartCtr	//Last block of this part transferred, decrease Part Counter
-		lda	$0201		//Last byte of Block = New Block Count
+UpdateBCtr:	inc	NewBundle	//#$00 -> #$01, next block will be first of next Bundle
+		dec	BundleCt	//Last block of this Bundle transferred, decrease Bundle Counter
+NBC:		lda	#$00		//New Block Count
 		jsr	ShufToRaw	//Transfer complete, we can safely use JSR here
 		sta	BlockCtr
 		rts
+		nop
 //$073d
 ShufToRaw:	ldx	#$99		//Fetched data are bit shuffled and
 		axs	#$00		//EOR transformed for fast transfer
@@ -909,7 +910,15 @@ LMT4:		ldx	#$0f		//2 cycles
 .byte $28,$2c,$29,$2d,$e1,$ca,$6a,$4a,$b7,$ca,$6a,$4a,$25,$ca,$6a,$4a		//ax
 .byte $be,$39,$45,$db,$b5,$ae,$cd,$d5,$b6,$64,$38,$92,$35,$6f,$22,$26		//bx
 .byte $20,$24,$21,$b8,$a7,$da,$fa,$ea,$b1,$da,$fa,$ea,$45,$da,$fa,$ea		//cx Bitrate Tab @ $07c0 ($07d1,$07d2,$07d3,$07d5)
-.byte $bb,$a1,$a4,$a7,$e5,$a8,$da,$cb,$b3,$87,$5a,$a6,$65,$78,$87,$96		//dx
-.byte $a5,$01,$c3,$d2,$b1,$5a,$7a,$12,$b5,$5a,$7a,$21,$05,$5a,$7a,$43		//ex
-.byte $bf,$23,$12,$13,$a5,$ed,$45,$54,$d2,$19,$1e,$2e,$3d,$4c,$5b,$1f		//fx
+.byte $bb,$a1,$a4,$a7,$e5,$a8,$da,$cb,$b3,$87,$5a,$a6,$65,$1f,$2e,$3d		//dx
+.byte $4c,$5b,$6a,$79,$95,$5a,$7a,$a9,$b5,$5a,$7a,$95,$05,$5a,$7a,$43		//ex
+.byte $bf,$86,$79,$53,$a5
+//$07f5
+StoreLoop:	pla			//Store last block of Bundle in secondary buffer and fetch next block, SP=#$00 here
+		tsx
+		sta	$0200,x
+		bne	StoreLoop
+		jmp	BlockInSB		//Cannot use RTS here
+//$07ff
+.byte											$62		//fx
 }

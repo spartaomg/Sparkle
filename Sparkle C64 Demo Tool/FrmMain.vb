@@ -31,14 +31,7 @@ Public Class FrmMain
 
         ReDim PartT(-1), PartS(-1), PartDiskLoc(-1)
 
-        'If CustomIL Then
         CalcILTab()
-        'Else
-        'TabT = My.Resources.TabT
-        'TabS = My.Resources.TabS
-        'End If
-
-        Packer = My.Settings.DefaultPacker
 
         Track(1) = 0
         For T = 1 To 34
@@ -146,7 +139,7 @@ Err:
     End Sub
 
     Private Sub TsbOpen_Click(sender As Object, e As EventArgs) Handles tsbOpen.Click
-        'On Error GoTo Err
+        On Error GoTo Err
 
         Dim OpenDLG As New OpenFileDialog
 
@@ -185,7 +178,7 @@ Err:
     End Sub
 
     Private Function OpenFile()
-        'On Error GoTo Err
+        On Error GoTo Err
 
         OpenFile = True
 
@@ -197,10 +190,8 @@ Err:
 
         Disk = System.IO.File.ReadAllBytes(D64Name)
 
-        'If CustomIL Then
         GetILfromDisk()
         CalcILTab()
-        'End If
 
         ScanDiskForParts()
 
@@ -360,7 +351,6 @@ Err:
             End If
             CT = 18 : CS = 1                                'Otherwise, show last built disk
             ShowSector()
-            FileChanged = True
             StatusFileName(D64Name)
             ScanDiskForParts()
         End If
@@ -656,7 +646,7 @@ Err:
                 TsbNextSector4_Click(sender, e)
             Case Keys.OemMinus  'Prevous Sector in Sequence (- key)
                 TsbPrevSector4_Click(sender, e)
-            Case Keys.Home      'First Sector of First Part (Home key)
+            Case Keys.Home      'First Sector of First Bundle (Home key)
                 If e.Control Then
                     TsbFirstTrack_Click(sender, e)
                 ElseIf e.Shift Then
@@ -664,7 +654,7 @@ Err:
                 Else
                     TsbFirstPart_Click(sender, e)
                 End If
-            Case Keys.End       'Last Sector of Last Part (End key)
+            Case Keys.End       'Last Sector of Last Bundle (End key)
                 If e.Control Then
                     TsbLastTrack_Click(sender, e)
                 ElseIf e.Shift Then
@@ -672,7 +662,7 @@ Err:
                 Else
                     TsbLastPart_Click(sender, e)
                 End If
-            Case Keys.PageUp    'First Sector of Previous Part (PgUp key)
+            Case Keys.PageUp    'First Sector of Previous Bundle (PgUp key)
                 If e.Control Then
                     TsbPrevTrack_Click(sender, e)
                 ElseIf e.Shift Then
@@ -680,7 +670,7 @@ Err:
                 Else
                     TsbPrevPart_Click(sender, e)
                 End If
-            Case Keys.PageDown  'First Sector of Next PArt (PgDn key)
+            Case Keys.PageDown  'First Sector of Next Bundle (PgDn key)
                 If e.Control Then
                     TsbNextTrack_Click(sender, e)
                 ElseIf e.Shift Then
@@ -839,6 +829,17 @@ Err:
     Private Sub ShowSector()
         On Error GoTo Err
 
+        Select Case CT
+            Case 1 To 17
+                TslIL.Text = "Interleave: " + IL0.ToString
+            Case 18 To 24
+                TslIL.Text = "Interleave: " + IL1.ToString
+            Case 25 To 30
+                TslIL.Text = "Interleave: " + IL2.ToString
+            Case Else
+                TslIL.Text = "Interleave: " + IL3.ToString
+        End Select
+
         Dim tmpSect As String = ""
         Dim Tmp As Byte
         Dim TA As String
@@ -857,10 +858,8 @@ Err:
 
         CP = Track(CT) + CS * 256
 
-        'txtASCII.Text = ""
         Dim L, T As Integer
         For R = 0 To 15
-            'TA = ""
             For C = 0 To 15
                 Tmp = Disk(CP + R * 16 + C)
                 tmpSect += ByteToChar(Int(Tmp / 16)) + ByteToChar(Tmp And &HF) + " "
@@ -871,7 +870,7 @@ Err:
                     Dim src_rect As New Rectangle(L, T, 16, 16)
                     Dim dst_rect As New Rectangle((C * 16), (R * 16) + 2, 16, 16)
 
-                    ' Copy that part of the image.
+                    ' Copy that bundle of the image.
                     Gr.DrawImage(PETSCII, dst_rect, src_rect, GraphicsUnit.Pixel)
                 End Using
             Next
@@ -960,11 +959,11 @@ Err:
         L = (B Mod 16) * 16
         T = (Int(B / 16)) * 16
         Using Gr As Graphics = Graphics.FromImage(BM)
-            ' Define source and destination rectangles.
+            'Define source and destination rectangles.
             Dim src_rect As New Rectangle(L, T, 16, 16)
             Dim dst_rect As New Rectangle((CX * 16) + 2, (CY * 16) + 2, 16, 16)
 
-            ' Copy that part of the image.
+            'Copy that Bundle of the image.
             Gr.DrawImage(PETSCII, dst_rect, src_rect, GraphicsUnit.Pixel)
         End Using
 
@@ -1002,8 +1001,6 @@ StartCheck2:
             CheckStart += 7
             If CheckStart < Len(txtSector.Text) Then GoTo StartCheck2
         End If
-
-        'IO.File.WriteAllText("C:\Users\Tamas\OneDrive\C64\Coding\RichText.txt", txtSector.Text)
 
         txtSector.Select((CY * 49) + (CX * 3) + CB, SelLen)
 
@@ -1491,21 +1488,21 @@ Err:
 
         ReDim PartT(PartNo), PartS(PartNo), PartDiskLoc(PartNo)
 
-        If Disk(255) = 0 Then Exit Sub
+        If Disk(1) = 0 Then Exit Sub
 
 NextPart:
         PartNo += 1
 
         ReDim Preserve PartT(PartNo), PartS(PartNo), PartDiskLoc(PartNo)
 
-        PartT(PartNo) = TabT(BlockNo)  'First Track of Part
-        PartS(PartNo) = TabS(BlockNo)  'First Sector of Part
+        PartT(PartNo) = TabT(BlockNo)  'First Track of Bundle
+        PartS(PartNo) = TabS(BlockNo)  'First Sector of Bundle
         PartDiskLoc(PartNo) = BlockNo
 
-        BlockNo += Disk(Track(TabT(BlockNo)) + (TabS(BlockNo) * 256) + 255)
+        BlockNo += Disk(Track(TabT(BlockNo)) + (TabS(BlockNo) * 256) + 1)
 
         If BlockNo < 664 Then
-            If Disk(Track(TabT(BlockNo)) + (TabS(BlockNo) * 256) + 255) <> 0 Then GoTo NextPart
+            If Disk(Track(TabT(BlockNo)) + (TabS(BlockNo) * 256) + 1) <> 0 Then GoTo NextPart
         End If
 
         Exit Sub

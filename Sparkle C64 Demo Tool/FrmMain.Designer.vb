@@ -102,6 +102,7 @@ Partial Class FrmMain
 		Me.Label3 = New System.Windows.Forms.Label()
 		Me.Label2 = New System.Windows.Forms.Label()
 		Me.Label1 = New System.Windows.Forms.Label()
+		Me.TslIL = New System.Windows.Forms.ToolStripLabel()
 		Me.ToolStrip2.SuspendLayout()
 		Me.ssStatus.SuspendLayout()
 		Me.ToolStrip1.SuspendLayout()
@@ -112,7 +113,7 @@ Partial Class FrmMain
 		'ToolStrip2
 		'
 		Me.ToolStrip2.ImageScalingSize = New System.Drawing.Size(20, 20)
-		Me.ToolStrip2.Items.AddRange(New System.Windows.Forms.ToolStripItem() {Me.tsbBAM, Me.tsbDir, Me.ToolStripSeparator10, Me.tsbFirstTrack, Me.tsbPrevTrack, Me.ToolStripSeparator4, Me.tsbNextTrack, Me.tsbLastTrack, Me.ToolStripSeparator5, Me.ToolStripSeparator6, Me.tsbSector0, Me.tsbPrevSector, Me.ToolStripSeparator7, Me.tsbNextSector, Me.tsbLastSector, Me.ToolStripSeparator8, Me.ToolStripSeparator9, Me.TsbFirstPart, Me.ToolStripSeparator17, Me.TsbPrevPart, Me.ToolStripSeparator14, Me.tsbPrevSector4, Me.ToolStripSeparator11, Me.tsbNextSector4, Me.ToolStripSeparator16, Me.TsbNextPart, Me.ToolStripSeparator18, Me.TsbLastPart, Me.ToolStripSeparator12, Me.ToolStripSeparator13, Me.ToolStripLabel1, Me.txtCT, Me.ToolStripLabel2, Me.txtCS})
+		Me.ToolStrip2.Items.AddRange(New System.Windows.Forms.ToolStripItem() {Me.tsbBAM, Me.tsbDir, Me.ToolStripSeparator10, Me.tsbFirstTrack, Me.tsbPrevTrack, Me.ToolStripSeparator4, Me.tsbNextTrack, Me.tsbLastTrack, Me.ToolStripSeparator5, Me.ToolStripSeparator6, Me.tsbSector0, Me.tsbPrevSector, Me.ToolStripSeparator7, Me.tsbNextSector, Me.tsbLastSector, Me.ToolStripSeparator8, Me.ToolStripSeparator9, Me.TsbFirstPart, Me.ToolStripSeparator17, Me.TsbPrevPart, Me.ToolStripSeparator14, Me.tsbPrevSector4, Me.ToolStripSeparator11, Me.tsbNextSector4, Me.ToolStripSeparator16, Me.TsbNextPart, Me.ToolStripSeparator18, Me.TsbLastPart, Me.ToolStripSeparator12, Me.ToolStripSeparator13, Me.ToolStripLabel1, Me.txtCT, Me.ToolStripLabel2, Me.txtCS, Me.TslIL})
 		Me.ToolStrip2.Location = New System.Drawing.Point(0, 27)
 		Me.ToolStrip2.Name = "ToolStrip2"
 		Me.ToolStrip2.Padding = New System.Windows.Forms.Padding(0)
@@ -262,8 +263,8 @@ Partial Class FrmMain
 		Me.TsbFirstPart.ImageTransparentColor = System.Drawing.Color.White
 		Me.TsbFirstPart.Name = "TsbFirstPart"
 		Me.TsbFirstPart.Size = New System.Drawing.Size(24, 24)
-		Me.TsbFirstPart.Text = "First Part"
-		Me.TsbFirstPart.ToolTipText = "Load First Sector of First Part  (Home)"
+		Me.TsbFirstPart.Text = "First Bundle"
+		Me.TsbFirstPart.ToolTipText = "Load First Sector of First Bundle  (Home)"
 		'
 		'ToolStripSeparator17
 		'
@@ -277,8 +278,8 @@ Partial Class FrmMain
 		Me.TsbPrevPart.ImageTransparentColor = System.Drawing.Color.White
 		Me.TsbPrevPart.Name = "TsbPrevPart"
 		Me.TsbPrevPart.Size = New System.Drawing.Size(24, 24)
-		Me.TsbPrevPart.Text = "Previous Part"
-		Me.TsbPrevPart.ToolTipText = "Load First Sector of Previous Part (PgUp)"
+		Me.TsbPrevPart.Text = "Previous Bundle"
+		Me.TsbPrevPart.ToolTipText = "Load First Sector of Previous Bundle (PgUp)"
 		'
 		'ToolStripSeparator14
 		'
@@ -293,7 +294,7 @@ Partial Class FrmMain
 		Me.tsbPrevSector4.Name = "tsbPrevSector4"
 		Me.tsbPrevSector4.Size = New System.Drawing.Size(24, 24)
 		Me.tsbPrevSector4.Text = "Previous Sector"
-		Me.tsbPrevSector4.ToolTipText = "Load Previous Sector in Sequence using Default Interleave (-)"
+		Me.tsbPrevSector4.ToolTipText = "Load Previous Sector in Sequence using Interleave (-)"
 		'
 		'ToolStripSeparator11
 		'
@@ -308,7 +309,7 @@ Partial Class FrmMain
 		Me.tsbNextSector4.Name = "tsbNextSector4"
 		Me.tsbNextSector4.Size = New System.Drawing.Size(24, 24)
 		Me.tsbNextSector4.Text = "Next Sector"
-		Me.tsbNextSector4.ToolTipText = "Load Next Sector in Sequence using Default Interleave (+)"
+		Me.tsbNextSector4.ToolTipText = "Load Next Sector in Sequence using Interleave (+)"
 		'
 		'ToolStripSeparator16
 		'
@@ -322,8 +323,8 @@ Partial Class FrmMain
 		Me.TsbNextPart.ImageTransparentColor = System.Drawing.Color.White
 		Me.TsbNextPart.Name = "TsbNextPart"
 		Me.TsbNextPart.Size = New System.Drawing.Size(24, 24)
-		Me.TsbNextPart.Text = "Next Part"
-		Me.TsbNextPart.ToolTipText = "Load First Sector of Next Part (PgDn)"
+		Me.TsbNextPart.Text = "Next Bundle"
+		Me.TsbNextPart.ToolTipText = "Load First Sector of Next Bundle (PgDn)"
 		'
 		'ToolStripSeparator18
 		'
@@ -337,8 +338,8 @@ Partial Class FrmMain
 		Me.TsbLastPart.ImageTransparentColor = System.Drawing.Color.White
 		Me.TsbLastPart.Name = "TsbLastPart"
 		Me.TsbLastPart.Size = New System.Drawing.Size(24, 24)
-		Me.TsbLastPart.Text = "Last Part"
-		Me.TsbLastPart.ToolTipText = "Load Last Sector of Last Part (End)"
+		Me.TsbLastPart.Text = "Last Bundle"
+		Me.TsbLastPart.ToolTipText = "Load Last Sector of Last Bundle (End)"
 		'
 		'ToolStripSeparator12
 		'
@@ -816,6 +817,14 @@ Partial Class FrmMain
 		Me.Label1.TabIndex = 19
 		Me.Label1.Text = "00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F"
 		'
+		'TslIL
+		'
+		Me.TslIL.Font = New System.Drawing.Font("Segoe UI", 9.0!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+		Me.TslIL.ForeColor = System.Drawing.Color.MidnightBlue
+		Me.TslIL.Name = "TslIL"
+		Me.TslIL.Size = New System.Drawing.Size(68, 24)
+		Me.TslIL.Text = "Interleave:"
+		'
 		'FrmMain
 		'
 		Me.AllowDrop = True
@@ -925,5 +934,6 @@ Partial Class FrmMain
     Friend WithEvents TsbAdmin As ToolStripDropDownButton
     Friend WithEvents TsmAssociate As ToolStripMenuItem
     Friend WithEvents ToolStripSeparator19 As ToolStripSeparator
-    Friend WithEvents TsmDeleteAssociation As ToolStripMenuItem
+	Friend WithEvents TsmDeleteAssociation As ToolStripMenuItem
+	Friend WithEvents TslIL As ToolStripLabel
 End Class

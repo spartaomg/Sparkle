@@ -23,10 +23,6 @@ Partial Class FrmEditor
 	<System.Diagnostics.DebuggerStepThrough()> _
 	Private Sub InitializeComponent()
 		Dim resources As System.ComponentModel.ComponentResourceManager = New System.ComponentModel.ComponentResourceManager(GetType(FrmEditor))
-		Me.PnlPacker = New System.Windows.Forms.Panel()
-		Me.OptBetter = New System.Windows.Forms.RadioButton()
-		Me.OptFaster = New System.Windows.Forms.RadioButton()
-		Me.lblPacker = New System.Windows.Forms.Label()
 		Me.ChkToolTips = New System.Windows.Forms.CheckBox()
 		Me.ChkExpand = New System.Windows.Forms.CheckBox()
 		Me.BtnEntryDown = New System.Windows.Forms.Button()
@@ -49,53 +45,9 @@ Partial Class FrmEditor
 		Me.OptRelativePaths = New System.Windows.Forms.RadioButton()
 		Me.Label1 = New System.Windows.Forms.Label()
 		Me.ChkSize = New System.Windows.Forms.CheckBox()
-		Me.PnlPacker.SuspendLayout()
 		Me.strip.SuspendLayout()
 		Me.PnlPath.SuspendLayout()
 		Me.SuspendLayout()
-		'
-		'PnlPacker
-		'
-		Me.PnlPacker.Controls.Add(Me.OptBetter)
-		Me.PnlPacker.Controls.Add(Me.OptFaster)
-		Me.PnlPacker.Controls.Add(Me.lblPacker)
-		Me.PnlPacker.Location = New System.Drawing.Point(666, 297)
-		Me.PnlPacker.Name = "PnlPacker"
-		Me.PnlPacker.Size = New System.Drawing.Size(108, 71)
-		Me.PnlPacker.TabIndex = 125
-		'
-		'OptBetter
-		'
-		Me.OptBetter.AutoSize = True
-		Me.OptBetter.Location = New System.Drawing.Point(9, 44)
-		Me.OptBetter.Name = "OptBetter"
-		Me.OptBetter.Size = New System.Drawing.Size(53, 17)
-		Me.OptBetter.TabIndex = 2
-		Me.OptBetter.TabStop = True
-		Me.OptBetter.Text = "Better"
-		Me.OptBetter.UseVisualStyleBackColor = True
-		'
-		'OptFaster
-		'
-		Me.OptFaster.AutoSize = True
-		Me.OptFaster.Location = New System.Drawing.Point(8, 21)
-		Me.OptFaster.Name = "OptFaster"
-		Me.OptFaster.Size = New System.Drawing.Size(54, 17)
-		Me.OptFaster.TabIndex = 1
-		Me.OptFaster.TabStop = True
-		Me.OptFaster.Text = "Faster"
-		Me.OptFaster.TextAlign = System.Drawing.ContentAlignment.MiddleCenter
-		Me.OptFaster.UseVisualStyleBackColor = True
-		'
-		'lblPacker
-		'
-		Me.lblPacker.AutoSize = True
-		Me.lblPacker.Font = New System.Drawing.Font("Microsoft Sans Serif", 8.25!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-		Me.lblPacker.Location = New System.Drawing.Point(6, 5)
-		Me.lblPacker.Name = "lblPacker"
-		Me.lblPacker.Size = New System.Drawing.Size(96, 13)
-		Me.lblPacker.TabIndex = 0
-		Me.lblPacker.Text = "Default Packer:"
 		'
 		'ChkToolTips
 		'
@@ -262,7 +214,7 @@ Partial Class FrmEditor
 		Me.PnlPath.Controls.Add(Me.OptFullPaths)
 		Me.PnlPath.Controls.Add(Me.OptRelativePaths)
 		Me.PnlPath.Controls.Add(Me.Label1)
-		Me.PnlPath.Location = New System.Drawing.Point(666, 380)
+		Me.PnlPath.Location = New System.Drawing.Point(666, 294)
 		Me.PnlPath.Name = "PnlPath"
 		Me.PnlPath.Size = New System.Drawing.Size(108, 71)
 		Me.PnlPath.TabIndex = 127
@@ -318,7 +270,6 @@ Partial Class FrmEditor
 		Me.Controls.Add(Me.ChkSize)
 		Me.Controls.Add(Me.PnlPath)
 		Me.Controls.Add(Me.strip)
-		Me.Controls.Add(Me.PnlPacker)
 		Me.Controls.Add(Me.ChkToolTips)
 		Me.Controls.Add(Me.ChkExpand)
 		Me.Controls.Add(Me.BtnEntryDown)
@@ -340,8 +291,6 @@ Partial Class FrmEditor
 		Me.Name = "FrmEditor"
 		Me.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen
 		Me.Text = "Script Editor"
-		Me.PnlPacker.ResumeLayout(False)
-		Me.PnlPacker.PerformLayout()
 		Me.strip.ResumeLayout(False)
 		Me.strip.PerformLayout()
 		Me.PnlPath.ResumeLayout(False)
@@ -350,11 +299,6 @@ Partial Class FrmEditor
 		Me.PerformLayout()
 
 	End Sub
-
-	Friend WithEvents PnlPacker As Panel
-	Friend WithEvents OptBetter As RadioButton
-	Friend WithEvents OptFaster As RadioButton
-	Friend WithEvents lblPacker As Label
 	Friend WithEvents ChkToolTips As CheckBox
 	Friend WithEvents ChkExpand As CheckBox
 	Friend WithEvents BtnEntryDown As Button

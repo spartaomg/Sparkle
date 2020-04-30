@@ -4,8 +4,6 @@
     Public ReadOnly UserDeskTop As String = Environment.GetFolderPath(Environment.SpecialFolder.Desktop)
     Public ReadOnly UserFolder As String = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)
 
-	Public Packer As Integer = 2     '1= faster, 2=better
-
     Public DiskLoop As Integer = 0
 
     Public Drive() As Byte
@@ -38,15 +36,14 @@
     Public StartTrack As Byte = 1
     Public StartSector As Byte = 0
 
-    Public ByteSt(), BitSt(), Buffer(255), BitPos, LastByte, AdLo, AdHi As Byte
+    Public ByteSt(), Buffer(255), LastByte, AdLo, AdHi As Byte
     Public Match, MaxBit, MatchSave(), PrgLen, Distant As Integer
     Public MatchOffset(), MatchCnt, RLECnt, MatchLen(), MaxSave, MaxOffset, MaxLen, LitCnt, Bits, BuffAdd, PrgAdd As Integer
     Public MaxSLen, MaxSOff, MaxSSave As Integer
     Public DistAd(), DistLen(), DistSave(), DistCnt, DistBase As Integer
-    Public DtPos, CmPos, CmLast, DtLen, MatchStart, BitCnt As Integer
-    Public LastPO, LastMS As Integer    'save previous POffset and MatchStart positions to recompress last block of part
+    Public DtPos, CmPos, CmLast, DtLen, MatchStart As Integer
+    Public LastPO, LastMS As Integer    'save previous POffset and MatchStart positions to recompress last block of bundle
     Public LastBitP, LastBytC, LastBitC As Integer
-    Public ByteCnt As Integer    'Points at the next empty byte in buffer
     Public MatchType(), MaxType As String
 
     Public LastByteCt As Integer = 255
@@ -69,9 +66,7 @@
     Public ScriptName As String
     Public DiskNo As Integer
 
-    '-----THESE WILL BE REMOVED-----
     Public D64Name As String = "" '= My.Computer.FileSystem.SpecialDirectories.MyDocuments
-    '-------------------------------
 
     Public DiskHeader As String = "demo disk " + Year(Now).ToString
     Public DiskID As String = "sprkl"
@@ -83,10 +78,10 @@
     Public FileChanged As Boolean = False
 
     Public DiskCnt As Integer = -1
-    Public PartCnt As Integer = -1
+    Public BundleCnt As Integer = -1
     Public FileCnt As Integer = -1
     Public CurrentDisk As Integer = -1
-    Public CurrentPart As Integer = -1
+    Public CurrentBundle As Integer = -1
     Public CurrentFile As Integer = -1
     Public CurrentScript As Integer = -1
 
@@ -95,33 +90,33 @@
     Public tmpFileNameA(), tmpFileAddrA(), tmpFileOffsA(), tmpFileLenA() As String
     Public FileIOA() As Boolean
     Public tmpFileIOA() As Boolean
-    Public BitsNeededForNextPart As Integer = 0
+    Public BitsNeededForNextBundle As Integer = 0
 
     Public Prgs As New List(Of Byte())
     Public tmpPrgs As New List(Of Byte())
 
-    Public DiskNoA(), DFDiskNoA(), DFPartNoA(), DiskPartCntA(), DiskFileCntA() As Integer
-    Public FilesInPartA() As Integer
+    Public DiskNoA(), DFDiskNoA(), DFBundleNoA(), DiskBundleCntA(), DiskFileCntA() As Integer
+    Public FilesInBundleA() As Integer
     Public PDiskNoA(), PSizeA() As Integer
     Public PNewBlockA() As Boolean
-    Public FDiskNoA(), FPartNoA(), FSizeA() As Integer
-    Public TotalParts As Integer = 0
+    Public FDiskNoA(), FBundleNoA(), FSizeA() As Integer
+    Public TotalBundles As Integer = 0
     Public NewFile As String
 
     Public DiskSizeA() As Integer
-    Public PartSizeA() As Integer
-    Public PartOrigSizeA() As Integer
+    Public BundleSizeA() As Integer
+    Public BundleOrigSizeA() As Integer
     Public FileSizeA() As Integer
     Public FBSDisk() As Integer
-    Public PartByteCntA() As Integer
-    Public PartBitCntA() As Integer
-    Public PartBitPosA() As Byte
-    Public UncomPartSize As Double = 0
+    Public BundleBytePtrA() As Integer
+    Public BundleBitPtrA() As Integer
+    Public BundleBitPosA() As Integer
+    Public UncompBundleSize As Double = 0
 
     Public bBuildDisk As Boolean = False
 
     Public SS, SE, LastSS, LastSE As Integer
-    Public NewPart As Boolean = False
+    Public NewBundle As Boolean = False
     Public ScriptEntryType As String = ""
     Public ScriptEntry As String = ""
     Public ScriptLine As String = ""
@@ -137,14 +132,14 @@
     Dim FirstFileStart As String = ""
 
     Public TabT(663), TabS(663) As Byte
-    Public BlockPtr As Integer = 255
+    Public BlockPtr As Integer '= 255
     Public LastBlockCnt As Byte = 0
-    Public LoaderParts As Integer = 1
+    Public LoaderBundles As Integer = 1
     Public FilesInBuffer As Byte = 1
 
     Public TmpSetNewblock As Boolean = False
-    Public SetNewBlock As Boolean = False      'This will fire at the previous part and will set NewBlock2
-    Public NewBlock As Boolean = False     'This will fire at the specified part
+    Public SetNewBlock As Boolean = False      'This will fire at the previous bundle and will set NewBlock2
+    Public NewBlock As Boolean = False     'This will fire at the specified bundle
 
     Private DirTrack, DirSector, DirPos As Integer
     Public DirArt As String
@@ -157,8 +152,8 @@
 
     Private Loader() As Byte
 
-    Public CompressPartFromEditor As Boolean = False
-    Public LastFileOfPart As Boolean = False
+    Public CompressBundleFromEditor As Boolean = False
+    Public LastFileOfBundle As Boolean = False
 
     Public Sub SetLastSector()
         On Error GoTo Err
@@ -189,20 +184,20 @@ Err:
 
         DiskCnt = -1
 
-        ReDim DiskNoA(DiskCnt), DiskPartCntA(DiskCnt), DiskFileCntA(DiskCnt)
+        ReDim DiskNoA(DiskCnt), DiskBundleCntA(DiskCnt), DiskFileCntA(DiskCnt)
         ReDim D64NameA(DiskCnt), DiskHeaderA(DiskCnt), DiskIDA(DiskCnt), DemoNameA(DiskCnt), DemoStartA(DiskCnt), DirArtA(DiskCnt)
         ReDim DiskSizeA(DiskCnt)
 
-        PartCnt = -1
-        ReDim PDiskNoA(PartCnt), PSizeA(PartCnt), PartSizeA(PartCnt), FilesInPartA(PartCnt), PartOrigSizeA(PartCnt)
+        BundleCnt = -1
+        ReDim PDiskNoA(BundleCnt), PSizeA(BundleCnt), BundleSizeA(BundleCnt), FilesInBundleA(BundleCnt), BundleOrigSizeA(BundleCnt)
 
         FileCnt = -1
 
-        ReDim FileNameA(FileCnt), DFDiskNoA(FileCnt), DFPartNoA(FileCnt), FileAddrA(FileCnt), FileOffsA(FileCnt), FileLenA(FileCnt)
-        ReDim FDiskNoA(FileCnt), FPartNoA(FileCnt), FSizeA(FileCnt)
+        ReDim FileNameA(FileCnt), DFDiskNoA(FileCnt), DFBundleNoA(FileCnt), FileAddrA(FileCnt), FileOffsA(FileCnt), FileLenA(FileCnt)
+        ReDim FDiskNoA(FileCnt), FBundleNoA(FileCnt), FSizeA(FileCnt)
         ReDim FileSizeA(FileCnt), FBSDisk(FileCnt)
 
-        TotalParts = 0
+        TotalBundles = 0
 
         Exit Sub
 Err:
@@ -216,16 +211,14 @@ Err:
 
         FindNextScriptEntry = True
 
-        'NewPart = False
-
 NextLine:
         If Mid(Script, SS, 1) = Chr(13) Then                'Check if this is an empty line indicating a new section
-            NewPart = True
+            NewBundle = True
             SS += 2                                         'Skip vbCrLf
             SE = SS + 1
             GoTo NextLine
         ElseIf Mid(Script, SS, 1) = Chr(10) Then            'Line ends with vbLf
-            NewPart = True
+            NewBundle = True
             SS += 1                                         'Skip vbLf
             SE = SS + 1
             GoTo NextLine
@@ -549,7 +542,7 @@ Err:
             Drive = My.Resources.SD
         End If
 
-        Drive(802) = idcFileCnt 'Save number of parts to be loaded to ZP Tab Location $20 (=$320+2), includes Address Bytes!!!
+        Drive(802) = idcFileCnt 'Save number of bundles to be loaded to ZP Tab Location $20 (=$320+2), includes Address Bytes!!!
         Drive(803) = idcNextID  'Save Next Side ID1 to ZP Tab Location $21 (=$321+2), includes Address Bytes
 
         CT = 18
@@ -569,7 +562,6 @@ Err:
         Disk(Track(18) + (0 * 256) + 254) = idcFileCnt
         Disk(Track(18) + (0 * 256) + 253) = idcNextID
         'Add Custom Interleave Info
-        'If CustomIL Then
         Disk(Track(18) + (0 * 256) + 252) = 256 - IL3
         Disk(Track(18) + (0 * 256) + 251) = 256 - IL2
         Disk(Track(18) + (0 * 256) + 250) = 256 - IL1
@@ -580,7 +572,6 @@ Err:
         Disk(Track(18) + (14 * 256) + 98) = 256 - IL1
         Disk(Track(18) + (14 * 256) + 99) = IL0
         Disk(Track(18) + (14 * 256) + 100) = 256 - IL0
-        'End If
 
         Exit Function
 Err:
@@ -628,7 +619,7 @@ Err:
             Loader = My.Resources.SLT
         End If
 
-        For I = 0 To Loader.Length - 3      'Find JMP $01f0 instruction (JMP AltLoad)
+        For I = 0 To Loader.Length - 3      'Find JMP $0180 instruction (JMP Load)
             If (Loader(I) = &H4C) And (Loader(I + 1) = &H80) And (Loader(I + 2) = &H1) Then
                 Loader(I - 2) = AdLo        'Lo Byte return address at the end of Loader
                 Loader(I - 5) = AdHi        'Hi Byte return address at the end of Loader
@@ -743,37 +734,47 @@ Err:
             ZP = 2
             LoaderZP = "02"
         End If
-        If ZP = 255 Then
-            MsgBox("Zeropage value cannot be more than $fe." + vbNewLine + vbNewLine + "ZP is corrected to $fe. Please update the ZP entry in your script!", vbInformation + vbOKOnly)
-            ZP = 254
-            LoaderZP = "fe"
+        If ZP > &HFD Then
+            MsgBox("Zeropage value cannot be more than $fd." + vbNewLine + vbNewLine + "ZP is corrected to $fd. Please update the ZP entry in your script!", vbInformation + vbOKOnly)
+            ZP = &HFD
+            LoaderZP = "fd"
         End If
 
-        'ZP=02 is the default, no need for update
+        'ZP=02 is the default, no need to update
         If ZP = 2 Then Exit Sub
 
-        Dim Offset As Integer = 0
-        Offset = 5                  'For V1.2
+        'Find the LDA #$00 LDX #$00 sequence in the code - beginning of loader
+        Dim LoaderBase As Integer = 0
+        For I As Integer = 0 To Loader.Length - 1 - 3
+            If (Loader(I) = &HA9) And (Loader(I + 1) = &H0) And (Loader(I + 2) = &HA2) And (Loader(I + 3) = &H0) Then
+                LoaderBase = I
+                Exit For
+            End If
+        Next
+        '                                    Instructions       Types
+        Loader(LoaderBase + &HA9) = ZP      'STA ZP             STA ZP
+        Loader(LoaderBase + &HC6) = ZP      'STA (ZP),Y         STA (ZP),Y
+        Loader(LoaderBase + &HDE) = ZP      'ADC ZP             ADC ZP
+        Loader(LoaderBase + &HE0) = ZP      'STA ZP
+        Loader(LoaderBase + &H11A) = ZP     'ADC ZP
+        Loader(LoaderBase + &H11C) = ZP     'STA ZP
+        Loader(LoaderBase + &H12B) = ZP     'STA (ZP),Y
+        Loader(LoaderBase + &H13A) = ZP     'ADC ZP
+        Loader(LoaderBase + &H13C) = ZP     'STA ZP
+        Loader(LoaderBase + &H148) = ZP     'ADC ZP
+        Loader(LoaderBase + &H158) = ZP     'STA (ZP),Y
 
-        Loader(334 + Offset) = ZP
-        Loader(363 + Offset) = ZP
-        Loader(349 + Offset) = ZP + 1
+        Loader(LoaderBase + &HB8) = ZP + 1  'STA ZP+1           STA ZP+1
+        Loader(LoaderBase + &HE8) = ZP + 1  'DEC ZP+1           DEC ZP+1
+        Loader(LoaderBase + &H120) = ZP + 1 'DEC ZP+1           LDA ZP+1
+        Loader(LoaderBase + &H140) = ZP + 1 'DEC ZP+1
+        Loader(LoaderBase + &H14D) = ZP + 1 'LDA ZP+1
 
-        Offset = -4                 'For V1.2
-
-        Loader(396 + Offset) = ZP
-        Loader(398 + Offset) = ZP
-        Loader(442 + Offset) = ZP
-        Loader(444 + Offset) = ZP
-        Loader(461 + Offset) = ZP
-        Loader(478 + Offset) = ZP
-        Loader(480 + Offset) = ZP
-        Loader(492 + Offset) = ZP
-        Loader(508 + Offset) = ZP
-        Loader(406 + Offset) = ZP + 1
-        Loader(448 + Offset) = ZP + 1
-        Loader(484 + Offset) = ZP + 1
-        Loader(497 + Offset) = ZP + 1
+        Loader(LoaderBase + &H72) = ZP + 2  'STA ZP+2           STA ZP+2
+        Loader(LoaderBase + &H80) = ZP + 2  'LDA ZP+2           LDA ZP+2
+        Loader(LoaderBase + &HA3) = ZP + 2  'STA ZP+2           STA ZP+2
+        Loader(LoaderBase + &HEF) = ZP + 2  'STY ZP+2           STY ZP+2
+        Loader(LoaderBase + &HF2) = ZP + 2  'ROL ZP+2           ROL ZP+2
 
         Exit Sub
 Err:
@@ -913,7 +914,7 @@ Err:
 
         BuildDemoFromScript = True
 
-        Packer = My.Settings.DefaultPacker     'Default packer (1 - faster, 2 - better)
+        'Packer = My.Settings.DefaultPacker     'Default packer (1 - faster, 2 - better)
 
         TotLit = 0 : TotMatch = 0
 
@@ -926,18 +927,16 @@ Err:
             MsgBox("Invalid Loader Script file!", vbExclamation + vbOKOnly)
             GoTo NoDisk
         End If
-        CurrentPart = 0
+        CurrentBundle = 0
         DiskCnt = -1
-        TotalParts = 0
+        TotalBundles = 0
         DiskLoop = 0    'Reset Loop variable
-        'Dim NewD As Boolean = False
-        'NewDisk:
         'Reset Disk Variables
         If ResetDiskVariables() = False Then GoTo NoDisk
         Dim NewD As Boolean = True
-        NewPart = False
+        NewBundle = False
         TmpSetNewblock = False
-        'NewPart = True
+
 FindNext:
         LastSS = SS
         LastSE = SE
@@ -953,7 +952,7 @@ FindNext:
                     If ResetDiskVariables() = False Then GoTo NoDisk
                 End If
                 D64Name = ScriptEntryArray(0)
-                NewPart = True
+                NewBundle = True
             Case "header:"
                 If NewD = False Then
                     NewD = True
@@ -961,7 +960,7 @@ FindNext:
                     If ResetDiskVariables() = False Then GoTo NoDisk
                 End If
                 DiskHeader = ScriptEntryArray(0)
-                NewPart = True
+                NewBundle = True
             Case "id:"
                 If NewD = False Then
                     NewD = True
@@ -969,7 +968,7 @@ FindNext:
                     If ResetDiskVariables() = False Then GoTo NoDisk
                 End If
                 DiskID = ScriptEntryArray(0)
-                NewPart = True
+                NewBundle = True
             Case "name:"
                 If NewD = False Then
                     NewD = True
@@ -977,7 +976,7 @@ FindNext:
                     If ResetDiskVariables() = False Then GoTo NoDisk
                 End If
                 DemoName = ScriptEntryArray(0)
-                NewPart = True
+                NewBundle = True
             Case "start:"
                 If NewD = False Then
                     NewD = True
@@ -985,19 +984,7 @@ FindNext:
                     If ResetDiskVariables() = False Then GoTo NoDisk
                 End If
                 DemoStart = ScriptEntryArray(0)
-                NewPart = True
-            Case "packer:"
-                If NewD = False Then
-                    NewD = True
-                    If FinishDisk(False, SaveIt) = False Then GoTo NoDisk
-                    If ResetDiskVariables() = False Then GoTo NoDisk
-                End If
-                If LCase(ScriptEntryArray(0)) = "faster" Then
-                    Packer = 1
-                Else
-                    Packer = 2
-                End If
-                NewPart = True
+                NewBundle = True
             Case "dirart:"
                 If NewD = False Then
                     NewD = True
@@ -1014,7 +1001,7 @@ FindNext:
                         MsgBox("The following DirArt file was not found:" + vbNewLine + vbNewLine + ScriptEntryArray(0), vbOKOnly + vbExclamation, "DirArt file not found")
                     End If
                 End If
-                NewPart = True
+                NewBundle = True
             Case "zp:"
                 If NewD = False Then
                     NewD = True
@@ -1022,11 +1009,10 @@ FindNext:
                     If ResetDiskVariables() = False Then GoTo NoDisk
                 End If
                 If DiskCnt = 0 Then LoaderZP = ScriptEntryArray(0)  'ZP usage can only be set from first disk
-                NewPart = True
+                NewBundle = True
             Case "loop:"
                 DiskLoop = Convert.ToInt32(ScriptEntryArray(0), 10)
             Case "il0:"
-                'If CustomIL Then
                 If NewD = False Then
                     NewD = True
                     If FinishDisk(False, SaveIt) = False Then GoTo NoDisk
@@ -1034,10 +1020,8 @@ FindNext:
                 End If
                 Dim TmpIL As Integer = Convert.ToInt32(ScriptEntryArray(0), 10)
                 IL0 = If(TmpIL Mod 21 > 0, TmpIL Mod 21, DefaultIL0)
-                'End If
-                NewPart = True
+                NewBundle = True
             Case "il1:"
-                'If CustomIL Then
                 If NewD = False Then
                     NewD = True
                     If FinishDisk(False, SaveIt) = False Then GoTo NoDisk
@@ -1045,10 +1029,8 @@ FindNext:
                 End If
                 Dim TmpIL As Integer = Convert.ToInt32(ScriptEntryArray(0), 10)
                 IL1 = If(TmpIL Mod 19 > 0, TmpIL Mod 19, DefaultIL1)
-                'End If
-                NewPart = True
+                NewBundle = True
             Case "il2:"
-                'If CustomIL Then
                 If NewD = False Then
                     NewD = True
                     If FinishDisk(False, SaveIt) = False Then GoTo NoDisk
@@ -1056,10 +1038,8 @@ FindNext:
                 End If
                 Dim TmpIL As Integer = Convert.ToInt32(ScriptEntryArray(0), 10)
                 IL2 = If(TmpIL Mod 18 > 0, TmpIL Mod 18, DefaultIL2)
-                'End If
-                NewPart = True
+                NewBundle = True
             Case "il3:"
-                'If CustomIL Then
                 If NewD = False Then
                     NewD = True
                     If FinishDisk(False, SaveIt) = False Then GoTo NoDisk
@@ -1067,42 +1047,29 @@ FindNext:
                 End If
                 Dim TmpIL As Integer = Convert.ToInt32(ScriptEntryArray(0), 10)
                 IL3 = If(TmpIL Mod 17 > 0, TmpIL Mod 17, DefaultIL3)
-                'End If
-                NewPart = True
+                NewBundle = True
             Case "list:", "script:"
                 If InsertScript(ScriptEntryArray(0)) = False Then GoTo NoDisk
-                NewPart = True    'Files in the embedded script will ALWAYS be in a new part (i.e. scripts cannot be embedded in a part)!!!
+                NewBundle = True    'Files in the embedded script will ALWAYS be in a new bundle (i.e. scripts cannot be embedded in a bundle)!!!
             Case "file:"
-                'Add files to part array, if new part=true, we will first sort, compress and add previous part to disk
+                'Add files to bundle array, if new bundle=true, we will first sort, compress and add previous bundle to disk
                 If AddFile() = False Then GoTo NoDisk
                 NewD = False    'We have added at least one file to this disk, so next disk info entry will be a new disk
-                NewPart = False
-            Case "new disk"
-                'If new disk, sort, compress and add last part, then update part count, add loader & drive code, save disk, then GoTo NewDisk
-                'If FinishDisk(False, SaveIt) = False Then GoTo NoDisk
-                'If ResetDiskVariables() = False Then GoTo NoDisk
-                'NewD = True
-                'NewPart = True
-                'GoTo NewDisk
-            Case "new block", "next block", "new sector", "align part", "align"
+                NewBundle = False
+            Case "new block", "next block", "new sector", "align bundle", "align"
                 If NewD = False Then
                     TmpSetNewblock = True
-                    'Else
-                    'SetNewBlock = False     'The first part on a disk ALWAYS starts in a new block, SetNewBlock is not needed
                 End If
             Case Else
-                If NewPart = True Then
-                    If PartDone() = False Then GoTo NoDisk
+                If NewBundle = True Then
+                    If BundleDone() = False Then GoTo NoDisk
                 End If
         End Select
 
         If SE < Script.Length Then GoTo FindNext
 
-        'Last disk: sort, compress and add last part, then update part count, add loader & drive code, save disk, and we are done :)
+        'Last disk: sort, compress and add last bundle, then update bundle count, add loader & drive code, save disk, and we are done :)
         If FinishDisk(True, SaveIt) = False Then GoTo NoDisk
-
-        'MsgBox("Lit:" + vbTab + TotLit.ToString + vbNewLine + "Match:" + vbTab + TotMatch.ToString + vbNewLine +
-        '     "Total:" + vbTab + (TotLit + TotMatch).ToString)
 
         Exit Function
 Err:
@@ -1183,8 +1150,10 @@ Err:
 
     End Function
 
-    Private Sub AddHeaderAndID()
+    Private Function AddHeaderAndID() As Boolean
         On Error GoTo Err
+
+        AddHeaderAndID = True
 
         Dim B As Byte
 
@@ -1214,34 +1183,28 @@ Err:
             Disk(CP + &HA1 + Cnt) = B
         Next
 
-        Exit Sub
+        Exit Function
 Err:
         ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
-    End Sub
+        AddHeaderAndID = False
+
+    End Function
 
     Private Function FinishDisk(LastDisk As Boolean, Optional SaveIt As Boolean = True) As Boolean
         On Error GoTo Err
 
         FinishDisk = True
 
-        If PartDone() = False Then GoTo NoDisk
+        If BundleDone() = False Then GoTo NoDisk
+        If CompressBundle() = False Then GoTo NoDisk
+        If CloseBundle(0, True) = False Then GoTo NoDisk
+        If CloseBuffer() = False Then GoTo NoDisk
 
-        'If SortPart() = False Then GoTo NoDisk
-
-        If CompressPart() = False Then GoTo NoDisk
-
-        If Packer = 1 Then
-            If FinishPart(0, True) = False Then GoTo NoDisk
-            CloseBuff()
-        Else
-            If ClosePart(0, True) = False Then GoTo NoDisk
-            CloseBuffer()
-        End If
         'Now add compressed parts to disk
-        If AddCompressedPartsToDisk() = False Then GoTo NoDisk
-        AddHeaderAndID()
+        If AddCompressedBundlesToDisk() = False Then GoTo NoDisk
+        If AddHeaderAndID() = False Then GoTo NoDisk
         If InjectLoader(-1, 18, 5, 6) = False Then GoTo NoDisk
 
         If LastDisk = True Then
@@ -1250,7 +1213,7 @@ Err:
             End If
         End If
 
-        If InjectDriveCode(DiskCnt + 1, LoaderParts, If(LastDisk = False, DiskCnt + 2, DiskLoop)) = False Then GoTo NoDisk
+        If InjectDriveCode(DiskCnt + 1, LoaderBundles, If(LastDisk = False, DiskCnt + 2, DiskLoop)) = False Then GoTo NoDisk
         If DirArt <> "" Then AddDirArt()
 
         BytesSaved += Int(BitsSaved / 8)
@@ -1270,6 +1233,7 @@ NoDisk:
     End Function
 
     Private Function SaveDisk() As Boolean
+        'CANNOT HAVE ON ERROR FUNCTION DUE TO TRY/CATCH
 
         SaveDisk = True
 
@@ -1304,6 +1268,9 @@ TryAgain:
                         D64Name += ".d64"
                     End If
                     IO.File.WriteAllBytes(D64Name, Disk)
+                    FileChanged = False
+                Else
+                    FileChanged = True
                 End If
 
             End If
@@ -1322,17 +1289,18 @@ TryAgain:
                 GoTo TryAgain
             Else
                 SaveDisk = False
+                FileChanged = True
             End If
         End Try
 
     End Function
 
-    Public Function CompressPart(Optional FromEditor = False) As Boolean
+    Public Function CompressBundle(Optional FromEditor = False) As Boolean
         On Error GoTo Err
 
-        CompressPartFromEditor = FromEditor
+        CompressBundleFromEditor = FromEditor
 
-        CompressPart = True
+        CompressBundle = True
 
         Dim PreBCnt As Integer = BufferCnt
 
@@ -1340,43 +1308,34 @@ TryAgain:
 
         'DO NOT RESET ByteSt AND BUFFER VARIABLES HERE!!!
 
-        If (BufferCnt = 0) And (ByteCnt = 254) Then
-            NewBlock = SetNewBlock          'SetNewBlock is true at closing the previous part, so first it just sets NewBlock2
-            SetNewBlock = False             'And NewBlock will fire at the desired part
+        If (BufferCnt = 0) And (BytePtr = 255) Then
+            NewBlock = SetNewBlock          'SetNewBlock is true at closing the previous bundle, so first it just sets NewBlock2
+            SetNewBlock = False             'And NewBlock will fire at the desired bundle
         Else
-            If FromEditor = False Then      'Don't finish previous part here if we are calculating part size from Editor
+            If FromEditor = False Then      'Don't finish previous bundle here if we are calculating bundle size from Editor
 
                 '----------------------------------------------------------------------------------
                 '"SPRITE BUG"
                 'Compression bug involving the transitional block - FIXED
-                'Fix: include the I/O status of the first file of this part in the calculation for
-                'finishing the previous part
+                'Fix: include the I/O status of the first file of this bundle in the calculation for
+                'finishing the previous bundle
                 '----------------------------------------------------------------------------------
 
-                'Before finishing the previous part, calculate I/O status of the first file of this part
+                'Before finishing the previous bundle, calculate I/O status of the first file of this bundle
                 '(Files already sorted)
-                Dim ThisPartIO As Integer = If(FileIOA.Count > 0, CheckNextIO(FileAddrA(0), FileLenA(0), FileIOA(0)), 0)
-                If Packer = 1 Then
-                    If FinishPart(ThisPartIO, False) = False Then GoTo NoComp
-                Else
-                    If ClosePart(ThisPartIO, False) = False Then GoTo NoComp
-                End If
+                Dim ThisBundleIO As Integer = If(FileIOA.Count > 0, CheckNextIO(FileAddrA(0), FileLenA(0), FileIOA(0)), 0)
+                If CloseBundle(ThisBundleIO, False) = False Then GoTo NoComp
             End If
         End If
 
-        NewPart = True
-        LastFileOfPart = False
+        NewBundle = True
+        LastFileOfBundle = False
         For I As Integer = 0 To Prgs.Count - 1
-            'Mark the last file in a part for better compression
-            If I = Prgs.Count - 1 Then LastFileOfPart = True
+            'Mark the last file in a bundle for better compression
+            If I = Prgs.Count - 1 Then LastFileOfBundle = True
             'The only two parameters that are needed are FA and FUIO... FileLenA(i) is not used
-            If Packer = 1 Then
-                NewLZ(Prgs(I).ToArray, FileAddrA(I), FileIOA(I))  'NewPart is TRUE FOR THE FIRST FILE ONLY
-                If I < Prgs.Count - 1 Then FinishFile()
-            Else
-                PackFile(Prgs(I).ToArray, FileAddrA(I), FileIOA(I))
-                If I < Prgs.Count - 1 Then CloseFile()
-            End If
+            PackFile(Prgs(I).ToArray, FileAddrA(I), FileIOA(I))
+            If I < Prgs.Count - 1 Then CloseFile()
         Next
 
         LastBlockCnt = BlockCnt
@@ -1384,13 +1343,13 @@ TryAgain:
         If LastBlockCnt > 255 Then
             'Parts cannot be larger than 255 blocks compressed
             'There is some confusion here how PartCnt is used in the Editor and during Disk building...
-            MsgBox("Part " + If(CompressPartFromEditor = True, PartCnt + 1, PartCnt).ToString + " would need " + LastBlockCnt.ToString + " blocks on the disk." + vbNewLine + vbNewLine + "Parts cannot be larger than 255 blocks compressed!", vbOKOnly + vbCritical, "Part exceeds 255-block limit!")
-            If CompressPartFromEditor = False Then GoTo NoComp
+            MsgBox("Bundle " + If(CompressBundleFromEditor = True, BundleCnt + 1, BundleCnt).ToString + " would need " + LastBlockCnt.ToString + " blocks on the disk." + vbNewLine + vbNewLine + "Parts cannot be larger than 255 blocks compressed!", vbOKOnly + vbCritical, "Bundle exceeds 255-block limit!")
+            If CompressBundleFromEditor = False Then GoTo NoComp
         End If
 
-        'IF THE WHOLE PART IS LESS THAN 1 BLOCK, THEN "IT DOES NOT COUNT", Part Counter WILL NOT BE INCREASED
+        'IF THE WHOLE Bundle IS LESS THAN 1 BLOCK, THEN "IT DOES NOT COUNT", Bundle Counter WILL NOT BE INCREASED
         If PreBCnt = BufferCnt Then
-            PartCnt -= 1
+            BundleCnt -= 1
         End If
 
         Exit Function
@@ -1398,7 +1357,7 @@ Err:
         ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 NoComp:
-        CompressPart = False
+        CompressBundle = False
 
     End Function
 
@@ -1407,11 +1366,11 @@ NoComp:
 
         AddFile = True
 
-        If NewPart = True Then
-            If PartDone() = False Then GoTo NoDisk
+        If NewBundle = True Then
+            If BundleDone() = False Then GoTo NoDisk
         End If
 
-        'Then add file to part
+        'Then add file to bundle
         If AddFileToPart() = False Then GoTo NoDisk
 
         Exit Function
@@ -1422,24 +1381,21 @@ NoDisk:
         AddFile = False
 
     End Function
-    Private Function PartDone() As Boolean
+    Private Function BundleDone() As Boolean
         On Error GoTo Err
 
-        PartDone = True
+        BundleDone = True
 
-        'First finish last part, if it exists
-        'If PartCnt > 0 Then
+        'First finish last bundle, if it exists
         If tmpPrgs.Count > 0 Then
 
-            CurrentPart += 1
+            CurrentBundle += 1
 
-            'MsgBox(CurrentPart.ToString)
-
-            'Sort files in part
-            If SortPart() = False Then GoTo NoDisk
+            'Sort files in bundle
+            If SortBundle() = False Then GoTo NoDisk
             '-------------------------------------------
-            'Then compress files and add them to part
-            If CompressPart() = False Then GoTo NoDisk     'THIS WILL RESET NewPart TO FALSE
+            'Then compress files and add them to bundle
+            If CompressBundle() = False Then GoTo NoDisk     'THIS WILL RESET NewPart TO FALSE
 
             Prgs = tmpPrgs.ToList
             FileNameA = tmpFileNameA
@@ -1450,9 +1406,8 @@ NoDisk:
             SetNewBlock = TmpSetNewblock
             TmpSetNewblock = False
             '-------------------------------------------
-            'Then reset part variables (file arrays, prg array, block cnt), increase part counter
-            ResetPartVariables()
-            'NewPart = False
+            'Then reset bundle variables (file arrays, prg array, block cnt), increase bundle counter
+            ResetBundleVariables()
         End If
 
         Exit Function
@@ -1460,7 +1415,7 @@ Err:
         ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 NoDisk:
-        PartDone = False
+        BundleDone = False
 
     End Function
 
@@ -1482,10 +1437,10 @@ Err:
 
     End Function
 
-    Public Function SortPart() As Boolean
+    Public Function SortBundle() As Boolean
         On Error GoTo Err
 
-        SortPart = True
+        SortBundle = True
 
         If tmpPrgs.Count = 0 Then Exit Function
         If tmpPrgs.Count = 1 Then GoTo SortDone
@@ -1514,7 +1469,7 @@ Err:
                     If (OLS >= &HD000) And (OLE <= &HDFFF) And (tmpFileIOA(O) <> tmpFileIOA(I)) Then
                         'Overlap is IO memory only and different IO status - NO OVERLAP
                     Else
-                        MsgBox("The following two files overlap in Part " + PartCnt.ToString + ":" _
+                        MsgBox("The following two files overlap in Bundle " + BundleCnt.ToString + ":" _
                            + vbNewLine + vbNewLine + tmpFileNameA(I) + " ($" + Hex(FSI) + " - $" + Hex(FEI) + ")" + vbNewLine + vbNewLine _
                            + tmpFileNameA(O) + " ($" + Hex(FSO) + " - $" + Hex(FEO) + ")", vbOKOnly + vbExclamation)
                     End If
@@ -1641,17 +1596,17 @@ ReSort:
         If Change = True Then GoTo ReSort
 
 SortDone:
-        'Once Part is sorted, calculate the I/O status of the first file and the number of bits that will be needed
-        'to find the last block of the previous part (when the I/O status of the just sorted part needs to be known)
-        'This is used in ModBetterPacker:CloseBuffer
-        BitsNeededForNextPart = ((6 + CheckNextIO(tmpFileAddrA(0), tmpFileLenA(0), tmpFileIOA(0))) * 8) + 1
+        'Once Bundle is sorted, calculate the I/O status of the first file and the number of bits that will be needed
+        'to finish the last block of the previous bundle (when the I/O status of the just sorted bundle needs to be known)
+        'This is used in CloseBuffer
+        BitsNeededForNextBundle = ((6 + CheckNextIO(tmpFileAddrA(0), tmpFileLenA(0), tmpFileIOA(0))) * 8) + 1
 
         Exit Function
 Err:
         ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 NoSort:
-        SortPart = False
+        SortBundle = False
 
     End Function
 
@@ -1725,18 +1680,13 @@ NoSort:
             Select Case ScriptEntryArray.Count
                 Case 1  'No parameters in script
                     If Strings.InStr(Strings.LCase(FN), ".sid") <> 0 Then   'SID file - read parameters from file
-                        'FA = ConvertNumberToHexString(P(P(7)), (P(P(7) + 1)))
-                        'FO = ConvertNumberToHexString(P(7) + 2)
-                        'FL = ConvertNumberToHexString((P.Length - P(7) - 2) Mod 256, Int((P.Length - P(7) - 2) / 256))
                         FA = ConvertIntToHex(P(P(7)) + (P(P(7) + 1) * 256), 4)
                         FO = ConvertIntToHex(P(7) + 2, 8)
                         FL = ConvertIntToHex((P.Length - P(7) - 2), 4)
                     Else                                                    'Any other files
                         If P.Length > 2 Then                                'We have at least 3 bytes in the file
-                            'FA = ConvertNumberToHexString(P(0), P(1))       'First 2 bytes define load address
                             FA = ConvertIntToHex(P(0) + (P(1) * 256), 4)       'First 2 bytes define load address
                             FO = "00000002"                                    'Offset=2, Length=prg length-2
-                            'FL = ConvertNumberToHexString((P.Length - 2) Mod 256, Int((P.Length - 2) / 256))
                             FL = ConvertIntToHex(P.Length - 2, 4)
                         Else                                                'Short file without paramters -> STOP
                             MsgBox("File parameters are needed for the following file:" + vbNewLine + vbNewLine + FN, vbCritical + vbOKOnly, "Missing file parameters")
@@ -1746,7 +1696,6 @@ NoSort:
                 Case 2  'One parameter in script
                     FA = ScriptEntryArray(1)                                'Load address from script
                     FO = "00000000"                                             'Offset will be 0, length=prg length
-                    'FL = ConvertNumberToHexString(P.Length Mod 256, Int(P.Length / 256))
                     FL = ConvertIntToHex(P.Length, 4)
                 Case 3  'Two parameters in script
                     FA = ScriptEntryArray(1)                                'Load address from script
@@ -1754,10 +1703,8 @@ NoSort:
                     FON = Convert.ToInt32(FO, 16)                           'Make sure offset is valid
                     If FON > P.Length - 1 Then
                         FON = P.Length - 1                                  'If offset>prg length-1 then correct it
-                        'FO = ConvertNumberToHexString(FON Mod 256, Int(FON / 256))
                         FO = ConvertIntToHex(FON, 8)
                     End If                                                  'Length=prg length- offset
-                    'FL = ConvertNumberToHexString((P.Length - FON) Mod 256, Int((P.Length - FON) / 256))
                     FL = ConvertIntToHex(P.Length - FON, 4)
                 Case 4  'Three parameters in script
                     FA = ScriptEntryArray(1)
@@ -1765,7 +1712,6 @@ NoSort:
                     FON = Convert.ToInt32(FO, 16)                           'Make sure offset is valid
                     If FON > P.Length - 1 Then
                         FON = P.Length - 1                                  'If offset>prg length-1 then correct it
-                        'FO = ConvertNumberToHexString(FON Mod 256, Int(FON / 256))
                         FO = ConvertIntToHex(FON, 8)
                     End If                                                  'Length=prg length- offset
                     FL = ScriptEntryArray(3)
@@ -1778,7 +1724,6 @@ NoSort:
             'Make sure file length is not longer than actual file (should not happen)
             If FON + FLN > P.Length Then
                 FLN = P.Length - FON
-                'FL = ConvertNumberToHexString(FLN Mod 256, Int(FLN / 256))
                 FL = ConvertIntToHex(FLN, 4)
             End If
 
@@ -1790,10 +1735,6 @@ NoSort:
             End If
 
             'Trim file to the specified chunk (FLN number of bytes starting at FON, to Address of FAN)
-            'For I As Integer = 0 To FLN - 1
-            'P(I) = P(FON + I)
-            'Next
-            'ReDim Preserve P(FLN - 1)
             Dim PL As List(Of Byte) = P.ToList      'Copy array to list
             P = PL.Skip(FON).Take(FLN).ToArray      'Trim file to specified segment (FLN number of bytes starting at FON)
 
@@ -1813,9 +1754,9 @@ NoSort:
         tmpFileLenA(FileCnt) = FL
         tmpFileIOA(FileCnt) = FUIO
 
-        UncomPartSize += Int(FLN / 256)
+        UncompBundleSize += Int(FLN / 256)
         If FLN Mod 256 <> 0 Then
-            UncomPartSize += 1
+            UncompBundleSize += 1
         End If
 
         If FirstFileOfDisk = True Then      'If Demo Start is not specified, we will use the start address of the first file
@@ -1881,16 +1822,15 @@ Err:
 
         DiskCnt += 1
         ReDim Preserve DiskSizeA(DiskCnt)
-        'Reset Part File variables here, to have an empty array for the first compression on a ReBuild
+        'Reset Bundle File variables here, to have an empty array for the first compression on a ReBuild
         Prgs.Clear()    'this is the one that is needed for the first CompressPart call during a ReBuild
         ReDim FileNameA(-1), FileAddrA(-1), FileOffsA(-1), FileLenA(-1), FileIOA(-1)    'but reset all arrays just to be safe
 
-        'If CustomIL Then    'Reset interleave
+        'Reset interleave
         IL0 = DefaultIL0
         IL1 = DefaultIL1
         IL2 = DefaultIL2
         IL3 = DefaultIL3
-        'End If
 
         BufferCnt = 0
 
@@ -1899,7 +1839,9 @@ Err:
 
         'Reset Disk image
         NewDisk()
-        BlockPtr = 255
+
+        BlockPtr = 1
+
         '-------------------------------------------------------------
 
         StartTrack = 1 : StartSector = 0
@@ -1921,17 +1863,17 @@ Err:
         DirArt = ""
         LoaderZP = "02"
 
-        PartCnt = -1        'WILL BE INCREASED TO 0 IN ResetPartVariables
-        LoaderParts = 1
+        BundleCnt = -1        'WILL BE INCREASED TO 0 IN ResetPartVariables
+        LoaderBundles = 1
         FilesInBuffer = 1
 
-        CurrentPart = -1
+        CurrentBundle = -1
 
         '-------------------------------------------------------------
 
-        If ResetPartVariables() = False Then GoTo NoDisk    'Also adds first part
+        If ResetBundleVariables() = False Then GoTo NoDisk    'Also adds first bundle
 
-        NewPart = False
+        NewBundle = False
 
         Exit Function
 Err:
@@ -1942,47 +1884,44 @@ NoDisk:
 
     End Function
 
-    Public Function ResetPartVariables() As Boolean
+    Public Function ResetBundleVariables() As Boolean
         On Error GoTo Err
 
-        ResetPartVariables = True
+        ResetBundleVariables = True
 
         FileCnt = -1
         ReDim tmpFileNameA(FileCnt), tmpFileAddrA(FileCnt), tmpFileOffsA(FileCnt), tmpFileLenA(FileCnt), tmpFileIOA(FileCnt)
 
         tmpPrgs.Clear()
 
-        PartCnt += 1
+        BundleCnt += 1
 
-        TotalParts += 1
-        ReDim Preserve PartSizeA(TotalParts), PartOrigSizeA(TotalParts)
+        TotalBundles += 1
+        ReDim Preserve BundleSizeA(TotalBundles), BundleOrigSizeA(TotalBundles)
         BlockCnt = 0
 
-        UncomPartSize = 0
+        UncompBundleSize = 0
 
         Exit Function
 Err:
         ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
-        ResetPartVariables = False
+        ResetBundleVariables = False
 
     End Function
 
-    Public Function AddCompressedPartsToDisk() As Boolean
+    Public Function AddCompressedBundlesToDisk() As Boolean
         On Error GoTo Err
 
-        AddCompressedPartsToDisk = True
+        AddCompressedBundlesToDisk = True
 
         If BlocksFree < BufferCnt Then
-            MsgBox("Unable to add part to disk", vbOKOnly, "Not enough free space on disk")
+            MsgBox("Unable to add bundle to disk", vbOKOnly, "Not enough free space on disk")
             GoTo NoDisk
         End If
 
-        'If CustomIL Then
-        ''GetILfromDisk()
         CalcILTab()
-        'End If
 
         For I = 0 To BufferCnt - 1
             CT = TabT(I)
@@ -2007,7 +1946,7 @@ Err:
         ErrCode = Err.Number
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 NoDisk:
-        AddCompressedPartsToDisk = False
+        AddCompressedBundlesToDisk = False
 
     End Function
 
@@ -2028,21 +1967,6 @@ NoDisk:
                 Exit For
             End If
         Next
-
-        'DirTrack = 18
-        'DirSector = 1
-        'DirPos = 0
-        'FindNextDirPos()
-        'DirEntry = ""
-        'For I As Integer = 1 To Len(DirArt)
-        'DirEntry += Mid(DirArt, I, 1)
-        'If Mid(DirArt, I, 1) = Chr(10) Then
-        'If DirPos <> 0 Then AddDirEntry()
-        'FindNextDirPos()
-        'End If
-        'Next
-
-        'If (DirEntry <> "") And (DirPos <> 0) Then AddDirEntry()
 
         Exit Function
 Err:
@@ -2133,7 +2057,6 @@ Err:
         Disk(Track(DirTrack) + (DirSector * 256) + DirPos + 2) = 5      'Sector 5 (sector pointer of boot loader)
 
         'Remove vbNewLine characters and add 16 SHIFT+SPACE tail characters
-        'DirEntry = Replace(Replace(DirEntry, Chr(13), ""), Chr(10), "") + StrDup(16, Chr(160))
         DirEntry += StrDup(16, Chr(160))
 
         'Copy only the first 16 characters of the edited DirEntry to the Disk Directory
@@ -2174,11 +2097,10 @@ Err:
 
     End Sub
     Public Sub CalcILTab()
-        'On Error GoTo Err
+        On Error GoTo Err
 
         Dim SMax, IL As Integer
         Dim Disk(682) As Byte
-        'Dim TabT(663), TabS(663) As Byte
         Dim I As Integer = 0
         Dim SCnt As Integer
         Dim Tr(35) As Integer
@@ -2220,6 +2142,8 @@ Err:
                     IL = IL3
             End Select
 
+            GoTo NextStart
+
 NextSector:
             If Disk(Tr(T) + S) = 0 Then
                 Disk(Tr(T) + S) = 1
@@ -2228,6 +2152,7 @@ NextSector:
                 I += 1
                 SCnt += 1
                 S += IL
+NextStart:
                 If S >= SMax Then
                     S -= SMax
                     If (T < 18) And (S > 0) Then S -= 1 'If track 1-17 then subtract one more if S>0
@@ -2242,8 +2167,8 @@ NextSector:
             End If
         Next
 
-        'IO.File.WriteAllBytes(UserFolder + "\OneDrive\C64\Coding\TabT.prg", TabT)
-        'IO.File.WriteAllBytes(UserFolder + "\OneDrive\C64\Coding\TabS.prg", TabS)
+        'IO.File.WriteAllBytes(UserFolder + "\OneDrive\C64\Coding\TabT.bin", TabT)
+        'IO.File.WriteAllBytes(UserFolder + "\OneDrive\C64\Coding\TabS.bin", TabS)
 
         Exit Sub
 Err:

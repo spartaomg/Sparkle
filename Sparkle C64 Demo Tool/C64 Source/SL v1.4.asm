@@ -6,11 +6,11 @@
 //-----------------------------------------------------------------------
 //	Memory Layout
 //
-//	0180	0213	Loader
-//	01d4	01da	BitTab
+//	0180	021b	Loader
+//	01d6	01dc	BitTab
 //	01e0	01f0	IRQ Installer
-//	0214	02dc	Depacker
-//	02dd	02f7	Fallback IRQ
+//	021b	02e0	Depacker
+//	02e1	02fb	Fallback IRQ
 //	0300	03ff	Buffer
 //
 //-----------------------------------------------------------------------
@@ -18,7 +18,7 @@
 //	Loader Call:		jsr $0180	Parameterless
 //	IRQ Installer:		jsr $01e0	X/A = Subroutine Vector Lo/Hi
 //					jsr $01e6	Without changing Subroutine Vector
-//	Fallback IRQ:		    $02dd
+//	Fallback IRQ:		    $02e1
 //
 //-----------------------------------------------------------------------
 
@@ -27,30 +27,97 @@
 .const	InvSp		=Sp^$ff	//#$ae
 
 .const	ZP		=$02		//$02/$03
+.const	Bits		=$04
 
-.const	busy		=$f8		//AO=1, CO=1, DO=1 on C64
+.const	busy		=$f8		//DO NOT CHANGE IT TO #$FF!!!
 .const	ready		=$08		//AO=1, CO=0, DO=0 on C64
-.const	drivebusy	=$12		//AA=1, CO=0, DO=1 on Drive, CI=1, DI=0 on C64
+.const	drivebusy	=$12		//AA=1, CO=0, DO=1 on Drive
 
 .const	Buffer	=$0300
+
+.const	Listen	=$ed0c
+.const	ListenSA	=$edb9
+.const	Unlisten	=$edfe
+.const	SetFLP	=$fe00
+.const	SetFN		=$fdf9
+.const	Open		=$ffc0
 
 *=$0801	"Basic"		//Prg starts @ $0820, this gives the user
 BasicUpstart(Start) 		//plenty of space to modify the basic start line
 
-*=$0820	"Installer"
+*=$0810	"Installer"
 
-Start:	ldx	#<Cmd
+Start:	lda	#$ff		//Check IEC bus for multiple drives
+		sta	DriveCt+1
+		ldx	#$04
+		lda	#$08
+		sta	$ba
+
+DriveLoop:	lda	#$00		//Clear Error Status
+		sta	$90
+		lda	$ba
+		jsr	Listen
+		lda	#$6f
+		jsr	ListenSA
+		lda	$90		//No error: $00, Error: $80
+		bmi	SkipWarn	//check next drive # if not present
+
+		lda	$ba		//Drive present
+		sta	DriveNo+1	//This will be the active drive if there is only one drive on the bus
+		jsr	Unlisten
+		inc	DriveCt+1
+		beq	SkipWarn	//Skip warning if only one drive present
+
+		lda	$d018		//More than one drive present, show warning
+		bmi	Start		//Warning is already on, start bus check again
+
+		lda	#$3c		//Clear screen RAM
+		sta	$0288
+		jsr	$e544
+
+		ldx	#<WEnd-Warning-1
+TxtLoop:	lda	Warning,x	//Copy warning
+		sta	$3db9,x
+		dex
+		bpl	TxtLoop
+
+		lda	#$f5		//Screen RAM: $3c00
+		sta	$d018
+		bmi	Start		//Warning turned on, start bus check again
+
+SkipWarn:	inc	$ba
+		dex
+		bne	DriveLoop
+
+		//Here, DriveCt can only be $ff or $00
+
+		lda	#$15		//Restore Screen RAM to $0400
+		sta	$d018
+		lda	#$04
+		sta	$0288
+
+DriveCt:	lda	#$00
+		beq	ChkDone	//One drive only, continue
+
+		ldx	#<NDWEnd-NDW-1
+NDLoop:	lda	NDW,x		//No drive, show message and finish
+		jsr	$ffd2
+		dex
+		bpl	NDLoop
+		rts
+
+//----------------------------
+
+ChkDone:	ldx	#<Cmd
 		ldy	#>Cmd
 		lda	#CmdEnd-Cmd
-		jsr	$ffbd		//Filename = drive install code in command buffer
+		jsr	SetFN		//Filename = drive install code in command buffer
 
 		lda	#$0f
 		tay
-		ldx	$ba
-		bne	*+4
-		ldx	#$08
-		jsr	$ffba		//Logical parameters
-		jsr	$ffc0		//Open vector
+DriveNo:	ldx	#$00
+		jsr	SetFLP	//Logical parameters
+		jsr	Open		//Open vector
 
 		sei
 		lda	#$3c		// 0  0  1  1  1  1  0  0
@@ -89,9 +156,23 @@ LCopyLoop:	lda	LoaderCode,x
 		pha
 		lda	#<$10ad	//#<PrgStart-1	(Lo Byte)
 		pha
-		jmp	Load		//Load first part, it may overwrite installer, so we use an alternative approach here
+		jmp	Load		//Load first Bundle, it may overwrite installer, so we use an alternative approach here
 
-//----------------------------
+//-----------------------------------------------------------------------------------
+
+Warning:
+     //0123456789012345678901234567890123456789
+.text	 "sparkle supports only one active drive "
+.text	"pls turn everything else off on the bus!"
+WEnd:
+NDW:
+.byte	$4e,$49,$41,$47,$41,$20,$44,$41,$4f,$4c,$20,$44
+.byte	$4e,$41,$20,$4e,$4f,$20,$45,$56,$49,$52,$44,$20,$52,$55,$4f,$59
+.byte	$20,$4e,$52,$55,$54,$20,$45,$53,$41,$45,$4c,$50
+NDWEnd:
+
+//-----------------------------------------------------------------------------------
+
 Cmd:
 //Load all 5 drive code blocks into buffers 0-4 at $300-$7ff on drive in one command!
 
@@ -129,10 +210,10 @@ LoaderCode:
 *=LoaderCode	"Loader"
 
 .pseudopc $0180	{
-Load:
 
+Load:		lda	#$00
 LastX:	ldx	#$00
-		bne	LongMatch	//If LastX<>#$00, depack new part from buffer, otherwise, load next block
+		bne	StoreBits	//If LastX<>#$00, depack new Bundle from buffer, otherwise, load next block
 RcvBlock:	lda	#$35		//ROM=off, I/O=on
 		sta	$01
 		ldy	#ready	//Y=#$08, X=#$00
@@ -141,7 +222,7 @@ RcvBlock:	lda	#$35		//ROM=off, I/O=on
 		bvs	*-3		//$dd00=#$4x - drive is busy, $0x - drive is ready	00,01
 		stx	$dd00		//Release ATN, V=0 - will use it in loop below		02-05
 		dex			//Prepare X=#$ff for transfer					06,07
-		jsr	Wait12	//Waste a few more cycles... (drive takes 16 cycles)	08-19
+		jsr	Wait12	//Waste a few more cycles... (drive needs 16 cycles)	08-19
 
 //-------------------------------------
 //	    72-BYCLE RECEIVE LOOP
@@ -206,7 +287,7 @@ BitTab:		//$01d4							BitTab:		A after rol:
 .byte	%00110011	//6 - Literal - 5-7th bits (returns 6-13)		00110011	->	10011xxx		total: 7 bits
 .byte	%00001101	//7 - Literal - 5-9th bits (returns 14-45)	00001101	->	101xxxxx		total: 9 bits
 
-.text	"<OMG>"
+.text	"OMG"
 
 //----------------------------
 //		IRQ INSTALLER
@@ -224,23 +305,29 @@ Wait12:
 Done:		rts
 
 //----------------------------
+
+StoreBits:	sta	Bits
+
+//----------------------------
 //		LONG MATCH
 //----------------------------
 
-LongMatch:	clc			//C=0 NEEDED HERE for both branches!!! ALSO NEEDED FOR NEXT PART JUMP IF LastX<>#$00
+LongMatch:	clc			//C=0 NEEDED HERE for both branches!!! ALSO NEEDED FOR NEXT BUNDLE JUMP IF LastX<>#$00
 		bne	NextFile	//A=#$3f - Next File in block (#$fc) - Also used as a trampoline for LastX jump (both need C=0)
 		dex			//A=#$3e - Long Match (#$f8), read next byte for Match Length (#$3e-#$fe)
-		lda	Buffer,x	//If A=#$00 then this part is done, rest of the data in buffer is the beginning of the next part
+		lda	Buffer,x	//If A=#$00 then this Bundle is done, rest of the data in buffer is the beginning of the next Bundle
 		bne	MidConv	//Otherwise, converge with mid match (A=#$3e-#$fe here if branch taken)
 
 //----------------------------
-//		END OF PART
+//		END OF BUNDLE
 //----------------------------
 
-		stx	LastX+1	//Save last X position in buffer for next part depacking
+		stx	LastX+1	//Save last X position in buffer for next Bundle depacking
+		lda	Bits		//Store Bits for next Bundle in block
+		sta	Load+1
 		lda	#$35		//ROM=off, I/O=on
 		sta	$01
-		rts			//Part finished
+		rts			//Bundle finished
 
 //----------------------------
 //		SPARTAN STEP DELAY
@@ -253,53 +340,42 @@ SpSDelay:	lda	#<RcvLoop-<ChgJmp	//2	20	Restore Receive loop
 		sta	SpComp+1		//4	32	SpComp+1=(#$51 <-> #$ff)
 		bmi	RcvLoop		//3	(35) (Drive loop takes 33 cycles)
 
-//----------------------------
+//----------------------------------
 
 		lda	#busy		//=#$f8
 		sta	$dd00		//Bus lock
 
 //------------------------------------------------------------
-//		DEPACKER
+//		BLOCK STRUCTURE FOR DEPACKER
 //------------------------------------------------------------
-//		$00->	- Bit Stream
-//		($ff	- Block Count in first block only)
-//		$ff	- Dest Address Lo
-//		($fe	- IO Flag)
-//		$fe	- Dest Address Hi
-//		$fd->	- Byte Stream backwards (unpacked blocks are forward)
+//		$01	  - #$00 (end of block) (vs. block count on drive side)
+//		$00	  - First Bitstream byte
+//		$ff	  - Dest Address Lo
+//		($fe	  - IO Flag)
+//		$fe/$fd - Dest Address Hi
+//		$fd/$fc - Bytestream backwards with Bitstream interleaved (unpacked blocks are forward)
 //------------------------------------------------------------
 
-Depack:	ldx	#$00
-		stx	BitCheck+1	//Reset BitCheck
-
-		sec			//Token Bit, this keeps bit stream buffer<>#$00 until all 8 bits read
-		rol	Buffer	//Move Compression Bit to C here
-					//Only blocks occupied by a single file can be left uncompressed
-
-BlockCnt:	ldy	#$01		//Initial value of Block Counter = #$01, will decrease to #$00 after first block loaded
-		dey
-		bne	UpdateBCnt
-
-		dex
-		ldy	Buffer,x	//Last byte = BlockCnt, ByteStream = Buffer+$fe
-UpdateBCnt:	sty	BlockCnt+1	//New value = total number of blocks occupied by this part-1
-					//It is only used here to count blocks...
-					//...to be able to properly read block address by skipping next block count value
-					//End of a part is determined from the byte stream, not from here
+Depack:	ldx	#$00		
+		lda	Buffer,x	//First bitstream value
+		sec			//Token Bit, this keeps bitstream buffer<>#$00 until all 8 bits read
+		rol			//Move Compression Bit to C here
+		sta	Bits		//Store rest on ZP for faster processing
+					//Only blocks occupied by a single file can be uncompressed
 
 NextFile:	dex			//Entry point for next file in block, C must be 0 here for subsequent files	
 		lda	Buffer,x	//Lo Byte of Dest Address
 		sta	ZP
-		
-		ldy	#$35		//Default value for $01, ROM=off, I/O=on
+
+		ldy	#$35		//Default value for $01, I/O=on
 		dex
 		lda	Buffer,x	//Hi Byte vs IO Flag=#$00
 		bne	SkipIO
-		dey			//Y=#$34, ROM=off, I/O=off
+		dey			//Y=#$34, turn I/O off
 		dex
 		lda	Buffer,x	//This version can also load to zeropage!!!
 
-SkipIO:	sta	ZP+1
+SkipIO:	sta	ZP+1		//Hi Byte of Dest Address
 		sty	$01		//Update $01
 		dex
 
@@ -334,9 +410,9 @@ MidMatch:	lda	Buffer,x	//C=0
 		lsr
 		lsr
 		cmp	#$3e		//= (Long Match Tag/4)
-		bcs	LongMatch	//Long Match (C=1) vs Mid Match (C=0)
+		bcs	LongMatch	//Long Match/EOF (C=1) vs. Mid Match (C=0)
 
-MidConv:	tay			//Match Length=#$01-#$3d (mid) vs #$3e-#$fe (long)
+MidConv:	tay			//Match Length=#$01-#$3d (mid) vs. #$3e-#$fe (long)
 		eor	#$ff
 		adc	ZP		//C=0 here
 		sta	ZP
@@ -351,10 +427,12 @@ MidConv:	tay			//Match Length=#$01-#$3d (mid) vs #$3e-#$fe (long)
 //----------------------------
 //		BITCHECK
 //----------------------------
+NextByte:	ldy	Buffer,x
+		sty	Bits
+		dex
+BitCheck:	rol	Bits
+		beq	NextByte	//If Bits=#$00 then token bit is in C, fetch next bitstream byte from buffer
 
-NextByte:	inc	BitCheck+1
-BitCheck:	rol	Buffer
-		beq	NextByte	//If buffer=#$00 then token bit is in C, go to next position in buffer
 		rol
 		bcc	BitCheck
 		beq	Match		//A=#$00, C=1 (BEQ before BMI because there are 40-100% more match sequences than literals)
@@ -369,26 +447,33 @@ BitCheck:	rol	Buffer
 //		LITERALS
 //----------------------------
 
-		lda	#$94		//Lit0=#$94+#$6d+C(=0)=#$01 and C=1 after this addition
-Literal:	adc	#$6d		//Offset is the same for all 4 literal lengths here
-		sta	SubX+1	//Literal length, C=1 here ALWAYS
+		lda	#$93		//Literal length 1: #$93+#$6e+(C=0)=#$01 and C=1 after this addition
+		bcc	AddOffset
+
+Literal:	cmp	#$bf		//Literal lengths 2-44
+		bcc	AddOffset
+
+		lda	Buffer,x	//Literal lengths 45-250
+		dex
+		bcs	StoreLit	//Skip adding offset here
+
+AddOffset:	adc	#$6e		//Offset is the same for all 4 LitLen here
+StoreLit:	sta	SubX+1	//Literal length, C=1 here ALWAYS
 		tay
-		eor	#$ff		//ZP=ZP+A^#$FF+C(=1) = ZP=ZP-A (e.g. A=#$0e -> ZP=ZP-0e)
+		eor	#$ff		//ZP=ZP+(A^#$FF)+(C=1) = ZP=ZP-A (e.g. A=#$0e -> ZP=ZP-0e)
 		adc	ZP
 		sta	ZP
 		bcs	*+4
 		dec	ZP+1
 
 		txa
-SubX:		axs	#$00		//X-=(Literal+1) (e.g. Lit=#$00 -> X-=0+1
+SubX:		axs	#$00		//X=X-1-Literal (e.g. Lit=#$00 ->	X=A-1-0)
 		stx	LitCopy+1
 
-		cpy	#$2d		//MaxLit+1=45, sets/clears C
 LitCopy:	lda	Buffer,y
 		sta	(ZP),y
 		dey
-		bne	LitCopy
-		bcs	ClrC		//if LitCnt=MaxLit - read 1 bit to see whether next sequence it Lit or Match
+		bne	LitCopy	//Literal sequence is ALWAYS followed by a match sequence
 
 //----------------------------
 //		SHORT MATCH
@@ -422,7 +507,6 @@ MatchCopy:	lda	$10ad,y	//Y=#$02-#$04 (short) vs #$02-#$3e (mid) vs #$3f-#$ff (lo
 
 		dex
 
-ClrC:		clc			//NEEDED AFTER LITERALS!!!
 		lda	#%10000000	//Read 1 bit (match vs literal sequence)
 		bcc	BitCheck	//Branch ALWAYS
 
@@ -451,13 +535,5 @@ IRQSub:	jsr	Done		//Music player or IRQ subroutine, installer @ $01e0
 NMI:		rti
 
 //----------------------------
-
 EndLoader:
-
-.print "Loader Call:		" + toHexString(Load)
-.print "BitTab:		" + toHexString(BitTab)
-.print "IRQ Installer:	" + toHexString(InstallIRQ)
-.print "Depack:		" + toHexString(Depack)
-.print "Fallback IRQ:		" + toHexString(IRQ)
-.print "Loader End:		" + toHexString(EndLoader-1)
 }

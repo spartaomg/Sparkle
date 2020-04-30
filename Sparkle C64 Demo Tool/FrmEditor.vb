@@ -6,8 +6,8 @@ Public Class FrmEditor
     Private ReadOnly colDiskGray As Color = Color.FromArgb(41, 41, 41)
     Private ReadOnly colDiskInfo As Color = Color.DarkGreen
     Private ReadOnly colDiskInfoGray As Color = Color.FromArgb(29, 29, 29)
-    Private ReadOnly colPart As Color = Color.DarkMagenta
-    Private ReadOnly colPartGray As Color = Color.FromArgb(49, 49, 49)
+    Private ReadOnly colBunlde As Color = Color.DarkMagenta
+    Private ReadOnly colBundleGray As Color = Color.FromArgb(49, 49, 49)
     Private ReadOnly colFile As Color = Color.Black
     Private ReadOnly colFileGray As Color = Color.FromArgb(20, 20, 20)
     Private ReadOnly colFileParamDefault As Color = Color.RosyBrown
@@ -48,7 +48,7 @@ Public Class FrmEditor
 
     Private SC, DC, PC, FC As Integer
 
-    Private FirstPartOfDisk As Boolean
+    Private FirstBundleOfDisk As Boolean
 
     Private FileType As Byte
 
@@ -66,12 +66,12 @@ Public Class FrmEditor
 
     Private ReadOnly NewEntryText As String = "Add..."
     Private ReadOnly NewDiskEntryText As String = "New Disk"
-    Private ReadOnly NewPartEntryText As String = "New Part"
+    Private ReadOnly NewBundleEntryText As String = "New Bundle"
     Private ReadOnly NewScriptEntryText As String = "New Script"
     Private ReadOnly NewFileEntryText As String = "Add New File"
     Private ReadOnly NewEntryKey As String = "NewEntry"
     Private ReadOnly NewDiskKey As String = "NewDisk"
-    Private ReadOnly NewPartKey As String = "NewPart"
+    Private ReadOnly NewBundleKey As String = "NewBundle"
     Private ReadOnly NewScriptKey As String = "NewScript"
     Private ReadOnly NewFileKey As String = "NewFile"
 
@@ -82,12 +82,12 @@ Public Class FrmEditor
     Private LoopNode As New TreeNode
     Private ZPNode As New TreeNode
     Private DiskNode As TreeNode
-    Private PartNode As TreeNode
+    Private BundleNode As TreeNode
     Private FileNode As TreeNode
     Private ScriptNode As TreeNode
     Private DiskNodeA() As TreeNode
 
-    Private PartInNewBlock As Boolean = False
+    Private BundleInNewBlock As Boolean = False
 
     Private ReadOnly sDiskPath As String = "Disk Path: "
     Private ReadOnly sDiskHeader As String = "Disk Header: "
@@ -97,7 +97,7 @@ Public Class FrmEditor
     Private ReadOnly sAddEntry As String = "AddEntry"
     Private ReadOnly sAddScript As String = "AddScript"
     Private ReadOnly sAddDisk As String = "AddDisk"
-    Private ReadOnly sAddPart As String = "AddPart"
+    Private ReadOnly sAddBundle As String = "AddBundle"
     Private ReadOnly sAddFile As String = "AddFile"
     Private ReadOnly sFileSize As String = "Original File Size: "
     Private ReadOnly sFileUIO As String = "Load to:      "
@@ -106,7 +106,6 @@ Public Class FrmEditor
     Private ReadOnly sFileLen As String = "File Length:  $"
     Private ReadOnly sDirArt As String = "DirArt: "
     Private ReadOnly sZP As String = "Zeropage: "
-    Private ReadOnly sPacker As String = "Packer: "
     Private ReadOnly sLoop As String = "Loop: "
 
     Private ReadOnly sIL0 As String = "Interleave 0: "
@@ -116,7 +115,7 @@ Public Class FrmEditor
 
     Private ReadOnly sScript As String = "Script: "
     Private ReadOnly sFile As String = "File: "
-    Private ReadOnly sNewBlock As String = "Start this part in a new sector on the disk: " '"Start part in a new block on the disk: "
+    Private ReadOnly sNewBlock As String = "Start the first file of this bundle in a new sector on the disk: " '"Start bundle in a new block on the disk: "
     Private ReadOnly TT As New ToolTip
 
     Private ReadOnly tDiskPath As String = "Double click or press <Enter> to specify where your demo disk will be saved in D64 format."
@@ -125,10 +124,10 @@ Public Class FrmEditor
     Private ReadOnly tDemoName As String = "Double click or start typing to edit the name of the first PRG in the directory."
     Private ReadOnly tDemoStart As String = "Double click orstart typing to edit the start address (entry point) of the demo."
     Private ReadOnly tAddDisk As String = "Double click or press <Enter> to add a new disk structure to this script."
-    Private ReadOnly tAddPart As String = "Double click or press <Enter> to add a new part to this script."
+    Private ReadOnly tAddBundle As String = "Double click or press <Enter> to add a new bundle to this script."
     Private ReadOnly tAddScript As String = "Double click or press <Enter> to add an existing script to this script."
-    Private ReadOnly tAddFile As String = "Double click or press <Enter> to add an existing file to this demo part."
-    Private ReadOnly tNB As String = "Double click or press <Enter> to change the alignment of this demo part with a sector on the disk."
+    Private ReadOnly tAddFile As String = "Double click or press <Enter> to add an existing file to this bundle."
+    Private ReadOnly tNB As String = "Double click or press <Enter> to change the alignment of this bundle with a sector on the disk."
     Private ReadOnly tFileSize As String = "Original size of the selected file segment in blocks."
     Private ReadOnly tFileAddr As String = "Double click or start typing to edit the file segment's load address."
     Private ReadOnly tFileOffs As String = "Double click or start typing to edit the file segment's offset."
@@ -137,10 +136,10 @@ Public Class FrmEditor
     Private ReadOnly tDirArt As String = "Double click or press <Enter> to add a DirArt file to the demo's directory." + vbNewLine +
                 "Press the <Delete> key to delete the current DirArt file."
     Private ReadOnly tDisk As String = "Press <Delete> to delete this disk with all its content."
-    Private ReadOnly tPart As String = "Files and file segments in this part will be loaded during a single loader call." + vbNewLine +
-                "Press <Delete> to delete this part from this disk with all its content."
+    Private ReadOnly tBundle As String = "Files and file segments in this bundle will be loaded during a single loader call." + vbNewLine +
+                "Press <Delete> to delete this bundle of files from this disk with all its content."
     Private ReadOnly tFile As String = "Double click or press <Enter> to change this file." + vbNewLine +
-                "Press <Delete> to delete this file from this part."
+                "Press <Delete> to delete this file from this bundle."
     Private ReadOnly tScript As String = "Double click or press <Enter> to change this embedded script." + vbNewLine +
                 "Press <Delete> to delete this script entry and all its content."
     Private ReadOnly tBaseScript As String = "Double click or press <Enter> to load a script file."
@@ -148,9 +147,6 @@ Public Class FrmEditor
     Private ReadOnly tLoop As String = "Double click or press <Enter> to specify the disk the demo will loop to after finishing the last disk." + vbNewLine +
                 "The default value of 0 will terminate the demo without looping. A value between 1-255 will result in looping to the specified disk" + vbNewLine +
                 "E.g. select 1 to loop to the first disk."
-    Private ReadOnly tPacker As String = "Double click or press <Enter> to change the loader's packer selection." + vbNewLine +
-                "The 'faster' option results in a faster but less effective compression and somewhat faster loading." + vbNewLine +
-                "The 'better' option results in a slower but more effective compression and somewhat slower loading."
 
     Private Sub FrmEditor_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         On Error GoTo Err
@@ -173,11 +169,11 @@ Public Class FrmEditor
             Location = New Point(X, Y)
         End If
 
-        If My.Settings.DefaultPacker = 1 Then
-            OptFaster.Checked = True
-        Else
-            OptBetter.Checked = True
-        End If
+        'If My.Settings.DefaultPacker = 1 Then
+        'OptFaster.Checked = True
+        'Else
+        'OptBetter.Checked = True
+        'End If
 
         If My.Settings.FilePaths = 1 Then
             OptRelativePaths.Checked = True
@@ -255,7 +251,7 @@ Err:
         If txtEdit.Visible Then TV.Focus()
 
         With My.Settings
-            .DefaultPacker = If(OptFaster.Checked, 1, 2)
+            '.DefaultPacker = If(OptFaster.Checked, 1, 2)
             .ShowFileDetails = ChkExpand.Checked
             .ShowToolTips = ChkToolTips.Checked
             .CalculateSize = ChkSize.Checked
@@ -291,12 +287,6 @@ Err:
                 Case Keys.S
                     e.SuppressKeyPress = True
                     BtnSave_Click(sender, e)
-                Case Keys.B
-                    e.SuppressKeyPress = True
-                    OptBetter.Checked = True
-                Case Keys.F
-                    e.SuppressKeyPress = True
-                    OptFaster.Checked = True
                 Case Keys.R
                     e.SuppressKeyPress = True
                     OptRelativePaths.Checked = True
@@ -360,7 +350,7 @@ Err:
             ChkExpand.Left = .Left
             ChkToolTips.Left = .Left
             ChkSize.Left = .Left
-            PnlPacker.Left = .Left - 11
+            'PnlPacker.Left = .Left - 11
             PnlPath.Left = .Left - 11
         End With
 
@@ -407,8 +397,8 @@ Err:
                     HandleKey = True
                     e.SuppressKeyPress = True
                     Exit Sub
-                Case colPartGray, colNewBlockYesGray, colNewBlockNoGray, colScriptGray
-                    'Disk, Disk info, Part, New Block, and Script in script
+                Case colBundleGray, colNewBlockYesGray, colNewBlockNoGray, colScriptGray
+                    'Disk, Disk info, Bundle, New Block, and Script in script
                     HandleKey = True
                     e.SuppressKeyPress = True
                     Exit Sub
@@ -425,11 +415,11 @@ Err:
                     HandleKey = False
                 End If
                 Exit Sub
-            Case NewPartEntryText
+            Case NewBundleEntryText
                 If e.KeyCode = Keys.Enter Then
                     HandleKey = True
                     e.SuppressKeyPress = True
-                    AddPartNode()
+                    AddBundleNode()
                 Else
                     HandleKey = False
                 End If
@@ -716,30 +706,30 @@ FileDataFO:
                                 Exit Sub
                         End Select
 
-                    Case sPacker
-                        Select Case e.KeyCode
-                            Case Keys.Enter
+                        'Case sPacker
+                        'Select Case e.KeyCode
+                        'Case Keys.Enter
 
-                                .Visible = False
-                                Select Case LCase(Strings.Right(N.Text, 6))
-                                    Case "faster"
-                                        N.Text = sPacker + "better"
-                                        Packer = 2
-                                    Case "better"
-                                        N.Text = sPacker + "faster"
-                                        Packer = 1
-                                End Select
+                        '.Visible = False
+                        'Select Case LCase(Strings.Right(N.Text, 6))
+                        'Case "faster"
+                        'N.Text = sPacker + "better"
+                        'Packer = 2
+                        'Case "better"
+                        'N.Text = sPacker + "faster"
+                        'Packer = 1
+                        'End Select
 
-                                HandleKey = True
-                                e.SuppressKeyPress = True
-                                '----------------
-                                CalcDiskSizeWithForm(BaseNode, -1) ' SelNode.Parent.Index + 1)
-                                '----------------
-                            Case Else
-                                HandleKey = False
-                        End Select
+                        'HandleKey = True
+                        'e.SuppressKeyPress = True
+                        '----------------
+                        'CalcDiskSizeWithForm(BaseNode, -1) ' SelNode.Parent.Index + 1)
+                        ''----------------
+                        'Case Else
+                        'HandleKey = False
+                        'End Select
 
-                        Exit Sub
+                        'Exit Sub
 
                     Case sLoop
 
@@ -786,7 +776,7 @@ FileDataFO:
                 End Select
                 .Top = TV.Top + N.Bounds.Top + 3
                 .ForeColor = N.ForeColor
-        End With
+            End With
         End If
         With txtEdit
             If txtEdit.Visible = True Then
@@ -1181,13 +1171,13 @@ Done:
             .Tag = 0
             .ForeColor = colNewEntry
             .Nodes.Add(NewDiskKey, NewDiskEntryText)
-            .Nodes.Add(NewPartKey, NewPartEntryText)
+            .Nodes.Add(NewBundleKey, NewBundleEntryText)
             .Nodes.Add(NewScriptKey, NewScriptEntryText)
             .Nodes(NewDiskKey).ForeColor = colNewEntry
-            .Nodes(NewPartKey).ForeColor = colNewEntry
+            .Nodes(NewBundleKey).ForeColor = colNewEntry
             .Nodes(NewScriptKey).ForeColor = colNewEntry
             .Nodes(NewDiskKey).Tag = 0
-            .Nodes(NewPartKey).Tag = 0
+            .Nodes(NewBundleKey).Tag = 0
             .Nodes(NewScriptKey).Tag = 0
             .Expand()
         End With
@@ -1199,13 +1189,13 @@ Err:
 
     End Sub
 
-    Private Sub AddNewFileEntryNode(PartNode As TreeNode)
+    Private Sub AddNewFileEntryNode(BundleNode As TreeNode)
         On Error GoTo Err
 
-        With PartNode
-            .Nodes.Add(PartNode.Name + ":" + NewFileKey, NewFileEntryText)
-            .Nodes(PartNode.Name + ":" + NewFileKey).ForeColor = colNewEntry
-            .Nodes(PartNode.Name + ":" + NewFileKey).Tag = .Tag
+        With BundleNode
+            .Nodes.Add(BundleNode.Name + ":" + NewFileKey, NewFileEntryText)
+            .Nodes(BundleNode.Name + ":" + NewFileKey).ForeColor = colNewEntry
+            .Nodes(BundleNode.Name + ":" + NewFileKey).Tag = .Tag
         End With
 
         Exit Sub
@@ -1235,7 +1225,7 @@ Err:
 
         CurrentFile = FC
 
-        If N.Index = 0 Then     'Is this the first file in this part?
+        If N.Index = 0 Then     'Is this the first file in this bundle?
             BlockCnt = 0        'Yes, reset block count
         Else
             BlockCnt = 1        'Fake block for compression
@@ -1268,10 +1258,6 @@ Err:
         N.Text = CalcFileSize(N.Text, DFAN, DFLN)          'Also sets/clears IOBit
 
         UpdateFileParameters(N)
-
-        'If CurrentPart > PartSizeA.Count Then
-        'ReDim Preserve PartByteCntA(CurrentPart), PartBitCntA(CurrentPart), PartBitPosA(CurrentPart), PartSizeA(CurrentPart)
-        'End If
 
         AddNewFileEntryNode(N.Parent)
 
@@ -1321,7 +1307,7 @@ Done:
             .Tag = SC + &H30000
         End With
         AddNewEntryNode()
-        PartInNewBlock = False
+        BundleInNewBlock = False
         ConvertScriptToScriptNodes(ScriptNode, NewFile)
         'ReNumberEntries(BaseNode)
 
@@ -1359,7 +1345,7 @@ Done:
             .NodeFont = New Font(TV.Font.Name, TV.Font.Size, FontStyle.Regular)
         End With
         ScriptNode = SN
-        PartInNewBlock = False
+        BundleInNewBlock = False
         ConvertScriptToScriptNodes(SN, NewFile)
 
         CalcDiskSize(BaseNode, ScriptNode.Index)
@@ -1495,11 +1481,11 @@ Err:
 
     End Sub
 
-    Private Sub AddNewBlockNode(PartNode As TreeNode)
+    Private Sub AddNewBlockNode(BunldeNode As TreeNode)
         On Error GoTo Err
 
         Dim Fnt As New Font("Consolas", 10)
-        AddNode(PartNode, PartNode.Name + ":NB", sNewBlock + "NO", PartNode.Tag, colNewBlockNo, Fnt)
+        AddNode(BunldeNode, BunldeNode.Name + ":NB", sNewBlock + "NO", BunldeNode.Tag, colNewBlockNo, Fnt)
 
         Exit Sub
 Err:
@@ -1508,35 +1494,35 @@ Err:
 
     End Sub
 
-    Private Sub AddPartNode()
+    Private Sub AddBundleNode()
         On Error GoTo Err
 
-        PartNode = NewEntryNode    'TV.SelectedNode
+        BundleNode = NewEntryNode    'TV.SelectedNode
 
         PC += 1
-        ReDim Preserve PartByteCntA(PC), PartBitCntA(PC), PartBitPosA(PC), PartSizeA(PC), PartOrigSizeA(PC)
+        ReDim Preserve BundleBytePtrA(PC), BundleBitPtrA(PC), BundleBitPosA(PC), BundleSizeA(PC), BundleOrigSizeA(PC)
 
-        CurrentPart = PC
+        CurrentBundle = PC
 
         StartUpdate()
-        With PartNode
+        With BundleNode
             .Nodes.Clear()
-            .Text = "[Part " + PC.ToString + "]"
+            .Text = "[Bundle " + PC.ToString + "]"
             .Name = "P" + PC.ToString
             .Tag = PC + &H20000
-            .ForeColor = colPart
+            .ForeColor = colBunlde
         End With
 
 
-        AddNewBlockNode(PartNode)      'Adds a "New Block: false" node to this part node
-        AddNewFileEntryNode(PartNode)  'Adds an "Add New File" node to this part node
+        AddNewBlockNode(BundleNode)      'Adds a "New Block: false" node to this bundle node
+        AddNewFileEntryNode(BundleNode)  'Adds an "Add New File" node to this bundle node
 
         AddNewEntryNode()       'Adds an "Add.." node with 3 child nodes to the BaseNode
 
         FinishUpdate()
 
-        PartNode.Expand()
-        TV.SelectedNode = PartNode.Nodes(1)
+        BundleNode.Expand()
+        TV.SelectedNode = BundleNode.Nodes(1)
 
         Exit Sub
 Err:
@@ -1575,7 +1561,7 @@ Err:
         AddNode(DiskNode, sDemoName + DC.ToString, sDemoName + "demo", DiskNode.Tag, colDiskInfo, Fnt)
         AddNode(DiskNode, sDemoStart + DC.ToString, sDemoStart + "$", DiskNode.Tag, colDiskInfo, Fnt)
         AddNode(DiskNode, sDirArt + DC.ToString, sDirArt, DiskNode.Tag, colDiskInfo, Fnt)
-        AddNode(DiskNode, sPacker + DC.ToString, sPacker + If(My.Settings.DefaultPacker = 1, "faster", "better"), DiskNode.Tag, colDiskInfo, Fnt)
+        'AddNode(DiskNode, sPacker + DC.ToString, sPacker + If(My.Settings.DefaultPacker = 1, "faster", "better"), DiskNode.Tag, colDiskInfo, Fnt)
         'If CustomIL Then
         AddNode(DiskNode, sIL0 + DC.ToString, sIL0 + Strings.Left("04", 2 - Len(IL0.ToString)) + IL0.ToString, DiskNode.Tag, colDiskInfo, Fnt)
         AddNode(DiskNode, sIL1 + DC.ToString, sIL1 + Strings.Left("03", 2 - Len(IL1.ToString)) + IL1.ToString, DiskNode.Tag, colDiskInfo, Fnt)
@@ -1679,8 +1665,8 @@ Err:
                     CalcDiskSize(BaseNode, NI)
                     GoTo Done
                 End If
-            Case 2  'Part
-                If MsgBox("Are you sure you want to delete this Part and all its content?", vbQuestion + vbYesNo + vbDefaultButton2) = vbYes Then
+            Case 2  'Bundle
+                If MsgBox("Are you sure you want to delete this Bundle and all its content?", vbQuestion + vbYesNo + vbDefaultButton2) = vbYes Then
 
                     Frm.Show(Me)
 
@@ -1760,7 +1746,7 @@ Done:
         Select Case SelNode.ForeColor
             Case colDisk        'Disk node
                 NodeType = 1
-            Case colPart        'Part node
+            Case colBunlde      'Bundle node
                 NodeType = 2
             Case colFile        'File node
                 NodeType = 3
@@ -1820,7 +1806,7 @@ Err:
                 CurrentDisk = N.Tag And &HFFFF
                 Exit Sub
             Case 2 To 3
-                'Part and Script Nodes
+                'Bundle and Script Nodes
                 For I As Integer = N.Index To 0 Step -1
                     If Int(N.Parent.Nodes(I).Tag / &H10000) = 1 Then
                         CurrentDisk = N.Parent.Nodes(I).Tag And &HFFFF
@@ -2023,7 +2009,7 @@ Node2:              If FileNode.Nodes(2).ForeColor = colFileParamDefault Then Fi
         End If
 
         ValidateFileParameters(FileNode)    'This will make sure parameters are within limits
-        'It will also update file size and part size(s)
+        'It will also update file size and bundle size(s)
 
         CheckFileParameterColors(FileNode)  'Check if parameters are default or not
 
@@ -2677,7 +2663,9 @@ Err:
         'Frm.Show(Me)
 
         'StartUpdate()
-        CalcDiskSizeWithForm(BaseNode, SelNode.Parent.Index)
+        If SelNode.Parent.Nodes.Count > 2 Then
+            CalcDiskSizeWithForm(BaseNode, SelNode.Parent.Index)
+        End If
         'FinishUpdate()
 
         'Frm.Close()
@@ -2832,14 +2820,14 @@ Err:
 
         CurrentScript = SC
         CurrentDisk = DC
-        CurrentPart = PC
+        CurrentBundle = PC
         CurrentFile = FC
 
-        ReDim PartSizeA(PC), PartByteCntA(PC), PartBitCntA(PC), PartBitPosA(PC), PartOrigSizeA(PC)
+        ReDim BundleSizeA(PC), BundleBytePtrA(PC), BundleBitPtrA(PC), BundleBitPosA(PC), BundleOrigSizeA(PC)
 
-        PartByteCntA(PC) = 254
-        PartBitCntA(PC) = 0
-        PartBitPosA(PC) = 15
+        BundleBytePtrA(PC) = 255
+        BundleBitPtrA(PC) = 0
+        BundleBitPosA(PC) = 15
 
         DiskCnt = DC
         ReDim DiskSizeA(DiskCnt)
@@ -2882,9 +2870,9 @@ Err:
             ElseIf e.Node.Name = BaseScriptKey Then
                 .ToolTipTitle = "This script"
                 TTT = tBaseScript
-            ElseIf e.Node.Name = NewPartKey Then
-                .ToolTipTitle = "Add New Demo Part"
-                TTT = tAddPart
+            ElseIf e.Node.Name = NewBundleKey Then
+                .ToolTipTitle = "Add New File Bunlde "
+                TTT = tAddBundle
             ElseIf e.Node.Name = NewScriptKey Then
                 .ToolTipTitle = "Add New Script"
                 TTT = tAddScript
@@ -2892,7 +2880,7 @@ Err:
                 .ToolTipTitle = "Add New Demo File"
                 TTT = tAddFile
             ElseIf Strings.Right(e.Node.Name, 3) = ":NB" Then
-                .ToolTipTitle = "Align Demo Part with Disk Sector"
+                .ToolTipTitle = "Align Bundle with Disk Sector"
                 TTT = tNB
             ElseIf Strings.Right(e.Node.Name, 3) = ":FS" Then
                 .ToolTipTitle = "File Size"
@@ -2915,9 +2903,9 @@ Err:
             ElseIf Strings.Left(e.Node.Text, 5) = "[Disk" Then
                 .ToolTipTitle = "Demo Disk"
                 TTT = tDisk
-            ElseIf Strings.Left(e.Node.Text, 5) = "[Part" Then
-                .ToolTipTitle = "Demo Part"
-                TTT = tPart
+            ElseIf Strings.Left(e.Node.Text, 5) = "[Bund" Then
+                .ToolTipTitle = "File Bundle"
+                TTT = tBundle
             ElseIf Strings.Left(e.Node.Text, 7) = "[Script" Then
                 .ToolTipTitle = "Embedded script"
                 TTT = tScript
@@ -2945,9 +2933,9 @@ Err:
                     Case sZP
                         .ToolTipTitle = "Zeropage Usage"
                         TTT = tZP
-                    Case sPacker
-                        .ToolTipTitle = "Packer to be used"
-                        TTT = tPacker
+                        'Case sPacker
+                        '.ToolTipTitle = "Packer to be used"
+                        'TTT = tPacker
                     Case sLoop
                         .ToolTipTitle = "Looping after the last disk"
                         TTT = tLoop
@@ -3013,6 +3001,15 @@ Err:
         MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
     End Sub
+    Private Sub ResetBundleArrays()
+
+        ReDim BundleSizeA(PC), BundleBytePtrA(PC), BundleBitPtrA(PC), BundleBitPosA(PC), BundleOrigSizeA(PC)
+
+        BundleBytePtrA(PC) = 255
+        BundleBitPtrA(PC) = 0
+        BundleBitPosA(PC) = 15
+
+    End Sub
 
     Private Sub ConvertScriptToNodes()
         On Error GoTo Err
@@ -3048,14 +3045,10 @@ Err:
         SC = 0
 
         CurrentDisk = DC
-        CurrentPart = PC
+        CurrentBundle = PC
         CurrentFile = FC
 
-        ReDim PartSizeA(PC), PartByteCntA(PC), PartBitCntA(PC), PartBitPosA(PC), PartOrigSizeA(PC)
-
-        PartByteCntA(PC) = 254
-        PartBitCntA(PC) = 0
-        PartBitPosA(PC) = 15
+        ResetBundleArrays()
 
         BaseNode.Text = "This Script: " + ScriptName
 
@@ -3065,7 +3058,7 @@ Err:
         ZPSet = False
 
         Dim Fnt As New Font("Consolas", 10)
-        NewPart = True
+        NewBundle = True
         NewD = False
         For I As Integer = 1 To Lines.Count - 1
 
@@ -3081,8 +3074,8 @@ Err:
             SplitEntry()
 
             Select Case LCase(ScriptEntryType)
-                Case ""     'New Part
-                    NewPart = True
+                Case ""     'New Bundle
+                    NewBundle = True
                 Case "path:"
                     If NewD = False Then
                         NewD = True
@@ -3094,7 +3087,7 @@ Err:
                     Else
                         UpdateNode(DiskNode.Nodes(sDiskPath + DC.ToString), sDiskPath + ScriptEntryArray(0), DiskNode.Tag, colDiskInfo, Fnt) ', tDiskPath)
                     End If
-                    NewPart = True
+                    NewBundle = True
                 Case "header:"
                     If NewD = False Then
                         NewD = True
@@ -3105,7 +3098,7 @@ Err:
                     Else
                         UpdateNode(DiskNode.Nodes(sDiskHeader + DC.ToString), sDiskHeader + ScriptEntryArray(0), DiskNode.Tag, colDiskInfo, Fnt)
                     End If
-                    NewPart = True
+                    NewBundle = True
                 Case "id:"
                     If NewD = False Then
                         NewD = True
@@ -3116,7 +3109,7 @@ Err:
                     Else
                         UpdateNode(DiskNode.Nodes(sDiskID + DC.ToString), sDiskID + ScriptEntryArray(0), DiskNode.Tag, colDiskInfo, Fnt) ', tDiskID)
                     End If
-                    NewPart = True
+                    NewBundle = True
                 Case "name:"
                     If NewD = False Then
                         NewD = True
@@ -3127,7 +3120,7 @@ Err:
                     Else
                         UpdateNode(DiskNode.Nodes(sDemoName + DC.ToString), sDemoName + ScriptEntryArray(0), DiskNode.Tag, colDiskInfo, Fnt) ', tDemoName)
                     End If
-                    NewPart = True
+                    NewBundle = True
                 Case "start:"
                     If NewD = False Then
                         NewD = True
@@ -3138,7 +3131,7 @@ Err:
                     Else
                         UpdateNode(DiskNode.Nodes(sDemoStart + DC.ToString), sDemoStart + "$" + LCase(ScriptEntryArray(0)), DiskNode.Tag, colDiskInfo, Fnt) ', tDemoStart)
                     End If
-                    NewPart = True
+                    NewBundle = True
                 Case "dirart:"
                     If NewD = False Then
                         NewD = True
@@ -3152,24 +3145,24 @@ Err:
                     Else
                         UpdateNode(DiskNode.Nodes(sDirArt + DC.ToString), sDirArt + ScriptEntryArray(0), DiskNode.Tag, colDiskInfo, Fnt)
                     End If
-                    NewPart = True
-                Case "packer:"
-                    If NewD = False Then
-                        NewD = True
-                        AddDiskToScriptNode(BaseNode)
-                    End If
-                    If DiskNode.Nodes(sPacker + DC.ToString) Is Nothing Then
-                        AddNode(DiskNode, sPacker + DC.ToString, sPacker + LCase(ScriptEntryArray(0)), DiskNode.Tag, colDiskInfo, Fnt)
-                    Else
-                        UpdateNode(DiskNode.Nodes(sPacker + DC.ToString), sPacker + LCase(ScriptEntryArray(0)), DiskNode.Tag, colDiskInfo, Fnt)
-                    End If
-                    Select Case LCase(ScriptEntryArray(0))
-                        Case "faster"
-                            Packer = 1
-                        Case Else   '"better"
-                            Packer = 2
-                    End Select
-                    NewPart = True
+                    NewBundle = True
+                    'Case "packer:"
+                    'If NewD = False Then
+                    'NewD = True
+                    'AddDiskToScriptNode(BaseNode)
+                    'End If
+                    'If DiskNode.Nodes(sPacker + DC.ToString) Is Nothing Then
+                    'AddNode(DiskNode, sPacker + DC.ToString, sPacker + LCase(ScriptEntryArray(0)), DiskNode.Tag, colDiskInfo, Fnt)
+                    'Else
+                    'UpdateNode(DiskNode.Nodes(sPacker + DC.ToString), sPacker + LCase(ScriptEntryArray(0)), DiskNode.Tag, colDiskInfo, Fnt)
+                    'End If
+                    'Select Case LCase(ScriptEntryArray(0))
+                    'Case "faster"
+                    'Packer = 1
+                    'Case Else   '"better"
+                    'Packer = 2
+                    'End Select
+                    'NewPart = True
                 Case "zp:"
                     If NewD = False Then
                         NewD = True
@@ -3186,7 +3179,7 @@ Err:
                         DiskNode.Nodes.Add(ZPNode)
                         ZPSet = True
                     End If
-                    NewPart = True
+                    NewBundle = True
                 Case "loop:"
                     If NewD = False Then
                         NewD = True
@@ -3197,7 +3190,7 @@ Err:
                         DiskNode.Nodes.Add(LoopNode)
                         ZPSet = True
                     End If
-                    NewPart = True
+                    NewBundle = True
                 Case "il0:"
                     'If CustomIL Then
                     If NewD = False Then
@@ -3215,7 +3208,7 @@ Err:
                         UpdateNode(DiskNode.Nodes(sIL0 + DC.ToString), sIL0 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfo, Fnt) ', tDemoName)
                     End If
                     'End If
-                    NewPart = True
+                    NewBundle = True
                 Case "il1:"
                     'If CustomIL Then
                     If NewD = False Then
@@ -3233,7 +3226,7 @@ Err:
                         UpdateNode(DiskNode.Nodes(sIL1 + DC.ToString), sIL1 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfo, Fnt) ', tDemoName)
                     End If
                     'End If
-                    NewPart = True
+                    NewBundle = True
                 Case "il2:"
                     'If CustomIL Then
                     If NewD = False Then
@@ -3244,14 +3237,14 @@ Err:
                         ScriptEntryArray(0) = Strings.Left("03", 2 - Len(ScriptEntryArray(0))) + ScriptEntryArray(0)
                     ElseIf Len(ScriptEntryArray(0)) > 2 Then
                         ScriptEntryArray(0) = Strings.Right(ScriptEntryArray(0), 2)
-                        End If
+                    End If
                     If DiskNode.Nodes(sIL2 + DC.ToString) Is Nothing Then
                         AddNode(DiskNode, sIL2 + DC.ToString, sIL2 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfo, Fnt)
                     Else
                         UpdateNode(DiskNode.Nodes(sIL2 + DC.ToString), sIL2 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfo, Fnt) ', tDemoName)
                     End If
                     'End If
-                    NewPart = True
+                    NewBundle = True
                 Case "il3:"
                     'If CustomIL Then
                     If NewD = False Then
@@ -3269,7 +3262,7 @@ Err:
                         UpdateNode(DiskNode.Nodes(sIL3 + DC.ToString), sIL3 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfo, Fnt) ', tDemoName)
                     End If
                     'End If
-                    NewPart = True
+                    NewBundle = True
                 Case "list:", "script:"
                     NewD = False
                     If InStr(ScriptEntryArray(0), ":") = 0 Then ScriptEntryArray(0) = ScriptPath + ScriptEntryArray(0)
@@ -3282,9 +3275,9 @@ Err:
                     If InStr(ScriptEntryArray(0), ":") = 0 Then ScriptEntryArray(0) = ScriptPath + ScriptEntryArray(0)
 
                     AddFileToScriptNode(BaseNode, ScriptEntryArray(0), If(ScriptEntryArray.Count > 1, ScriptEntryArray(1), ""), If(ScriptEntryArray.Count > 2, ScriptEntryArray(2), ""), If(ScriptEntryArray.Count > 3, ScriptEntryArray(3), ""))
-                    NewPart = False
-                Case "new block", "next block", "new sector", "align part", "align"
-                    PartInNewBlock = True
+                    NewBundle = False
+                Case "new block", "next block", "new sector", "align bundle", "align"
+                    BundleInNewBlock = True
                 Case Else
                     'Figure out what to do with comments here...
             End Select
@@ -3343,10 +3336,10 @@ Done:
         'End If
         'End If
 
-        'Empty line (new part) will be a single $0A charachter, otherwise, line string will not contain vbNewLine
+        'Empty line (new bundle) will be a single $0A charachter, otherwise, line string will not contain vbNewLine
 
         Dim Fnt As New Font("Consolas", 10)
-        NewPart = True
+        NewBundle = True
         NewD = False
         For I As Integer = 0 To Lines.Count - 1
 
@@ -3362,8 +3355,8 @@ Done:
             SplitEntry()
 
             Select Case LCase(ScriptEntryType)
-                Case ""     'New Part
-                    NewPart = True
+                Case ""     'New Bundle
+                    NewBundle = True
                 Case "path:"
                     If NewD = False Then
                         NewD = True
@@ -3375,7 +3368,7 @@ Done:
                     Else
                         UpdateNode(DiskNode.Nodes(sDiskPath + DC.ToString), sDiskPath + ScriptEntryArray(0), DiskNode.Tag, colDiskInfoGray, Fnt) ', tDiskPath)
                     End If
-                    NewPart = True
+                    NewBundle = True
                 Case "header:"
                     If NewD = False Then
                         NewD = True
@@ -3386,7 +3379,7 @@ Done:
                     Else
                         UpdateNode(DiskNode.Nodes(sDiskHeader + DC.ToString), sDiskHeader + ScriptEntryArray(0), DiskNode.Tag, colDiskInfoGray, Fnt)
                     End If
-                    NewPart = True
+                    NewBundle = True
                 Case "id:"
                     If NewD = False Then
                         NewD = True
@@ -3397,7 +3390,7 @@ Done:
                     Else
                         UpdateNode(DiskNode.Nodes(sDiskID + DC.ToString), sDiskID + ScriptEntryArray(0), DiskNode.Tag, colDiskInfoGray, Fnt) ', tDiskID)
                     End If
-                    NewPart = True
+                    NewBundle = True
                 Case "name:"
                     If NewD = False Then
                         NewD = True
@@ -3408,7 +3401,7 @@ Done:
                     Else
                         UpdateNode(DiskNode.Nodes(sDemoName + DC.ToString), sDemoName + ScriptEntryArray(0), DiskNode.Tag, colDiskInfoGray, Fnt) ', tDemoName)
                     End If
-                    NewPart = True
+                    NewBundle = True
                 Case "start:"
                     If NewD = False Then
                         NewD = True
@@ -3419,7 +3412,7 @@ Done:
                     Else
                         UpdateNode(DiskNode.Nodes(sDemoStart + DC.ToString), sDemoStart + "$" + LCase(ScriptEntryArray(0)), DiskNode.Tag, colDiskInfoGray, Fnt) ', tDemoStart)
                     End If
-                    NewPart = True
+                    NewBundle = True
                 Case "dirart:"
                     If NewD = False Then
                         NewD = True
@@ -3433,24 +3426,24 @@ Done:
                     Else
                         UpdateNode(DiskNode.Nodes(sDirArt + DC.ToString), sDirArt + ScriptEntryArray(0), DiskNode.Tag, colDiskInfoGray, Fnt)
                     End If
-                    NewPart = True
-                Case "packer:"
-                    If NewD = False Then
-                        NewD = True
-                        AddDiskToScriptNode(SN)
-                    End If
-                    If DiskNode.Nodes(sPacker + DC.ToString) Is Nothing Then
-                        AddNode(DiskNode, sPacker + DC.ToString, sPacker + LCase(ScriptEntryArray(0)), DiskNode.Tag, colDiskInfoGray, Fnt)
-                    Else
-                        UpdateNode(DiskNode.Nodes(sPacker + DC.ToString), sPacker + LCase(ScriptEntryArray(0)), DiskNode.Tag, colDiskInfoGray, Fnt)
-                    End If
-                    Select Case LCase(ScriptEntryArray(0))
-                        Case "faster"
-                            Packer = 1
-                        Case Else   '"better"
-                            Packer = 2
-                    End Select
-                    NewPart = True
+                    NewBundle = True
+                    'Case "packer:"
+                    'If NewD = False Then
+                    'NewD = True
+                    'AddDiskToScriptNode(SN)
+                    'End If
+                    'If DiskNode.Nodes(sPacker + DC.ToString) Is Nothing Then
+                    'AddNode(DiskNode, sPacker + DC.ToString, sPacker + LCase(ScriptEntryArray(0)), DiskNode.Tag, colDiskInfoGray, Fnt)
+                    'Else
+                    'UpdateNode(DiskNode.Nodes(sPacker + DC.ToString), sPacker + LCase(ScriptEntryArray(0)), DiskNode.Tag, colDiskInfoGray, Fnt)
+                    'End If
+                    'Select Case LCase(ScriptEntryArray(0))
+                    'Case "faster"
+                    'Packer = 1
+                    'Case Else   '"better"
+                    'Packer = 2
+                    'End Select
+                    'NewPart = True
                 Case "zp:"
                     If NewD = False Then
                         NewD = True
@@ -3467,7 +3460,7 @@ Done:
                         DiskNode.Nodes.Add(ZPNode)
                         ZPSet = True
                     End If
-                    NewPart = True
+                    NewBundle = True
                 Case "loop:"
                     If NewD = False Then
                         NewD = True
@@ -3478,7 +3471,7 @@ Done:
                         DiskNode.Nodes.Add(LoopNode)
                         ZPSet = True
                     End If
-                    NewPart = True
+                    NewBundle = True
                 Case "il0:"
                     'If CustomIL Then
                     If NewD = False Then
@@ -3489,14 +3482,14 @@ Done:
                         ScriptEntryArray(0) = Strings.Left("04", 2 - Len(ScriptEntryArray(0))) + ScriptEntryArray(0)
                     ElseIf Len(ScriptEntryArray(0)) > 2 Then
                         ScriptEntryArray(0) = Strings.Right(ScriptEntryArray(0), 2)
-                        End If
+                    End If
                     If DiskNode.Nodes(sIL0 + DC.ToString) Is Nothing Then
                         AddNode(DiskNode, sIL0 + DC.ToString, sIL0 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfoGray, Fnt)
                     Else
                         UpdateNode(DiskNode.Nodes(sIL0 + DC.ToString), sIL0 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfoGray, Fnt) ', tDemoName)
                     End If
                     'End If
-                    NewPart = True
+                    NewBundle = True
                 Case "il1:"
                     'If CustomIL Then
                     If NewD = False Then
@@ -3515,7 +3508,7 @@ Done:
                         UpdateNode(DiskNode.Nodes(sIL1 + DC.ToString), sIL1 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfoGray, Fnt) ', tDemoName)
                     End If
                     'End If
-                    NewPart = True
+                    NewBundle = True
                 Case "il2:"
                     'If CustomIL Then
                     If NewD = False Then
@@ -3533,7 +3526,7 @@ Done:
                         UpdateNode(DiskNode.Nodes(sIL2 + DC.ToString), sIL2 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfoGray, Fnt) ', tDemoName)
                     End If
                     'End If
-                    NewPart = True
+                    NewBundle = True
                 Case "il3:"
                     'If CustomIL Then
                     If NewD = False Then
@@ -3551,7 +3544,7 @@ Done:
                         UpdateNode(DiskNode.Nodes(sIL3 + DC.ToString), sIL3 + ScriptEntryArray(0), DiskNode.Tag, colDiskInfoGray, Fnt) ', tDemoName)
                     End If
                     'End If
-                    NewPart = True
+                    NewBundle = True
                 Case "list:", "script:"
                     NewD = False
                     If InStr(ScriptEntryArray(0), ":") = 0 Then ScriptEntryArray(0) = Path + ScriptEntryArray(0)
@@ -3563,9 +3556,9 @@ Done:
                     If InStr(ScriptEntryArray(0), ":") = 0 Then ScriptEntryArray(0) = Path + ScriptEntryArray(0)
 
                     AddFileToScriptNode(SN, ScriptEntryArray(0), If(ScriptEntryArray.Count > 1, ScriptEntryArray(1), ""), If(ScriptEntryArray.Count > 2, ScriptEntryArray(2), ""), If(ScriptEntryArray.Count > 3, ScriptEntryArray(3), ""))
-                    NewPart = False
-                Case "new block", "next block", "new sector", "align part", "align"
-                    PartInNewBlock = True
+                    NewBundle = False
+                Case "new block", "next block", "new sector", "align bundle", "align"
+                    BundleInNewBlock = True
                 Case Else
                     'Figure out what to do with comments here...
             End Select
@@ -3599,7 +3592,7 @@ Err:
             AddNode(DiskNode, sDemoName + DC.ToString, sDemoName + "demo", DiskNode.Tag, colDiskInfo, Fnt)
             AddNode(DiskNode, sDemoStart + DC.ToString, sDemoStart + "$", DiskNode.Tag, colDiskInfo, Fnt)
             AddNode(DiskNode, sDirArt + DC.ToString, sDirArt, DiskNode.Tag, colDiskInfo, Fnt)
-            AddNode(DiskNode, sPacker + DC.ToString, sPacker + If(My.Settings.DefaultPacker = 1, "faster", "better"), DiskNode.Tag, colDiskInfo, Fnt)
+            'AddNode(DiskNode, sPacker + DC.ToString, sPacker + If(My.Settings.DefaultPacker = 1, "faster", "better"), DiskNode.Tag, colDiskInfo, Fnt)
             'If CustomIL Then
             AddNode(DiskNode, sIL0 + DC.ToString, sIL0 + Strings.Left("04", 2 - Len(IL0.ToString)) + IL0.ToString, DiskNode.Tag, colDiskInfo, Fnt)
             AddNode(DiskNode, sIL1 + DC.ToString, sIL1 + Strings.Left("03", 2 - Len(IL1.ToString)) + IL1.ToString, DiskNode.Tag, colDiskInfo, Fnt)
@@ -3675,7 +3668,7 @@ Err:
     Private Sub AddFileToScriptNode(SN As TreeNode, FileName As String, Optional FA As String = "", Optional FO As String = "", Optional FL As String = "")
         On Error GoTo Err
 
-        If NewPart = True Then AddPartToScriptNode(SN)
+        If NewBundle = True Then AddBundleToScriptNode(SN)
 
         Dim SNisBaseNode As Boolean = SN.Name = BaseNode.Name
 
@@ -3689,8 +3682,8 @@ Err:
         End If
 
         FC += 1
-        AddNode(PartNode, PartNode.Name + ":F" + FC.ToString, FileName, FC, If(SNisBaseNode, colFile, colFileGray))
-        FileNode = PartNode.Nodes(PartNode.Name + ":F" + FC.ToString)
+        AddNode(BundleNode, BundleNode.Name + ":F" + FC.ToString, FileName, FC, If(SNisBaseNode, colFile, colFileGray))
+        FileNode = BundleNode.Nodes(BundleNode.Name + ":F" + FC.ToString)
 
         If IO.File.Exists(Replace(FileName, "*", "")) = False Then
             FileNode.NodeFont = New Font(TV.Font, FontStyle.Italic)
@@ -3875,10 +3868,10 @@ Err:
 Done:
 
         If SNisBaseNode Then
-            If PartNode.Nodes(PartNode.Name + ":" + NewFileKey) IsNot Nothing Then
-                PartNode.Nodes(PartNode.Name + ":" + NewFileKey).Remove()
+            If BundleNode.Nodes(BundleNode.Name + ":" + NewFileKey) IsNot Nothing Then
+                BundleNode.Nodes(BundleNode.Name + ":" + NewFileKey).Remove()
             End If
-            AddNewFileEntryNode(PartNode)
+            AddNewFileEntryNode(BundleNode)
         End If
 
         Exit Sub
@@ -3888,19 +3881,19 @@ Err:
 
     End Sub
 
-    Private Sub AddPartToScriptNode(SN As TreeNode)
+    Private Sub AddBundleToScriptNode(SN As TreeNode)
         On Error GoTo Err
         Dim SNisBaseNode As Boolean = SN.Name = BaseNode.Name
 
         PC += 1
-        ReDim Preserve PartByteCntA(PC), PartBitCntA(PC), PartBitPosA(PC), PartSizeA(PC), PartOrigSizeA(PC)
+        ReDim Preserve BundleBytePtrA(PC), BundleBitPtrA(PC), BundleBitPosA(PC), BundleSizeA(PC), BundleOrigSizeA(PC)
 
-        AddNode(SN, "P" + PC.ToString, "[Part]", &H20000 + PC, If(SNisBaseNode, colPart, colPartGray))
-        PartNode = SN.Nodes("P" + PC.ToString)
+        AddNode(SN, "P" + PC.ToString, "[Bundle]", &H20000 + PC, If(SNisBaseNode, colBunlde, colBundleGray))
+        BundleNode = SN.Nodes("P" + PC.ToString)
         Dim Fnt As New Font("Consolas", 10)
-        AddNode(PartNode, PartNode.Name + ":NB", sNewBlock + If(PartInNewBlock = True, "YES", "NO"), PartNode.Tag, If(SNisBaseNode, If(PartInNewBlock = True, colNewBlockYes, colNewBlockNo), If(PartInNewBlock = True, colNewBlockYesGray, colNewBlockNoGray)), Fnt)
-        NewPart = False
-        PartInNewBlock = False
+        AddNode(BundleNode, BundleNode.Name + ":NB", sNewBlock + If(BundleInNewBlock = True, "YES", "NO"), BundleNode.Tag, If(SNisBaseNode, If(BundleInNewBlock = True, colNewBlockYes, colNewBlockNo), If(BundleInNewBlock = True, colNewBlockYesGray, colNewBlockNoGray)), Fnt)
+        NewBundle = False
+        BundleInNewBlock = False
 
         Exit Sub
 Err:
@@ -3948,8 +3941,8 @@ Err:
                                 End If
                             Case sDirArt + CurrentDisk.ToString
                                 Script += "DirArt:" + vbTab + Strings.Right(DiskNode.Nodes(J).Text, Len(DiskNode.Nodes(J).Text) - Len(sDirArt)) + vbNewLine
-                            Case sPacker + CurrentDisk.ToString
-                                Script += "Packer:" + vbTab + Strings.Right(DiskNode.Nodes(J).Text, Len(DiskNode.Nodes(J).Text) - Len(sPacker)) + vbNewLine
+                                'Case sPacker + CurrentDisk.ToString
+                                'Script += "Packer:" + vbTab + Strings.Right(DiskNode.Nodes(J).Text, Len(DiskNode.Nodes(J).Text) - Len(sPacker)) + vbNewLine
                             Case sZP
                                 Script += "ZP:" + vbTab + Strings.Right(DiskNode.Nodes(J).Text, Len(DiskNode.Nodes(J).Text) - Len(sZP) - 1) + vbNewLine
                             Case sLoop
@@ -3973,19 +3966,19 @@ Err:
                         End Select
                     Next
                 Case &H20000 To &H2FFFF
-                    'Part Node
-                    PartNode = BaseNode.Nodes(I)
+                    'Bundle Node
+                    BundleNode = BaseNode.Nodes(I)
                     Dim NewLineAdded As Boolean = False
-                    For J As Integer = 0 To PartNode.Nodes.Count - 1
-                        If PartNode.Nodes(J).Tag < &H10000 Then
+                    For J As Integer = 0 To BundleNode.Nodes.Count - 1
+                        If BundleNode.Nodes(J).Tag < &H10000 Then
                             If NewLineAdded = False Then
-                                Script += vbNewLine 'Only add a new line to the script if there are files in the part
-                                NewLineAdded = True 'Do it only once per part
-                                If Strings.Right(LCase(PartNode.Nodes(0).Text), 3) = "yes" Then
-                                    Script += "Align" + vbNewLine   'We do have a file in this part, so check if part needs to be aligned with a new sector
+                                Script += vbNewLine 'Only add a new line to the script if there are files in the bundle
+                                NewLineAdded = True 'Do it only once per bundle
+                                If Strings.Right(LCase(BundleNode.Nodes(0).Text), 3) = "yes" Then
+                                    Script += "Align" + vbNewLine   'We do have a file in this bundle, so check if bundle needs to be aligned with a new sector
                                 End If
                             End If
-                            FileNode = PartNode.Nodes(J)
+                            FileNode = BundleNode.Nodes(J)
                             Script += "File:" + vbTab + FileNode.Text
                             If FileNode.Nodes.Count > 0 Then
                                 If FileNode.Nodes(0).ForeColor = colFileParamEdited Then            'Add Load Address
@@ -4036,7 +4029,7 @@ Done:   Frm.Close()
             PC = 0
             FC = 0
             SC = 0
-            FirstPartOfDisk = True
+            FirstBundleOfDisk = True
             ReDim PDiskNoA(PC), PNewBlockA(PC)
         End If
 
@@ -4052,26 +4045,26 @@ Done:   Frm.Close()
                             DiskNode.Name = "D" + DC.ToString
                             DiskNode.Tag = &H10000 + DC
                         End If
-                        FirstPartOfDisk = True
+                        FirstBundleOfDisk = True
                     Case 2
-                        'Part Node
+                        'Bundle Node
                         PC += 1
                         ReDim Preserve PDiskNoA(PC), PNewBlockA(PC)
                         PDiskNoA(PC) = DC
-                        PartNode = ParentNode.Nodes(I)
-                        PNewBlockA(PC) = Strings.Right(PartNode.Nodes(0).Text, 3) = "YES"
+                        BundleNode = ParentNode.Nodes(I)
+                        PNewBlockA(PC) = Strings.Right(BundleNode.Nodes(0).Text, 3) = "YES"
 
-                        If PartNode.Index >= NodeIndex Then
-                            PartNode.Text = "[Part " + PC.ToString + "]"
-                            PartNode.Name = If(FirstPartOfDisk, "P", "p") + PC.ToString
-                            PartNode.Tag = &H20000 + PC
+                        If BundleNode.Index >= NodeIndex Then
+                            BundleNode.Text = "[Bundle " + PC.ToString + "]"
+                            BundleNode.Name = If(FirstBundleOfDisk, "P", "p") + PC.ToString
+                            BundleNode.Tag = &H20000 + PC
                         End If
-                        For J As Integer = 1 To PartNode.Nodes.Count - 1
-                            If PartNode.Nodes(J).Tag < &H10000 Then
+                        For J As Integer = 1 To BundleNode.Nodes.Count - 1
+                            If BundleNode.Nodes(J).Tag < &H10000 Then
                                 FC += 1
                             End If
                         Next
-                        FirstPartOfDisk = False
+                        FirstBundleOfDisk = False
                     Case 3
                         'Script Node
                         SC += 1
@@ -4098,7 +4091,7 @@ Err:
             PC = 0
             FC = 0
             SC = 0
-            FirstPartOfDisk = True
+            FirstBundleOfDisk = True
         End If
 
         If ParentNode.Nodes.Count > 0 Then
@@ -4109,18 +4102,18 @@ Err:
                         DC += 1
                         DiskNode = ParentNode.Nodes(I)
                         DiskNode.Name = "D" + DC.ToString
-                        FirstPartOfDisk = True
+                        FirstBundleOfDisk = True
                     Case 2
-                        'Part Node
+                        'Bundle Node
                         PC += 1
-                        PartNode = ParentNode.Nodes(I)
-                        PartNode.Name = If(FirstPartOfDisk, "P", "p") + PC.ToString
-                        For J As Integer = 1 To PartNode.Nodes.Count - 1
-                            If PartNode.Nodes(J).Tag < &H10000 Then
+                        BundleNode = ParentNode.Nodes(I)
+                        BundleNode.Name = If(FirstBundleOfDisk, "P", "p") + PC.ToString
+                        For J As Integer = 1 To BundleNode.Nodes.Count - 1
+                            If BundleNode.Nodes(J).Tag < &H10000 Then
                                 FC += 1
                             End If
                         Next
-                        FirstPartOfDisk = False
+                        FirstBundleOfDisk = False
                     Case 3
                         'Script Node
                         SC += 1
@@ -4139,7 +4132,7 @@ Err:
     Private Function CalcPartSize(PartN As TreeNode, Optional prevPartN As TreeNode = Nothing) As Integer
         On Error GoTo Err
 
-        'THIS WILL CALCULATE THE SIZE OF A SINGLE PART, UPDATE PART NODE AND RETURN PART SIZE
+        'THIS WILL CALCULATE THE SIZE OF A SINGLE Bundle, UPDATE Bundle NODE AND RETURN Bundle SIZE
 
         Dim P() As Byte
         Dim FA, FO, FL As String
@@ -4148,8 +4141,8 @@ Err:
         ReDim FileNameA(FileCnt), FileAddrA(FileCnt), FileOffsA(FileCnt), FileLenA(FileCnt), FileIOA(FileCnt)
         Prgs.Clear()
         ReDim ByteSt(-1)
-        UncomPartSize = 0
-        BlockCnt = -0
+        UncompBundleSize = 0
+        BlockCnt = 0
 
         For I As Integer = 1 To PartN.Nodes.Count - 1
             If PartN.Nodes(I).Tag < &H10000 Then
@@ -4184,9 +4177,9 @@ Err:
                             FL = ConvertIntToHex(FLN, 4)
                         End If
 
-                        UncomPartSize += Int(FLN / 254)
+                        UncompBundleSize += Int(FLN / 254)
                         If FLN Mod 254 > 0 Then
-                            UncomPartSize += 1
+                            UncompBundleSize += 1
                         End If
 
                         Dim PL As List(Of Byte) = P.ToList  'Copy array to list
@@ -4212,18 +4205,18 @@ Err:
             End If
         Next
 
-        PartCnt = CurrentPart
+        BundleCnt = CurrentBundle
 
         BufferCnt = 0
         Dim PrevCP As Integer = 1
         Dim PrevBC As Integer = 0
         Dim PrevPartChgd As Boolean = False
         If (Strings.Left(PartN.Name, 1) = "P") Or (Strings.Right(PartN.Nodes(0).Text, 3) = "YES") Then
-            'First part on disk or aligned part
+            'First bundle on disk or aligned bundle
             ResetBuffer()
         Else
 
-            'Sort part, but SortPart Sub works with temporary arrays and liasts
+            'Sort bundle, but SortPart Sub works with temporary arrays and liasts
 
             tmpPrgs = Prgs.ToList
             tmpFileNameA = FileNameA
@@ -4232,7 +4225,7 @@ Err:
             tmpFileLenA = FileLenA
             tmpFileIOA = FileIOA
 
-            SortPart()
+            SortBundle()
 
             'Restor arrays and lists
 
@@ -4245,15 +4238,15 @@ Err:
 
             ReDim Buffer(255)
 
-            'Find the previous part's variables
+            'Find the previous bundle's variables
 TryAgain:
-            ByteCnt = PartByteCntA(CurrentPart - PrevCP)
-            BitCnt = PartBitCntA(CurrentPart - PrevCP)
-            BitPos = PartBitPosA(CurrentPart - PrevCP)
-            PrevBC = PartSizeA(CurrentPart - PrevCP)
+            BytePtr = BundleBytePtrA(CurrentBundle - PrevCP)
+            BitPtr = BundleBitPtrA(CurrentBundle - PrevCP)
+            BitPos = BundleBitPosA(CurrentBundle - PrevCP)
+            PrevBC = BundleSizeA(CurrentBundle - PrevCP)
 
-            If ByteCnt = 0 Then
-                If CurrentPart - PrevCP > 0 Then
+            If BytePtr = 0 Then
+                If CurrentBundle - PrevCP > 0 Then
                     PrevCP += 1
                     GoTo TryAgain
                 Else
@@ -4262,53 +4255,53 @@ TryAgain:
             End If
         End If
 
-        'Will need to finish the previous part here!!!
-        If (BufferCnt = 0) And (ByteCnt = 254) Then
-            NewBlock = SetNewBlock          'SetNewBlock is true at closing the previous part, so first it just sets NewBlock2
-            SetNewBlock = False             'And NewBlock will fire at the desired part
+        'Will need to finish the previous bundle here!!!
+        If (BufferCnt = 0) And (BytePtr = 255) Then
+            NewBlock = SetNewBlock          'SetNewBlock is true at closing the previous bundle, so first it just sets NewBlock2
+            SetNewBlock = False             'And NewBlock will fire at the desired bundle
         Else
             Dim ThisPartIO As Integer = If(FileIOA.Count > 0, CheckNextIO(FileAddrA(0), FileLenA(0), FileIOA(0)), 0)
-            If Packer = 1 Then
-                FinishPart(ThisPartIO, False)
-            Else
-                ClosePart(ThisPartIO, False, True)
-            End If
+            CloseBundle(ThisPartIO, False, True)
         End If
 
         If BufferCnt = 1 Then
-            'Closing the previous part resulted in an additional block, update previous part info
+            'Closing the previous bundle resulted in an additional block, update previous bundle info
             BufferCnt = 0
-            PartByteCntA(CurrentPart - PrevCP) = ByteCnt
-            PartBitCntA(CurrentPart - PrevCP) = BitCnt
-            PartBitPosA(CurrentPart - PrevCP) = BitPos
-            PartSizeA(CurrentPart - PrevCP) = PrevBC + 1
+            BundleBytePtrA(CurrentBundle - PrevCP) = BytePtr
+            BundleBitPtrA(CurrentBundle - PrevCP) = BitPtr
+            BundleBitPosA(CurrentBundle - PrevCP) = BitPos
+            BundleSizeA(CurrentBundle - PrevCP) = PrevBC + 1
             PrevPartChgd = True 'We will add an additional block to the disk size
         End If
 
-        CompressPart(True)
+        CompressBundle(True)
 
-        If CurrentPart + 1 < PDiskNoA.Count Then
-            If PDiskNoA(CurrentPart) = PDiskNoA(CurrentPart + 1) Then
-                NewBlock = PNewBlockA(CurrentPart + 1)
+        If CurrentBundle + 1 < PDiskNoA.Count Then
+            If PDiskNoA(CurrentBundle) = PDiskNoA(CurrentBundle + 1) Then
+                SetNewBlock = PNewBlockA(CurrentBundle + 1)
             End If
         Else
-            NewBlock = False
+            SetNewBlock = False
         End If
 
-        If CurrentPart > PartByteCntA.Count Then
-            ReDim Preserve PartByteCntA(CurrentPart), PartBitCntA(CurrentPart), PartBitPosA(CurrentPart), PartSizeA(CurrentPart), PartOrigSizeA(CurrentPart)
+        If SetNewBlock = True Then
+            BufferCnt += 1
         End If
 
-        PartByteCntA(CurrentPart) = ByteCnt
-        PartBitCntA(CurrentPart) = BitCnt
-        PartBitPosA(CurrentPart) = BitPos
+        If CurrentBundle > BundleBytePtrA.Count Then
+            ReDim Preserve BundleBytePtrA(CurrentBundle), BundleBitPtrA(CurrentBundle), BundleBitPosA(CurrentBundle), BundleSizeA(CurrentBundle), BundleOrigSizeA(CurrentBundle)
+        End If
+
+        BundleBytePtrA(CurrentBundle) = BytePtr
+        BundleBitPtrA(CurrentBundle) = BitPtr
+        BundleBitPosA(CurrentBundle) = BitPos
 
         If Strings.Left(PartN.Name, 1) = "P" Then
             BufferCnt += 1
         End If
 
-        PartSizeA(CurrentPart) = BufferCnt
-        PartOrigSizeA(CurrentPart) = UncomPartSize
+        BundleSizeA(CurrentBundle) = BufferCnt
+        BundleOrigSizeA(CurrentBundle) = UncompBundleSize
 
         CalcPartSize = BufferCnt + If(PrevPartChgd = True, 1, 0)
 
@@ -4341,9 +4334,9 @@ Done:
     End Sub
 
     Private Sub CalcDiskSize(ParentNode As TreeNode, Optional PartNodeIndex As Integer = -1)
-        On Error GoTo err
+        On Error GoTo Err
 
-        'THIS WILL CALCULATE EVERY DISK'S AND PART'S SIZE IN THE SCRIPT AND UPDATE EVERY DISK AND PART NODE
+        'THIS WILL CALCULATE EVERY DISK'S AND Bundle'S SIZE IN THE SCRIPT AND UPDATE EVERY DISK AND Bundle NODE
         'ALWAYS CALL IT WITH BASENODE
         If ParentNode Is Nothing Then Exit Sub
         'If PartNode Is Nothing Then Exit Sub
@@ -4358,31 +4351,31 @@ Done:
         If ParentNode.Name = BaseNode.Name Then
             ReNumberEntries(BaseNode, PartNodeIndex)
 
-            Packer = My.Settings.DefaultPacker
+            'Packer = My.Settings.DefaultPacker
             ReDim DiskNodeA(DC), DiskSizeA(DC)
             'Default case - we calculate the whole script
             CurrentDisk = 0
             If PartNodeIndex > -1 Then
-                PartNode = ParentNode.Nodes(PartNodeIndex)
+                BundleNode = ParentNode.Nodes(PartNodeIndex)
                 'Calculate from selected node
                 For I As Integer = PartNodeIndex To 0 Step -1
                     'Find selected node's disk node and start calculations from this disk node
-                    If Int(PartNode.Parent.Nodes(I).Tag / &H10000) = 1 Then
-                        DiskNode = PartNode.Parent.Nodes(I)
+                    If Int(BundleNode.Parent.Nodes(I).Tag / &H10000) = 1 Then
+                        DiskNode = BundleNode.Parent.Nodes(I)
                         CurrentDisk = (DiskNode.Tag And &HFFFF)
                         DiskNodeA(CurrentDisk) = DiskNode
                         StartIndex = I + 1    'Exlude disk from calculation below
-                        For J As Integer = 0 To DiskNode.Nodes.Count - 1
-                            If InStr(DiskNode.Nodes(J).Name, sPacker) <> 0 Then
-                                Select Case Strings.Right(LCase(DiskNode.Nodes(J).Text), 6)
-                                    Case "better"
-                                        Packer = 2
-                                    Case Else
-                                        Packer = 1
-                                End Select
-                                Exit For
-                            End If
-                        Next
+                        'For J As Integer = 0 To DiskNode.Nodes.Count - 1
+                        'If InStr(DiskNode.Nodes(J).Name, sPacker) <> 0 Then
+                        'Select Case Strings.Right(LCase(DiskNode.Nodes(J).Text), 6)
+                        'Case "better"
+                        'Packer = 2
+                        'Case Else
+                        'Packer = 1
+                        'End Select
+                        'Exit For
+                        'End If
+                        'Next
                         Exit For
                     End If
                 Next
@@ -4402,24 +4395,24 @@ Done:
                     CurrentDisk = (DiskNode.Tag And &HFFFF)
                     DiskNodeA(CurrentDisk) = DiskNode
                     DiskSizeA(CurrentDisk) = 0
-                    For J As Integer = 0 To DiskNode.Nodes.Count - 1
-                        If InStr(DiskNode.Nodes(J).Name, sPacker) <> 0 Then
-                            Select Case Strings.Right(LCase(DiskNode.Nodes(J).Text), 6)
-                                Case "better"
-                                    Packer = 2
-                                Case Else
-                                    Packer = 1
-                            End Select
-                            Exit For
-                        End If
-                    Next
+                    'For J As Integer = 0 To DiskNode.Nodes.Count - 1
+                    'If InStr(DiskNode.Nodes(J).Name, sPacker) <> 0 Then
+                    'Select Case Strings.Right(LCase(DiskNode.Nodes(J).Text), 6)
+                    'Case "better"
+                    'Packer = 2
+                    'Case Else
+                    'Packer = 1
+                    'End Select
+                    'Exit For
+                    'End If
+                    'Next
                 Case 2
-                    'Part
-                    PartNode = ParentNode.Nodes(I)
-                    CurrentPart = (PartNode.Tag And &HFFFF)
+                    'Bundle
+                    BundleNode = ParentNode.Nodes(I)
+                    CurrentBundle = (BundleNode.Tag And &HFFFF)
                     Dim CPS As Integer = CalcPartSize(ParentNode.Nodes(I))
                     If DiskSizeA(CurrentDisk) + CPS > MaxDiskSize Then
-                        PartNode.Text = "[Part " + CurrentPart.ToString + "]"
+                        BundleNode.Text = "[Bundle " + CurrentBundle.ToString + "]"
                         MsgBox("The size of this disk exceeds 664 blocks!", vbOKOnly + vbCritical, "Disk is full!")
                         Exit For
                     End If
@@ -4454,15 +4447,15 @@ Err:
                 Case 1
                     'Disk
                 Case 2
-                    'Part
-                    PartNode = ParentNode.Nodes(I)
-                    CurrentPart = (PartNode.Tag And &HFFFF)
-                    BufferCnt = PartSizeA(CurrentPart)
-                    UncomPartSize = PartOrigSizeA(CurrentPart)
+                    'Bundle
+                    BundleNode = ParentNode.Nodes(I)
+                    CurrentBundle = (BundleNode.Tag And &HFFFF)
+                    BufferCnt = BundleSizeA(CurrentBundle)
+                    UncompBundleSize = BundleOrigSizeA(CurrentBundle)
 
-                    PartNode.Text = "[Part " + Strings.Right(PartNode.Name, Len(PartNode.Name) - 1) + ": " + BufferCnt.ToString +
-                    " block" + If(BufferCnt = 1, "", "s") + " packed from " + UncomPartSize.ToString + " block" + If(UncomPartSize = 1, "", "s") +
-                    " unpacked, " + (Int(10000 * BufferCnt / UncomPartSize) / 100).ToString + "% of unpacked size]"
+                    BundleNode.Text = "[Bundle " + Strings.Right(BundleNode.Name, Len(BundleNode.Name) - 1) + ": " + BufferCnt.ToString +
+                    " block" + If(BufferCnt = 1, "", "s") + " packed from " + UncompBundleSize.ToString + " block" + If(UncompBundleSize = 1, "", "s") +
+                    " unpacked, " + (Int(10000 * BufferCnt / UncompBundleSize) / 100).ToString + "% of unpacked size]"
                 Case 3
                     'Script
                     UpdatePartNames(ParentNode.Nodes(I))
@@ -4690,8 +4683,8 @@ Err:
     Private Sub ChkSize_MouseEnter(sender As Object, e As EventArgs) Handles ChkSize.MouseEnter
         On Error GoTo Err
 
-        Dim TTT As String = "Check or press Ctrl+A to autocalculate disk and part sizes during script editing."
-        ShowToolTip("Autocalculate Disk and Part Sizes", TTT, ChkSize)
+        Dim TTT As String = "Check or press Ctrl+A to autocalculate disk and bundle sizes during script editing."
+        ShowToolTip("Autocalculate Disk and Bundle Sizes", TTT, ChkSize)
 
         Exit Sub
 Err:
@@ -4741,32 +4734,6 @@ Err:
             .ToolTipTitle = TTTitle
             .Show(TTText, Owner)
         End With
-
-        Exit Sub
-Err:
-        ErrCode = Err.Number
-        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
-    End Sub
-
-    Private Sub OptFaster_MouseEnter(sender As Object, e As EventArgs) Handles OptFaster.MouseEnter
-        On Error GoTo Err
-
-        Dim TTT As String = "Click or press Ctrl+F to use the faster packer by default."
-        ShowToolTip("Use Faster Packer", TTT, OptFaster)
-
-        Exit Sub
-Err:
-        ErrCode = Err.Number
-        MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
-    End Sub
-
-    Private Sub OptBetter_MouseEnter(sender As Object, e As EventArgs) Handles OptBetter.MouseEnter
-        On Error GoTo Err
-
-        Dim TTT As String = "Click or press Ctrl+B to use the better packer by default."
-        ShowToolTip("Use Better Packer", TTT, OptBetter)
 
         Exit Sub
 Err:

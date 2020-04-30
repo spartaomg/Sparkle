@@ -30,8 +30,8 @@
     <PublisherName>Sparta of OMG 2019</PublisherName>
     <SuiteName>Sparkle</SuiteName>
     <OpenBrowserOnPublish>false</OpenBrowserOnPublish>
-    <ApplicationRevision>408</ApplicationRevision>
-    <ApplicationVersion>1.4.20.0408</ApplicationVersion>
+    <ApplicationRevision>429</ApplicationRevision>
+    <ApplicationVersion>1.4.20.0429</ApplicationVersion>
     <UseApplicationTrust>false</UseApplicationTrust>
     <CreateDesktopShortcut>true</CreateDesktopShortcut>
     <PublishWizardCompleted>true</PublishWizardCompleted>
@@ -145,8 +145,7 @@
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="ModDisk.vb" />
-    <Compile Include="ModFasterPacker.vb" />
-    <Compile Include="ModBetterPacker.vb" />
+    <Compile Include="ModPacker.vb" />
     <Compile Include="ModRegistry.vb" />
     <Compile Include="My Project\AssemblyInfo.vb" />
     <Compile Include="My Project\Application.Designer.vb">
