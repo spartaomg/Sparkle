@@ -1063,6 +1063,7 @@ FindNext:
             Case Else
                 If NewBundle = True Then
                     If BundleDone() = False Then GoTo NoDisk
+                    NewBundle = False
                 End If
         End Select
 
@@ -1111,29 +1112,35 @@ NoDisk:
         Dim S As String = ""
         For I As Integer = 0 To Lines.Count - 1
             Lines(I) = Lines(I).TrimEnd(Chr(13))    'Trim vbCR from end of lines if vbCrLf was used
-            'Add relative path of subscript to relative path of subscript entries
-            If Strings.Left(LCase(Lines(I)), 5) = "file:" Then
-                If (InStr(Right(Lines(I), Len(Lines(I)) - 5), ":") = 0) And (InStr(Right(Lines(I), Len(Lines(I)) - 5), SPath) = 0) Then
-                    Lines(I) = "File:" + vbTab + SPath + Right(Lines(I), Len(Lines(I)) - 5).TrimStart(vbTab)    'Trim any extra leading TABs
+            'Skip Script Header
+            If Lines(I) <> ScriptHeader Then
+                If S <> "" Then
+                    S += vbNewLine
                 End If
-            ElseIf Strings.Left(LCase(Lines(I)), 7) = "script:" Then
-                If (InStr(Right(Lines(I), Len(Lines(I)) - 7), ":") = 0) And (InStr(Right(Lines(I), Len(Lines(I)) - 7), SPath) = 0) Then
-                    Lines(I) = "Script:" + vbTab + SPath + Right(Lines(I), Len(Lines(I)) - 7).TrimStart(vbTab)
+                'Add relative path of subscript to relative path of subscript entries
+                If Strings.Left(LCase(Lines(I)), 5) = "file:" Then
+                    If (InStr(Right(Lines(I), Len(Lines(I)) - 5), ":") = 0) And (InStr(Right(Lines(I), Len(Lines(I)) - 5), SPath) = 0) Then
+                        Lines(I) = "File:" + vbTab + SPath + Right(Lines(I), Len(Lines(I)) - 5).TrimStart(vbTab)    'Trim any extra leading TABs
+                    End If
+                ElseIf Strings.Left(LCase(Lines(I)), 7) = "script:" Then
+                    If (InStr(Right(Lines(I), Len(Lines(I)) - 7), ":") = 0) And (InStr(Right(Lines(I), Len(Lines(I)) - 7), SPath) = 0) Then
+                        Lines(I) = "Script:" + vbTab + SPath + Right(Lines(I), Len(Lines(I)) - 7).TrimStart(vbTab)
+                    End If
+                ElseIf Strings.Left(LCase(Lines(I)), 5) = "list:" Then
+                    If (InStr(Right(Lines(I), Len(Lines(I)) - 5), ":") = 0) And (InStr(Right(Lines(I), Len(Lines(I)) - 5), SPath) = 0) Then
+                        Lines(I) = "Script:" + vbTab + SPath + Right(Lines(I), Len(Lines(I)) - 5).TrimStart(vbTab)
+                    End If
+                ElseIf Strings.Left(LCase(Lines(I)), 5) = "path:" Then
+                    If (InStr(Right(Lines(I), Len(Lines(I)) - 5), ":") = 0) And (InStr(Right(Lines(I), Len(Lines(I)) - 5), SPath) = 0) Then
+                        Lines(I) = "Path:" + vbTab + SPath + Right(Lines(I), Len(Lines(I)) - 5).TrimStart(vbTab)
+                    End If
+                ElseIf Strings.Left(LCase(Lines(I)), 7) = "dirart:" Then
+                    If (InStr(Right(Lines(I), Len(Lines(I)) - 7), ":") = 0) And (InStr(Right(Lines(I), Len(Lines(I)) - 7), SPath) = 0) Then
+                        Lines(I) = "DirArt:" + vbTab + SPath + Right(Lines(I), Len(Lines(I)) - 7).TrimStart(vbTab)
+                    End If
                 End If
-            ElseIf Strings.Left(LCase(Lines(I)), 5) = "list:" Then
-                If (InStr(Right(Lines(I), Len(Lines(I)) - 5), ":") = 0) And (InStr(Right(Lines(I), Len(Lines(I)) - 5), SPath) = 0) Then
-                    Lines(I) = "Script:" + vbTab + SPath + Right(Lines(I), Len(Lines(I)) - 5).TrimStart(vbTab)
-                End If
-            ElseIf Strings.Left(LCase(Lines(I)), 5) = "path:" Then
-                If (InStr(Right(Lines(I), Len(Lines(I)) - 5), ":") = 0) And (InStr(Right(Lines(I), Len(Lines(I)) - 5), SPath) = 0) Then
-                    Lines(I) = "Path:" + vbTab + SPath + Right(Lines(I), Len(Lines(I)) - 5).TrimStart(vbTab)
-                End If
-            ElseIf Strings.Left(LCase(Lines(I)), 7) = "dirart:" Then
-                If (InStr(Right(Lines(I), Len(Lines(I)) - 7), ":") = 0) And (InStr(Right(Lines(I), Len(Lines(I)) - 7), SPath) = 0) Then
-                    Lines(I) = "DirArt:" + vbTab + SPath + Right(Lines(I), Len(Lines(I)) - 7).TrimStart(vbTab)
-                End If
+                S += Lines(I)
             End If
-            S += Lines(I) + vbNewLine
         Next
 
         Script = Replace(Script, ScriptLine, S)
@@ -1540,7 +1547,7 @@ Prepend:                PO = tmpPrgs(O)
                     tmpFileIOA(O) = tmpFileIOA(O) Or tmpFileIOA(I)   'BUG FIX - REPORTED BY RAISTLIN/G*P
                     'New file's length is the length of the two merged files
                     FEO += FEI
-                    'FileLenA(O) = ConvertNumberToHexString(FEO Mod 256, Int(FEO / 256))
+
                     tmpFileLenA(O) = ConvertIntToHex(FEO, 4)
                     'Remove File(I) and all its parameters
                     For J As Integer = I To tmpPrgs.Count - 2
@@ -1565,8 +1572,8 @@ Prepend:                PO = tmpPrgs(O)
 ReSort:
         Change = False
         For I As Integer = 0 To tmpPrgs.Count - 2
-            'Sort except if file length < 3, to allow for ZP relocation script hack
-            If (Convert.ToInt32(tmpFileLenA(I), 16) > Convert.ToInt32(tmpFileLenA(I + 1), 16)) And (Convert.ToInt32(tmpFileLenA(I), 16) > 2) Then
+            'Sort except if file length < 4, to allow for ZP relocation script hack
+            If (Convert.ToInt32(tmpFileLenA(I), 16) > Convert.ToInt32(tmpFileLenA(I + 1), 16)) And (Convert.ToInt32(tmpFileLenA(I), 16) > 3) Then
                 PI = tmpPrgs(I)
                 tmpPrgs(I) = tmpPrgs(I + 1)
                 tmpPrgs(I + 1) = PI

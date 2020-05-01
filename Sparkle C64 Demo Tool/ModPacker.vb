@@ -88,7 +88,7 @@
 		End If
 
 		If NewBundle Then
-			BlockPtr = ByteSt.Count                           'If this is a new bundle, store Block Counter Pointer
+			BlockPtr = ByteSt.Count                                 'If this is a new bundle, store Block Counter Pointer
 			NewBundle = False
 		End If
 
