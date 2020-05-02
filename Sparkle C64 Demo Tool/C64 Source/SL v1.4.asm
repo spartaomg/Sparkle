@@ -435,6 +435,7 @@ LongLit:	lda	Buffer,x	//Literal lengths 45-250
 //----------------------------
 //		BITCHECK
 //----------------------------
+
 NextByte:	ldy	Buffer,x
 		sty	Bits
 		dex

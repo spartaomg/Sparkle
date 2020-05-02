@@ -10,7 +10,7 @@
 //	0082	00ff	GCR Loop
 //	0100	01ff	Data Buffer in Stack
 //	0200	02ff	Secondary buffer for last block of a file bundle
-//	0300	05fc	Drive Code (#$03 bytes free)
+//	0300	05f9	Drive Code (#$06 bytes free)
 //	0600	06ff	ZP GCR Tabs and GCR Loop, moved to ZP, overwritten by GCR Tabs
 //	0600	06ff	GCR Tabs for GCR decoding, H2STab
 //	0700	07ff	GCR Tabs for GCR decoding, GCR Mod Tabs
@@ -343,7 +343,11 @@ Data:		ldy	VerifCtr	//Checksum Verification Counter
 		lda	WantedCtr
 		beq	SkipSLoop	//If this is also the last block on the wanted list, do not copy the block
 					//Otherwise, copy the whole block to the secondary buffer and then back to fetching the next block
-		jmp	StoreLoop	//StoreLoop moved to $07f5, cannot use JSR here, stack is full
+StoreLoop:	pla			//Store last block of Bundle in secondary buffer and fetch next block, SP=#$00 here
+		tsx
+		sta	$0200,x
+		bne	StoreLoop
+
 BlockInSB:	inc	ScndBuff	//=#$01 raise "secondary buffer occupied" flag
 		bne	ToFH		//Branch always
 SkipSLoop:			
@@ -682,20 +686,21 @@ CheckEoD:	ldy	SCtr		//Last sector transferred?
 BuildList:	cpy	BlockCtr	//Check if we have less unfetched sectors left on track than blocks left in Bundle
 		bcc	NewWCtr	//Pick the smaller of the two for new Wanted Counter
 		ldy	BlockCtr
+		lda	cT		//If SCtr>=BlockCtr then Bundle will end on this track...
 NewWCtr:	sty	WantedCtr	//Store new Wanted Counter (SCtr vs BlockCtr whichever is smaller)
+		sta	LastT		//...so save current track to LastT, otherwise put 0
 
-		ldx	nS		//Preload Next Sector in chain
-		bpl	ChainLoop	//Branch ALWAYS
-
+		lax	nS		//Preload Next Sector in chain
+		.byte	$e0		//CPX #$e8 to skip INX
 NxtSct:	inx
-		iny			//temporary increase as we will have an unwanter decrease after bne
+		iny			//temporary increase as we will have an unwanted decrease after bne
 		bne	MaxSct1	//Branch ALWAYS
 ChainLoop:	lda	WList,x	//Check if sector is unfetched (=00)
 		bne	NxtSct	//If sector is not unfetched (it is either fetched or wanted), go to next sector
 
 		lda	#$ff
 		sta	WList,x	//Mark Sector as wanted
-		stx	LastS		//Save Last Sector's number
+		stx	LastS		//Save Last Sector
 IL:		axs	#$00		//Calculate Next Sector using IL
 MaxSct1:	cpx	#$00		//Reached Max?
 		bcc	SkipSub	//Has not reached Max yet, so skip adjustments
@@ -708,12 +713,6 @@ SkipSub:	dey			//Any more blocks to be put in chain?
 		bne	ChainLoop	//Yes, continue building sector chain
 
 		stx	nS		//Update Next Sector
-
-		lda	SCtr
-		cmp	BlockCtr
-		bcc	SkipLast
-		ldy	cT		//If SCtr>=BlockCtr then Bundle will end on this track...
-SkipLast:	sty	LastT		//so save current track to LastT, otherwise put 0
 
 ToFetch:	jmp	Fetch
 
@@ -912,13 +911,5 @@ LMT4:		ldx	#$0f		//2 cycles
 .byte $20,$24,$21,$b8,$a7,$da,$fa,$ea,$b1,$da,$fa,$ea,$45,$da,$fa,$ea		//cx Bitrate Tab @ $07c0 ($07d1,$07d2,$07d3,$07d5)
 .byte $bb,$a1,$a4,$a7,$e5,$a8,$da,$cb,$b3,$87,$5a,$a6,$65,$1f,$2e,$3d		//dx
 .byte $4c,$5b,$6a,$79,$95,$5a,$7a,$a9,$b5,$5a,$7a,$95,$05,$5a,$7a,$43		//ex
-.byte $bf,$86,$79,$53,$a5
-//$07f5
-StoreLoop:	pla			//Store last block of Bundle in secondary buffer and fetch next block, SP=#$00 here
-		tsx
-		sta	$0200,x
-		bne	StoreLoop
-		jmp	BlockInSB		//Cannot use RTS here
-//$07ff
-.byte											$62		//fx
+.byte $bf,$86,$79,$53,$a5,$3b,$f2,$dc,$b5,$7e,$1f,$3c,$86,$9d,$4f,$62		//fx
 }
