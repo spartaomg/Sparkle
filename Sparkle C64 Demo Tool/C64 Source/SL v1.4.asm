@@ -425,6 +425,14 @@ MidConv:	tay			//Match Length=#$01-#$3d (mid) vs. #$3e-#$fe (long)
 		bcc	ShortConv	//Converge with short match
 
 //----------------------------
+//		LONG LITERALS
+//----------------------------
+
+LongLit:	lda	Buffer,x	//Literal lengths 45-250
+		dex
+		bcs	StoreLit	//Skip adding offset here
+
+//----------------------------
 //		BITCHECK
 //----------------------------
 NextByte:	ldy	Buffer,x
@@ -451,11 +459,7 @@ BitCheck:	rol	Bits
 		bcc	AddOffset
 
 Literal:	cmp	#$bf		//Literal lengths 2-44
-		bcc	AddOffset
-
-		lda	Buffer,x	//Literal lengths 45-250
-		dex
-		bcs	StoreLit	//Skip adding offset here
+		bcs	LongLit
 
 AddOffset:	adc	#$6e		//Offset is the same for all 4 LitLen here
 StoreLit:	sta	SubX+1	//Literal length, C=1 here ALWAYS
