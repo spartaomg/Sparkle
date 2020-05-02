@@ -773,8 +773,8 @@ Err:
         Loader(LoaderBase + &H72) = ZP + 2  'STA ZP+2           STA ZP+2
         Loader(LoaderBase + &H80) = ZP + 2  'LDA ZP+2           LDA ZP+2
         Loader(LoaderBase + &HA3) = ZP + 2  'STA ZP+2           STA ZP+2
-        Loader(LoaderBase + &HEF) = ZP + 2  'STY ZP+2           STY ZP+2
-        Loader(LoaderBase + &HF2) = ZP + 2  'ROL ZP+2           ROL ZP+2
+        Loader(LoaderBase + &HF5) = ZP + 2  'STY ZP+2           STY ZP+2
+        Loader(LoaderBase + &HF8) = ZP + 2  'ROL ZP+2           ROL ZP+2
 
         Exit Sub
 Err:
