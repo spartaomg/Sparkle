@@ -80,7 +80,7 @@
 		'----------------------------------------------------------------------------------------------------------
 
 		If BytePtr = 255 Then
-			FirstBlockOfNextFile = False                            'First block in buffer, Lit Selector Bit is needed (will be compression bit)
+			FirstBlockOfNextFile = False                           'First block in buffer, Lit Selector Bit is needed (will be compression bit)
 			NextFileInBuffer = False                                'This is the first file that is being added to an empty buffer
 		Else
 			FirstBlockOfNextFile = True                             'First block of next file in same buffer, Lit Selector Bit NOT NEEEDED
@@ -516,7 +516,8 @@ Err:
 					Buffer(I - 1) = Buffer(I)
 				Next
 				Buffer(AdHiPos) = 0                     'IO Flag to previous AdHi Position
-				BytePtr -= 1                            'Update ByteCt to next empty position in buffer
+				BytePtr -= 1                            'Update BytePtr to next empty position in buffer
+				BitPtr -= 1                             'BitPtr also needs to be moved - BUG reported by Raistlin/G*P
 				AdHiPos -= 1                            'Update AdHi Position in Buffer
 				BlockUnderIO = 1                        'Set BlockUnderIO Flag
 			End If
@@ -715,7 +716,7 @@ Err:
 
 		'FIND UNCOMPRESSIBLE BLOCKS (only used if there is ONE file in the BLOCK)
 		'THE COMPRESSION BITs ADD 80.5 BYTES TO THE DISK, BUT THIS MAKES DEPACKING OF UNCOMPRESSIBLE BLOCKS MUCH FASTER
-		If (StartPtr - SI <= LastByte) And (StartPtr > LastByte - 1) And (NextFileInBuffer = False) Then
+		If (StartPtr - SI <= LastByte) And (StartPtr > LastByte - 1) And (NextFileInBuffer = False) And (BufferCnt > 0) Then
 			'if (StartPtr - SI <= 100) And (StartPtr > LastByte - 1) And (NextFileInBuffer = False) Then
 			'Less than 252/253 bytes   AND  Not the end of File      AND  No other files in this buffer
 			LastByte = AdLoPos - 2
@@ -772,6 +773,10 @@ Err:
 		If SI < 0 Then Exit Function             'We have reached the end of the file -> exit
 
 		'If we have not reached the end of the file, then update buffer
+
+		'If PrgAdd + SI = &HC1FD Then
+		'MsgBox("!")
+		'End If
 
 		Buffer(BytePtr) = (PrgAdd + SI) Mod 256
 		AdLoPos = BytePtr
@@ -934,20 +939,22 @@ NoGo:
 
 		'ADDS NEXT FILE TAG TO BUFFER
 
-		'4 bytes and 0-1 bits needed for NextFileTag, Address Bytes and first Lit byte (+1 more if UIO)
-		Dim Bytes As Integer = 4 'BYTES NEEDED: End Tag + AdLo + AdHi + 1st Literal (ByC=5 only if BlockUnderIO=true - checked at sequencefits()
-		Dim Bits As Integer = If((LitCnt = -1) Or (LitCnt Mod (MaxLitLen + 1) = MaxLitLen), 1, 0)   'Calculate whether Match Bit is needed for new file
+		'4-5 bytes and 0-1 bits needed for NextFileTag, Address Bytes and first Lit byte (+1 more if UIO)
+		'BYTES NEEDED: End Tag + AdLo + AdHi + 1st Literal +/- I/O FLAG of NEW FILE's 1st literal
+		Dim Bytes As Integer = 4 + CheckIO(PrgLen - 1)  'BUG reported by Raistlin/G*P
+		'Calculate whether Match Bit is needed for new file
+		Dim Bits As Integer = If((LitCnt = -1) Or (LitCnt Mod (MaxLitLen + 1) = MaxLitLen), 1, 0)
 
-		If SequenceFits(Bytes, Bits, CheckIO(PrgLen - 1)) Then
+		If SequenceFits(Bytes, Bits) Then   'DO NOT INCLUDE NEXT NEXT FILE'S IO STATUS HERE - IT WOULD RESULT IN AN UNWANTED I/O FLAG INSERTION
 
-			'Buffer has enough space for New File Match Tag and New File Info and first Literal byte (and IO flag if needed)
+			'Buffer has enough space for New File Match Tag and New File Info and first Literal byte (and I/O flag if needed)
 
 			If Bits = 1 Then AddBits(0, 1)
 
 			Buffer(BytePtr) = NextFileTag                           'Then add New File Match Tag
 			BytePtr -= 1
 		Else
-			'Next File Info does not fit, so close buffer
+			'Next File Info does not fit, so close buffer, next file will start in new block
 			CloseBuffer()
 		End If
 

@@ -31,7 +31,7 @@
     Public FileUnderIO As Boolean = False
     Public IOBit As Byte
 
-    Public Track(35), CT, CS, CP, BufferCt, BlockCnt As Integer
+    Public Track(35), CT, CS, CP, BlockCnt As Integer
     Public TestDisk As Boolean = False
     Public StartTrack As Byte = 1
     Public StartSector As Byte = 0
@@ -1342,7 +1342,13 @@ TryAgain:
             If I = Prgs.Count - 1 Then LastFileOfBundle = True
             'The only two parameters that are needed are FA and FUIO... FileLenA(i) is not used
             PackFile(Prgs(I).ToArray, FileAddrA(I), FileIOA(I))
-            If I < Prgs.Count - 1 Then CloseFile()
+            If I < Prgs.Count - 1 Then
+                'MsgBox(Hex(PrgAdd) + vbNewLine + Hex(PrgLen) + vbNewLine + FileAddrA(I + 1) + vbNewLine + FileLenA(I + 1) + vbNewLine + Hex(Prgs(I + 1).Length))
+                'WE NEED TO USE THE NEXT FILE'S ADDRESS AND LENGTH HERE FOR I/O BYTE CALCULATION FOR THE NEXT PART - BUG reported by Raistlin/G*P
+                PrgAdd = Convert.ToInt32(FileAddrA(I + 1), 16)
+                PrgLen = Prgs(I + 1).Length ' Convert.ToInt32(FileLenA(I + 1), 16)
+                CloseFile()
+            End If
         Next
 
         LastBlockCnt = BlockCnt
