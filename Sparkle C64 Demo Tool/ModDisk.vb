@@ -1356,7 +1356,7 @@ TryAgain:
         If LastBlockCnt > 255 Then
             'Parts cannot be larger than 255 blocks compressed
             'There is some confusion here how PartCnt is used in the Editor and during Disk building...
-            MsgBox("Bundle " + If(CompressBundleFromEditor = True, BundleCnt + 1, BundleCnt).ToString + " would need " + LastBlockCnt.ToString + " blocks on the disk." + vbNewLine + vbNewLine + "Parts cannot be larger than 255 blocks compressed!", vbOKOnly + vbCritical, "Bundle exceeds 255-block limit!")
+            MsgBox("Bundle " + If(CompressBundleFromEditor = True, BundleCnt + 1, BundleCnt).ToString + " would need " + LastBlockCnt.ToString + " blocks on the disk." + vbNewLine + vbNewLine + "Bundles cannot be larger than 255 blocks compressed!", vbOKOnly + vbCritical, "Bundle exceeds 255-block limit!")
             If CompressBundleFromEditor = False Then GoTo NoComp
         End If
 
@@ -1930,7 +1930,7 @@ Err:
         AddCompressedBundlesToDisk = True
 
         If BlocksFree < BufferCnt Then
-            MsgBox("Unable to add bundle to disk", vbOKOnly, "Not enough free space on disk")
+            MsgBox(D64Name + " cannot be built because it would require " + BufferCnt.ToString + " blocks.", vbOKOnly + vbCritical, "Not enough free space on disk")
             GoTo NoDisk
         End If
 

@@ -764,6 +764,13 @@ Err:
 
 		BlockCnt += 1
 		BufferCnt += 1
+
+		'This does not work here yet, Pack needs to be changed to a function
+		'If BufferCnt > BlocksFree Then
+		'MsgBox("Unable to add bundle to disk :(", vbOKOnly, "Not enough free space on disk")
+		'GoTo NoDisk
+		'End If
+
 		UpdateByteStream()
 
 		ResetBuffer()                       'Resets buffer variables
@@ -823,7 +830,7 @@ Err:
 Err:
 		ErrCode = Err.Number
 		MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
-
+NoDisk:
 		CloseBuffer = False
 
 	End Function
@@ -912,7 +919,7 @@ NewB:          'Next File Info does not fit, so close buffer
 			If LastBlockCnt > 255 Then
 				'Parts cannot be larger than 255 blocks compressed
 				'There is some confusion here how PartCnt is used in the Editor and during Disk building...
-				MsgBox("Bundle " + If(CompressBundleFromEditor = True, BundleCnt + 1, BundleCnt).ToString + " would need " + LastBlockCnt.ToString + " blocks on the disk." + vbNewLine + vbNewLine + "Parts cannot be larger than 255 blocks!", vbOKOnly + vbCritical, "Bundle exceeds 255-block limit!")
+				MsgBox("Bundle " + If(CompressBundleFromEditor = True, BundleCnt + 1, BundleCnt).ToString + " would need " + LastBlockCnt.ToString + " blocks on the disk." + vbNewLine + vbNewLine + "Bundles cannot be larger than 255 blocks!", vbOKOnly + vbCritical, "Bundle exceeds 255-block limit!")
 				If CompressBundleFromEditor = False Then GoTo NoGo
 			End If
 
