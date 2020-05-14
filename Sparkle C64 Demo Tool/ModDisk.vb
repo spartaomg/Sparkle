@@ -38,7 +38,7 @@
 
     Public ByteSt(), Buffer(255), LastByte, AdLo, AdHi As Byte
     Public Match, MaxBit, MatchSave(), PrgLen, Distant As Integer
-    Public MatchOffset(), MatchCnt, RLECnt, MatchLen(), MaxSave, MaxOffset, MaxLen, LitCnt, Bits, BuffAdd, PrgAdd As Integer
+    Public MatchOffset(), MatchCnt, RLECnt, MatchLen(), MaxSave, MaxOffset, MaxLen, LitCnt, BuffAdd, PrgAdd As Integer
     Public MaxSLen, MaxSOff, MaxSSave As Integer
     Public DistAd(), DistLen(), DistSave(), DistCnt, DistBase As Integer
     Public DtPos, CmPos, CmLast, DtLen, MatchStart As Integer
@@ -792,8 +792,6 @@ Err:
             ConvertIntToHex = Left(StrDup(SLen, "0"), SLen - ConvertIntToHex.Length) + ConvertIntToHex
         End If
 
-        'MsgBox(ConvertIntToHex)
-
         Exit Function
 Err:
         ErrCode = Err.Number
@@ -914,8 +912,6 @@ Err:
 
         BuildDemoFromScript = True
 
-        'Packer = My.Settings.DefaultPacker     'Default packer (1 - faster, 2 - better)
-
         TotLit = 0 : TotMatch = 0
 
         SS = 1 : SE = 1
@@ -927,6 +923,10 @@ Err:
             MsgBox("Invalid Loader Script file!", vbExclamation + vbOKOnly)
             GoTo NoDisk
         End If
+
+        TotalBits = 0
+        TotalNewBits = 0
+
         CurrentBundle = 0
         DiskCnt = -1
         TotalBundles = 0
@@ -998,7 +998,7 @@ FindNext:
                     If IO.File.Exists(ScriptEntryArray(0)) Then
                         DirArt = IO.File.ReadAllText(ScriptEntryArray(0))
                     Else
-                        MsgBox("The following DirArt file was not found:" + vbNewLine + vbNewLine + ScriptEntryArray(0), vbOKOnly + vbExclamation, "DirArt file not found")
+                        MsgBox("The following DirArt file does not exist:" + vbNewLine + vbNewLine + ScriptEntryArray(0), vbOKOnly + vbExclamation, "DirArt file not found")
                     End If
                 End If
                 NewBundle = True
@@ -1328,7 +1328,7 @@ TryAgain:
                 'finishing the previous bundle
                 '----------------------------------------------------------------------------------
 
-                'Before finishing the previous bundle, calculate I/O status of the first file of this bundle
+                'Before finishing the previous bundle, calculate I/O status of the LAST BYTE of the first file of this bundle
                 '(Files already sorted)
                 Dim ThisBundleIO As Integer = If(FileIOA.Count > 0, CheckNextIO(FileAddrA(0), FileLenA(0), FileIOA(0)), 0)
                 If CloseBundle(ThisBundleIO, False) = False Then GoTo NoComp
@@ -1343,10 +1343,11 @@ TryAgain:
             'The only two parameters that are needed are FA and FUIO... FileLenA(i) is not used
             PackFile(Prgs(I).ToArray, FileAddrA(I), FileIOA(I))
             If I < Prgs.Count - 1 Then
-                'MsgBox(Hex(PrgAdd) + vbNewLine + Hex(PrgLen) + vbNewLine + FileAddrA(I + 1) + vbNewLine + FileLenA(I + 1) + vbNewLine + Hex(Prgs(I + 1).Length))
-                'WE NEED TO USE THE NEXT FILE'S ADDRESS AND LENGTH HERE FOR I/O BYTE CALCULATION FOR THE NEXT PART - BUG reported by Raistlin/G*P
+                'WE NEED TO USE THE NEXT FILE'S ADDRES, LENGTH AND I/O STATUS HERE
+                'FOR I/O BYTE CALCULATION FOR THE NEXT PART - BUG reported by Raistlin/G*P
                 PrgAdd = Convert.ToInt32(FileAddrA(I + 1), 16)
                 PrgLen = Prgs(I + 1).Length ' Convert.ToInt32(FileLenA(I + 1), 16)
+                FileUnderIO = FileIOA(I + 1)
                 CloseFile()
             End If
         Next
@@ -1609,10 +1610,14 @@ ReSort:
         If Change = True Then GoTo ReSort
 
 SortDone:
-        'Once Bundle is sorted, calculate the I/O status of the first file and the number of bits that will be needed
+        'Once Bundle is sorted, calculate the I/O status of the last byte of the first file and the number of bits that will be needed
         'to finish the last block of the previous bundle (when the I/O status of the just sorted bundle needs to be known)
         'This is used in CloseBuffer
-        BitsNeededForNextBundle = ((6 + CheckNextIO(tmpFileAddrA(0), tmpFileLenA(0), tmpFileIOA(0))) * 8) + 1
+        'Bytes needed: LongMatch Tag, NextBundle Tag, AdLo, AdHi, First Lit, +/- I/O, + 1 Lit Bit + 1 Match Bit
+        'We may be overcalculating here but that is safer than undercalculating which would result in buggy decompression
+        'If the last block is not the actual last block of the bundle...
+        'With overcalculation, worst case scenario is a little bit worse compression ration of the last block
+        BitsNeededForNextBundle = ((5 + CheckNextIO(tmpFileAddrA(0), tmpFileLenA(0), tmpFileIOA(0))) * 8) + 2
 
         Exit Function
 Err:
@@ -1753,7 +1758,7 @@ NoSort:
 
         Else
 
-            MsgBox("The following file does not exist:" + vbNewLine + vbNewLine + FN)
+            MsgBox("The following file does not exist:" + vbNewLine + vbNewLine + FN, vbOKOnly + vbCritical, "File not found")
             GoTo NoDisk
 
         End If

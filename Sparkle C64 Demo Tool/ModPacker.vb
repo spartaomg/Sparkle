@@ -30,6 +30,11 @@
 	'Literal length is 0 based
 	Private ReadOnly MaxLitLen As Integer = 1 + 4 + 8 + 32 - 1 - 1  '=43 - this seems to be optimal, 1+4+8+16 and 1+4+8+64 are worse...
 
+	Private ReadOnly NewMaxLitLen As Integer = 15 - 1
+
+	Public TotalBits As Integer = 0
+	Public TotalNewBits As Integer = 0
+
 	Private MatchBytes As Integer = 0
 	Private MatchBits As Integer = 0
 	Private LitBits As Integer = 0
@@ -74,6 +79,22 @@
 		'----------------------------------------------------------------------------------------------------------
 
 		CalcBestSequence(PrgLen - 1, 1)
+
+		TotalBits += Seq(PrgLen).Bit
+		'MsgBox(TotalBits.ToString)
+
+		'Dim SLB(PrgLen - 1), SOB(PrgLen - 1), LLB(PrgLen - 1), LOB(PrgLen - 1) As Byte
+		'For I As Integer = 0 To PrgLen - 1
+		'SLB(I) = SL(I)
+		'SOB(I) = SO(I)
+		'LLB(I) = LL(I)
+		'LOB(I) = LO(I) Mod 256
+		'Next
+
+		'IO.File.WriteAllBytes("C:\users\tamas\onedrive\c64\coding\lethargy\SL.bin", SLB)
+		'IO.File.WriteAllBytes("C:\users\tamas\onedrive\c64\coding\lethargy\SO.bin", SOB)
+		'IO.File.WriteAllBytes("C:\users\tamas\onedrive\c64\coding\lethargy\LL.bin", LLB)
+		'IO.File.WriteAllBytes("C:\users\tamas\onedrive\c64\coding\lethargy\LO.bin", LOB)
 
 		'----------------------------------------------------------------------------------------------------------
 		'DETECT BUFFER STATUS AND INITIALIZE COMPRESSION
@@ -139,9 +160,9 @@ Err:
 			LO(Pos) = 0
 			LL(Pos) = 0
 			'Offset goes from 1 to max offset (cannot be 0)
-			MaxO = If(Pos + MaxOffset < SeqStart, MaxOffset, SeqStart - Pos)
+			MaxO = If(Pos + MaxOffset < SeqStart, MaxOffset, SeqStart - Pos)    'MaxO=256 or less
 			'Match length goes from 1 to max length
-			MaxL = If(Pos >= MaxLongLen, MaxLongLen, Pos)  'MaxL=254 or less
+			MaxL = If(Pos >= MaxLongLen - 1, MaxLongLen, Pos + 1)  'MaxL=255 or less
 			For O As Integer = 1 To MaxO                                    'O=1 to 255 or less
 				'Check if first byte matches at offset, if not go to next offset
 				If Prg(Pos) = Prg(Pos + O) Then
@@ -149,12 +170,13 @@ Err:
 						If L = MaxL Then
 							GoTo Match
 						ElseIf Prg(Pos - L) <> Prg(Pos + O - L) Then
+							'Find the first position where there is NO match -> this will give us the absolute length of the match
 							'L=MatchLength + 1 here
 							If L >= 2 Then
 Match:                          If O <= ShortOffset Then
 									If (SL(Pos) < MaxShortLen) And (SL(Pos) < L) Then
-										SL(Pos) = If(L > MaxShortLen, MaxShortLen, L)
-										SO(Pos) = O       'Keep O 1-based
+										SL(Pos) = If(L > MaxShortLen, MaxShortLen, L)   'Short matches cannot be longer than 4 bytes
+										SO(Pos) = O       'Keep Offset 1-based
 									End If
 									If LL(Pos) < L Then
 										LL(Pos) = L
@@ -171,8 +193,8 @@ Match:                          If O <= ShortOffset Then
 						End If
 					Next
 					'If both short and long matches maxed out, we can leave the loop and go to the next Prg position
-					If (LL(Pos) = If(Pos >= MaxLongLen, MaxLongLen, Pos)) And
-						(SL(Pos) = If(Pos >= MaxShortLen, MaxShortLen, Pos)) Then
+					If (LL(Pos) = If(Pos >= MaxLongLen - 1, MaxLongLen, Pos + 1)) And
+						(SL(Pos) = If(Pos >= MaxShortLen - 1, MaxShortLen, Pos + 1)) Then
 						Exit For
 					End If
 				End If
@@ -309,7 +331,7 @@ Restart:
 				MLen = Seq(SI + 1).Len      '1 based
 				MOff = Seq(SI + 1).Off      '1 based
 Match:
-				CalcMatchBits(MLen, MOff)
+				CalcMatchBytesAndBits(MLen, MOff)
 				If MatchBytes = 3 Then
 					'--------------------------------------------------------------------
 					'Long Match - 3 match bytes + 0/1 match bit
@@ -385,7 +407,7 @@ Err:
 
 	End Sub
 
-	Private Function CalcMatchBits(Length As Integer, Offset As Integer) As Integer 'Match Length is 1 based
+	Private Sub CalcMatchBytesAndBits(Length As Integer, Offset As Integer) 'Match Length is 1 based
 		On Error GoTo Err
 
 		If (Length <= MaxShortLen) And (Offset <= ShortOffset) Then
@@ -398,16 +420,14 @@ Err:
 
 		MatchBits = If(LitCnt = -1, 1, 0)
 
-		CalcMatchBits = MatchBits
-
-		Exit Function
+		Exit Sub
 Err:
 		ErrCode = Err.Number
 		MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
-	End Function
+	End Sub
 
-	Private Function CalcMatchBitSeq(Length As Integer, Offset As Integer) As Integer 'Match Length is 1 based
+	Private Sub CalcMatchBitSeq(Length As Integer, Offset As Integer) 'Match Length is 1 based
 		On Error GoTo Err
 
 		If (Length <= MaxShortLen) And (Offset <= ShortOffset) Then
@@ -420,17 +440,25 @@ Err:
 
 		MatchBits = (MatchBytes * 8) + 1
 
-		CalcMatchBitSeq = MatchBits
-
-		Exit Function
+		Exit Sub
 Err:
 		ErrCode = Err.Number
 		MsgBox(ErrorToString(), vbOKOnly + vbExclamation, Reflection.MethodBase.GetCurrentMethod.Name + " Error")
 
-	End Function
+	End Sub
 
 	Private Function CalcLitBitSeq(Lits As Integer) As Integer     'LitCnt is 0 based
 		On Error GoTo Err
+
+		'If Lits = -1 Then
+		'CalcLitBitSeq = 0
+		'ElseIf Lits = 0 Then
+		'CalcLitBitSeq = 2
+		'ElseIf Lits < NewMaxLitLen Then
+		'CalcLitBitSeq = 6
+		'Else
+		'CalcLitBitSeq = 14
+		'End If
 
 		If Lits = -1 Then
 			CalcLitBitSeq = 0                       '0	1 type selector bit for match
@@ -498,8 +526,8 @@ Err:
 		'Add Close Byte + IO Byte ONLY if this is the first sequence in the block that goes under IO
 		BytesToAdd += 1 + If((BlockUnderIO = 0) And (SequenceUnderIO = 1), 1, 0)
 
-		'Add Close Bit if this sequence is a match, or this sequence is a  literal sequence with a MaxLit length
-		BitsToAdd += If((MLen > 1) Or (LitCnt = -1) Or (LitCnt Mod (MaxLitLen + 1) = MaxLitLen), 1, 0)
+		'Add Match/Close Bit if the last sequence was a match
+		BitsToAdd += If(MLen > 0, 1, 0)
 
 		BytesToAdd += Int(BitsToAdd / 8)
 		BitsToAdd = BitsToAdd Mod 8
@@ -781,10 +809,6 @@ Err:
 
 		'If we have not reached the end of the file, then update buffer
 
-		'If PrgAdd + SI = &HC1FD Then
-		'MsgBox("!")
-		'End If
-
 		Buffer(BytePtr) = (PrgAdd + SI) Mod 256
 		AdLoPos = BytePtr
 
@@ -801,22 +825,29 @@ Err:
 
 		'------------------------------------------------------------------------------------------------------------------------------
 		'"COLOR BUG"
-		'Compression bug related to the transitional block - FIXED
-		'Fix: add 6 or 7 bytes + 1 bit to the calculation to find the last block of a bundle
-		'1 block count, +2 new bundle tag, +2 NEXT Bundle address, +1 first literal byte of NEXT Bundle, +0/1 IO status of first literal byte
-		'+1  match bit (may or may not be needed, but we don't know until the end...)
+		'Compression bug related to the transitional block (i.e. finding the last block of a bundle) - FIXED
+		'Fix: add 5 or 6 bytes + 2 bits to the calculation to find the last block of a bundle
+		'+2 new bundle tag, +2 NEXT Bundle address, +1 first literal byte of NEXT Bundle, +0/1 IO status of first literal byte of NEXT file
+		'+1 literal bit, +1 match bit (may or may not be needed, but we don't know until the end...)
 		'------------------------------------------------------------------------------------------------------------------------------
 
-		'Check if the first literal byte of the NEXT Bundle will go under IO
+		'Check if the first literal byte of the NEXT Bundle will go under I/O
 		'Bits needed for next bundle is calculated in ModDisk:SortPart
-
 		'(Next block = Second block) or (remaining bits of Last File in Bundle + Needed Bits fit in this block)
-		If (BlockCnt = 1) Or ((Seq(SI).Bit + 8 + BitsNeededForNextBundle < LastByte * 8) And (LastFileOfBundle = True) And (NewBlock = False)) Then
+		If (BlockCnt = 1) Or ((Seq(SI).Bit + 8 + BitsNeededForNextBundle <= (LastByte * 8) + BitPos) And (LastFileOfBundle = True) And (NewBlock = False)) Then
+			'Seq(SI).Bit = remaining bits in file
+			'BitsNeededForNextBundle (5-6 bytes + 1/2 bits)
+			'+5/6 bytes +1/2 bits
+			'+1 byte (Close Tag)
+			'Bits remaining in block: LastByte * 8 (+ remaining bits in last BitPtr (BitPos+1))
+			'But we are trying to overcalculate here to avoid misidentification of the last block
+			'Which would result in buggy decompression
+
 			'This is the last block ONLY IF the remainder of the bundle + the next bundle's info fits!!!
 			'AND THE NEXT Bundle IS NOT ALIGNED in which case the next block is the last one
 			'Seg(SI).bit includes both the byte stream in bits and the bit stream (total bits needed to compress the remainder of the bundle)
-			'+End Tag: 8 bits
-			'+BitsNeeded: 6-7 bytes for next bundle's info + 1 match bit (may or may not be needed, but we wouldn't know until the end)
+			'+Close Tag: 8 bits
+			'+BitsNeeded: 5-6 bytes for next bundle's info + 1 lit bit +/- 1 match bit (may or may not be needed, but we wouldn't know until the end)
 			'For the 2nd and last block, only recalculate the first byte's sequence
 			CalcBestSequence(If(SI > 1, SI, 1), If(SI > 1, SI, 1))
 		Else
@@ -842,41 +873,47 @@ NoDisk:
 
 		If NewBlock = True Then GoTo NewB   'The bundle will start in a new block
 
-		'ADDS NEW Bundle TAG (Long Match Tag + End Tag) TO THE END OF THE Bundle, AND RESERVES LAST BYTE IN BUFFER FOR BLOCK COUNT
+		'ADDS NEW Bundle TAG (Long Match Tag + End Tag) TO THE END OF THE Bundle
 
 		'-----------------------------------------------------------------------------------
 		'"SPRITE BUG"
 		'Compression bug related to the transitional block - FIXED
-		'Fix: include next file's I/O status in calculation of needed bytes
+		'Fix: include NEXT file's I/O status in calculation of needed bytes
 		'-----------------------------------------------------------------------------------
-		'BYTES NEEDED: BlockCnt + Long Match Tag + End Tag + AdLo + AdHi + 1st Literal +1 if next file goes under I/O
-		Dim Bytes As Integer = 6 + NextFileIO
 
-		Dim Bits As Integer = If((LitCnt = -1) Or (LitCnt Mod (MaxLitLen + 1) = MaxLitLen), 1, 0)   'Calculate whether Match Bit is needed for new bundle
+		'BYTES NEEDED: Long Match Tag + End Tag + AdLo + AdHi + 1st Literal + 1 if next file goes under I/O
+		'BlockCnt is no longer needed - it will be overwritten by Close Tag
+		Dim Bytes As Integer = 5 + NextFileIO
+
+		'THE FIRST LITERAL ALSO NEEDS A LITERAL BIT
+		'DO NOT ADD MATCH BIT HERE, IT WILL BE ADDED IN SequenceFits()
+		'Bug fixed based on CloseFile bug reported by Visage/Lethargy
+		Dim Bits As Integer = 1
 
 		If SequenceFits(Bytes, Bits) Then       'This will add the EndTag to the needed bytes
 
 			'Buffer has enough space for New Bundle Tag and New Bundle Info and first Literal byte (and IO flag if needed)
 
-			If Bits = 1 Then AddBits(0, 1)
+			'If last sequence was a match (no literals) then add a match bit
+			If (MLen > 0) Or (LitCnt = -1) Then AddBits(0, 1)
 
 NextPart:   'Match Bit is not needed if this is the beginning of the next block
 			FilesInBuffer += 1  'There is going to be more than 1 file in the buffer
 
-			'MsgBox(FilesInBuffer.ToString + vbNewLine + BufferCnt.ToString)
+			'If FromEditor = True Then
+			''NOT SURE ABOUT THIS...
+			'If (BundleCnt > 2) And (FilesInBuffer = 2) Then         'Reserve last byte in buffer for Block Count...
+			''... only once, when the 2nd file is added to the same buffer
+			'Buffer(1) = 1                                       'Second byte reserved for BlockCnt
+			'End If
+			'Else
+			'If (BufferCnt > 0) And (FilesInBuffer = 2) Then         'Reserve last byte in buffer for Block Count...
+			''... only once, when the 2nd file is added to the same buffer
+			'Buffer(1) = 1                                     'Second byte reserved for BlockCnt
+			'End If
+			'End If
 
-			If FromEditor = True Then
-				'NOT SURE ABOUT THIS...
-				If (BundleCnt > 2) And (FilesInBuffer = 2) Then         'Reserve last byte in buffer for Block Count...
-					'... only once, when the 2nd file is added to the same buffer
-					Buffer(1) = 1                                       'Second byte reserved for BlockCnt
-				End If
-			Else
-				If (BufferCnt > 0) And (FilesInBuffer = 2) Then         'Reserve last byte in buffer for Block Count...
-					'... only once, when the 2nd file is added to the same buffer
-					Buffer(1) = 1                                     'Second byte reserved for BlockCnt
-				End If
-			End If
+			Buffer(1) = 1
 
 			Buffer(BytePtr) = LongMatchTag                          'Then add New File Match Tag
 			Buffer(BytePtr - 1) = EndTag
@@ -898,8 +935,7 @@ NextPart:   'Match Bit is not needed if this is the beginning of the next block
 
 			'DO NOT CLOSE LAST BUFFER HERE, WE ARE GOING TO ADD NEXT Bundle TO LAST BUFFER
 			If ByteSt.Count > BlockPtr + 255 Then     'Only save block count if block is already added to ByteSt
-				'MsgBox(Hex(LastBlockCnt))
-				ByteSt(BlockPtr + 1) = LastBlockCnt   'New Block Count is Byte(0) in buffer, not Byte(255)
+				ByteSt(BlockPtr + 1) = LastBlockCnt   'New Block Count is ByteSt(BlockPtr+1) in buffer, not ByteSt(BlockPtr+255)
 				LoaderBundles += 1
 			End If
 
@@ -946,17 +982,22 @@ NoGo:
 
 		'ADDS NEXT FILE TAG TO BUFFER
 
-		'4-5 bytes and 0-1 bits needed for NextFileTag, Address Bytes and first Lit byte (+1 more if UIO)
+		'4-5 bytes and 1-2 bits needed for NextFileTag, Address Bytes and first Lit byte (+1 more if UIO)
 		'BYTES NEEDED: End Tag + AdLo + AdHi + 1st Literal +/- I/O FLAG of NEW FILE's 1st literal
-		Dim Bytes As Integer = 4 + CheckIO(PrgLen - 1)  'BUG reported by Raistlin/G*P
-		'Calculate whether Match Bit is needed for new file
-		Dim Bits As Integer = If((LitCnt = -1) Or (LitCnt Mod (MaxLitLen + 1) = MaxLitLen), 1, 0)
+		'BUG reported by Raistlin/G*P
+		Dim Bytes As Integer = 4 + CheckIO(PrgLen - 1)
+
+		'THE FIRST LITERAL BYTE WILL ALSO NEED A LITERAL BIT
+		'DO NOT check whether Match Bit is needed for new file - will be checked in Sequencefits()
+		'BUG reported by Visage/Lethargy
+		Dim Bits As Integer = 1
 
 		If SequenceFits(Bytes, Bits) Then   'DO NOT INCLUDE NEXT NEXT FILE'S IO STATUS HERE - IT WOULD RESULT IN AN UNWANTED I/O FLAG INSERTION
 
 			'Buffer has enough space for New File Match Tag and New File Info and first Literal byte (and I/O flag if needed)
 
-			If Bits = 1 Then AddBits(0, 1)
+			'If last sequence was a match (no literals) then add a match bit
+			If (MLen > 0) Or (LitCnt = -1) Then AddBits(0, 1)
 
 			Buffer(BytePtr) = NextFileTag                           'Then add New File Match Tag
 			BytePtr -= 1
