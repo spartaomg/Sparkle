@@ -58,6 +58,7 @@ Partial Class FrmMain
 		Me.txtCT = New System.Windows.Forms.ToolStripTextBox()
 		Me.ToolStripLabel2 = New System.Windows.Forms.ToolStripLabel()
 		Me.txtCS = New System.Windows.Forms.ToolStripTextBox()
+		Me.TslIL = New System.Windows.Forms.ToolStripLabel()
 		Me.ssStatus = New System.Windows.Forms.StatusStrip()
 		Me.ssLabel = New System.Windows.Forms.ToolStripStatusLabel()
 		Me.ToolStrip1 = New System.Windows.Forms.ToolStrip()
@@ -102,7 +103,6 @@ Partial Class FrmMain
 		Me.Label3 = New System.Windows.Forms.Label()
 		Me.Label2 = New System.Windows.Forms.Label()
 		Me.Label1 = New System.Windows.Forms.Label()
-		Me.TslIL = New System.Windows.Forms.ToolStripLabel()
 		Me.ToolStrip2.SuspendLayout()
 		Me.ssStatus.SuspendLayout()
 		Me.ToolStrip1.SuspendLayout()
@@ -387,6 +387,14 @@ Partial Class FrmMain
 		Me.txtCS.Size = New System.Drawing.Size(25, 23)
 		Me.txtCS.ToolTipText = "Current Sector"
 		'
+		'TslIL
+		'
+		Me.TslIL.Font = New System.Drawing.Font("Segoe UI", 9.0!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
+		Me.TslIL.ForeColor = System.Drawing.Color.MidnightBlue
+		Me.TslIL.Name = "TslIL"
+		Me.TslIL.Size = New System.Drawing.Size(68, 24)
+		Me.TslIL.Text = "Interleave:"
+		'
 		'ssStatus
 		'
 		Me.ssStatus.ImageScalingSize = New System.Drawing.Size(20, 20)
@@ -550,6 +558,7 @@ Partial Class FrmMain
 		Me.TsbAdmin.Size = New System.Drawing.Size(90, 24)
 		Me.TsbAdmin.Text = "Admin Mode"
 		Me.TsbAdmin.ToolTipText = "Administrator Mode Functions"
+		Me.TsbAdmin.Visible = False
 		'
 		'TsmAssociate
 		'
@@ -817,14 +826,6 @@ Partial Class FrmMain
 		Me.Label1.TabIndex = 19
 		Me.Label1.Text = "00 01 02 03 04 05 06 07 08 09 0A 0B 0C 0D 0E 0F"
 		'
-		'TslIL
-		'
-		Me.TslIL.Font = New System.Drawing.Font("Segoe UI", 9.0!, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, CType(0, Byte))
-		Me.TslIL.ForeColor = System.Drawing.Color.MidnightBlue
-		Me.TslIL.Name = "TslIL"
-		Me.TslIL.Size = New System.Drawing.Size(68, 24)
-		Me.TslIL.Text = "Interleave:"
-		'
 		'FrmMain
 		'
 		Me.AllowDrop = True
@@ -838,6 +839,7 @@ Partial Class FrmMain
 		Me.DoubleBuffered = True
 		Me.FormBorderStyle = System.Windows.Forms.FormBorderStyle.FixedDialog
 		Me.Icon = CType(resources.GetObject("$this.Icon"), System.Drawing.Icon)
+		Me.KeyPreview = True
 		Me.MaximizeBox = False
 		Me.Name = "FrmMain"
 		Me.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen
