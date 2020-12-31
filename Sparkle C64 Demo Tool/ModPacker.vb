@@ -82,34 +82,6 @@ Friend Module ModPacker
 
 		CalcBestSequence(PrgLen - 1, 1)     'SeqEnd is 1 because Prg(0) is always 1 literal on its own, we need at lease 2 bytes for a match
 
-		'Dim SLB(PrgLen - 1), SOB(PrgLen - 1), LLB(PrgLen - 1), LOB(PrgLen - 1) As Byte
-		'For I As Integer = 0 To PrgLen - 1
-		'SLB(I) = SL(I)
-		'SOB(I) = SO(I)
-		'LLB(I) = LL(I)
-		'LOB(I) = LO(I) Mod 256
-		'Next
-
-		'IO.File.WriteAllBytes("C:\users\tamas\onedrive\c64\coding\lethargy\SL.bin", SLB)
-		'IO.File.WriteAllBytes("C:\users\tamas\onedrive\c64\coding\lethargy\SO.bin", SOB)
-		'IO.File.WriteAllBytes("C:\users\tamas\onedrive\c64\coding\lethargy\LL.bin", LLB)
-		'IO.File.WriteAllBytes("C:\users\tamas\onedrive\c64\coding\lethargy\LO.bin", LOB)
-
-		'Dim S As String = "No" + vbTab + "Len" + vbTab + "Off" + vbTab + "Bytes" + vbTab + "Nibbles" + vbTab + "Bits" + vbTab + "TBytes" + vbTab + "TBits" + vbNewLine
-
-		'For I As Integer = 1 To PrgLen
-		'S += (I - 1).ToString + vbTab +
-		'Seq(I).Len.ToString + vbTab +
-		'Seq(I).Off.ToString + vbTab +
-		'Seq(I).Bytes.ToString + vbTab +
-		'Seq(I).Nibbles.ToString + vbTab +
-		'Seq(I).Bits.ToString + vbTab +
-		'Seq(I).TotalBytes.ToString + vbTab +
-		'Seq(I).TotalBits.ToString + vbNewLine
-		'Next
-
-		'IO.File.WriteAllText("C:\users\tamas\onedrive\c64\coding\lethargy\TotalBits.txt", S)
-
 		'----------------------------------------------------------------------------------------------------------
 		'DETECT BUFFER STATUS AND INITIALIZE COMPRESSION
 		'----------------------------------------------------------------------------------------------------------
@@ -238,7 +210,7 @@ Match:                          If O <= ShortOffset Then
 				'Get offset, use short match if possible
 				SeqOff = If(L <= SL(Pos), SO(Pos), LO(Pos))
 
-				''THIS DOES NOT SEEM TO MAKE ANY DIFFERENCE. INSTEAD, WE ARE SIMPLY EXLUDING ANY 2-BYTE MID MATCHES
+				''THIS DOES NOT SEEM TO MAKE ANY DIFFERENCE. INSTEAD, WE ARE SIMPLY EXCLUDING ANY 2-BYTE MID MATCHES
 				'If (L = 2) And (SeqOff > ShortOffset) Then
 				'If LO(Pos - 2) = 0 And LO(Pos + 1) = 0 And SO(Pos - 2) = 0 And SO(Pos + 1) = 0 Then
 				''Filter out short mid matches surrounded by literals
@@ -559,7 +531,7 @@ Err:
 
 		Dim BytesFree As Integer = BytePtr      '1,2,3,...,BytePtr-1,BytePtr
 
-		'If this is a transitional block (including block 0 on disk) then we need 1 byte for block count (will be overwritten by Close Byte
+		'If this is a transitional block (including block 0 on disk) then we need 1 byte for block count (will be overwritten by Close Byte)
 		'If TransitionalBlock = True Then BytesFree -= 1
 		If (TransitionalBlock = True) Or (BufferCnt = 0) Then
 			BytesFree -= 1
@@ -849,6 +821,8 @@ Err:
 		'Add 4 bits if number of nibbles is odd
 		Dim BitsLeft As Integer = Seq(SI + 1).TotalBits + ((Seq(SI + 1).Nibbles Mod 2) * 4)
 
+		BitsNeededForNextBundle += If(MLen = 0, 0, 1)   'If last sequence was a Match, we also need a Match Bit
+
 		'If NewCalc = False Then
 		'BitsLeft = Seq(SI).TotalBits
 		'End If
@@ -1091,7 +1065,7 @@ Err:
 
 	End Function
 
-	Public Sub UpdateByteStream()   'THIS IS ALSO USED BY LZ4+RLE!!!
+	Public Sub UpdateByteStream()
 		On Error GoTo Err
 
 		ReDim Preserve ByteSt(BufferCnt * 256 - 1)
