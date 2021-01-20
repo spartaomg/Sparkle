@@ -3184,7 +3184,7 @@ Err:
 					UpdateNode(DiskNode.Nodes(sLoop), sLoop + ScriptEntryArray(0), DiskNode.Tag, colDiskInfo, Fnt)
 					If LoopSet = False Then 'Loop can only be set from the first disk
 						DiskNode.Nodes.Add(LoopNode)
-						ZPSet = True
+						LoopSet = True
 					End If
 					NewBundle = True
 				Case "il0:"
@@ -3466,7 +3466,7 @@ Done:
 					UpdateNode(LoopNode, sLoop + ScriptEntryArray(0), DiskNode.Tag, colDiskInfoGray, Fnt)
 					If LoopSet = False Then 'Loop can only be set from the first disk
 						DiskNode.Nodes.Add(LoopNode)
-						ZPSet = True
+						LoopSet = True
 					End If
 					NewBundle = True
 				Case "il0:"
